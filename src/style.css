@@ -117,7 +117,8 @@ button {
 }
 
 .header-container {
-  max-width: 1100px;
+  max-width: 100%;
+  padding: 0 0.5rem;
   margin: 0 auto;
   display: flex;
   align-items: center;
@@ -134,19 +135,18 @@ button {
 }
 
 .seal-logo {
-  width: 38px;
-  height: 38px;
-  border-radius: 9px;
-  background: var(--accent-seal);
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: radial-gradient(circle at 35% 30%, #dc2626 0%, #b91c1c 50%, #991b1b 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #ffffff;
-  font-family: 'Noto Serif SC', serif;
-  font-size: 1.5rem;
-  font-weight: 900;
-  box-shadow: 0 2px 6px rgba(194, 65, 12, 0.35);
-  border: 1.5px solid rgba(255, 255, 255, 0.4);
+  color: #fffdf5;
+  font-family: 'Ma Shan Zheng', serif;
+  font-size: 1.45rem;
+  box-shadow: 0 2px 8px rgba(185, 28, 28, 0.35);
+  border: 1.5px solid rgba(255, 255, 255, 0.35);
   user-select: none;
 }
 
@@ -221,48 +221,6 @@ button {
   box-shadow: 0 2px 6px rgba(194, 65, 12, 0.3);
 }
 
-/* Timer Control */
-.timer-selector {
-  padding-left: 0.65rem;
-  padding-right: 0.5rem;
-  gap: 0.4rem;
-}
-
-.timer-icon {
-  color: var(--fg-muted);
-}
-
-.timer-dropdown {
-  border: none;
-  background: transparent;
-  font-family: inherit;
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--fg-main);
-  outline: none;
-  cursor: pointer;
-  padding: 0.3rem 0.2rem;
-}
-
-.timer-countdown-chip {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  background: rgba(194, 65, 12, 0.1);
-  color: var(--accent-seal);
-  padding: 0.15rem 0.45rem;
-  border-radius: var(--radius-full);
-  font-size: 0.75rem;
-  font-weight: 700;
-}
-
-.timer-pause-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: inherit;
-}
-
 /* Right Tools */
 .right-tools {
   display: flex;
@@ -316,6 +274,81 @@ button {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+/* Shortcuts Trigger Wrapper & Popover Dropdown */
+.shortcuts-trigger-wrapper {
+  position: relative;
+}
+
+.shortcuts-btn.active {
+  color: var(--accent-seal);
+  border-color: var(--accent-seal);
+  background: rgba(194, 65, 12, 0.1);
+}
+
+.shortcuts-popover-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 290px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-line);
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25), 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: 0.85rem 1rem;
+  z-index: 100;
+  animation: fadeIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.shortcuts-popover-header {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--accent-seal);
+  border-bottom: 1px solid var(--border-light);
+  padding-bottom: 0.5rem;
+}
+
+.shortcuts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.shortcut-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.sc-kbd-group {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.sc-kbd {
+  background: var(--bg-main);
+  border: 1px solid var(--border-line);
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--fg-main);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.sc-desc {
+  font-size: 0.78rem;
+  color: var(--fg-muted);
 }
 
 .tool-btn.has-favs {
@@ -1580,3 +1613,1795 @@ kbd {
     display: none;
   }
 }
+
+/* ==========================================================================
+   Study Studio / Split Workspace (Premium Aesthetics & Oriental Paper)
+   ========================================================================== */
+
+.studio-app-root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: var(--bg-main);
+  color: var(--fg-main);
+  overflow-x: hidden;
+  background-image: 
+    radial-gradient(at 0% 0%, rgba(194, 65, 12, 0.035) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(217, 119, 6, 0.03) 0px, transparent 50%);
+}
+
+html.dark .studio-app-root {
+  background-image: 
+    radial-gradient(at 0% 0%, rgba(248, 113, 113, 0.04) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(56, 189, 248, 0.03) 0px, transparent 50%);
+}
+
+.studio-main-viewport {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+}
+
+.studio-state-center {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.25rem;
+  padding: 3rem;
+  text-align: center;
+}
+
+.studio-state-center.error .error-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--accent-seal);
+}
+
+.studio-state-center.error .error-sub {
+  color: var(--fg-muted);
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+}
+
+/* Bottom Global Shortcut Guide Bar */
+.studio-shortcuts-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem;
+  padding: 0.45rem 1rem;
+  background: var(--bg-elevated);
+  border-top: 1px solid var(--border-line);
+  font-size: 0.78rem;
+  color: var(--fg-muted);
+  user-select: none;
+}
+
+.shortcut-hint {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.shortcut-hint kbd {
+  background: var(--bg-main);
+  border: 1px solid var(--border-line);
+  padding: 0.12rem 0.45rem;
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--fg-main);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+/* Split Workspace 3-Column Layout (Zero Footer - Full Screen Studio) */
+.studio-split-layout {
+  display: grid;
+  grid-template-columns: 310px 1fr 390px;
+  height: calc(100vh - 60px);
+  overflow: hidden;
+}
+
+/* --------------------------------------------------------------------------
+   Left Sidebar: Character Library & Navigation
+   -------------------------------------------------------------------------- */
+.studio-sidebar-left {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-elevated);
+  border-right: 1px solid var(--border-line);
+  overflow: hidden;
+}
+
+.sidebar-header {
+  padding: 1rem 1rem 0.85rem;
+  border-bottom: 1px solid var(--border-light);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  background: var(--bg-elevated);
+}
+
+.sidebar-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sidebar-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 700;
+  font-size: 0.95rem;
+  letter-spacing: -0.01em;
+  color: var(--fg-main);
+}
+
+.sidebar-heading-icon {
+  color: var(--accent-seal);
+}
+
+.count-badge {
+  font-size: 0.72rem;
+  font-weight: 600;
+  background: var(--bg-main);
+  border: 1px solid var(--border-line);
+  padding: 0.1rem 0.45rem;
+  border-radius: var(--radius-full);
+  color: var(--fg-muted);
+}
+
+.mobile-close-btn {
+  display: none;
+  padding: 0.25rem;
+  color: var(--fg-muted);
+  border-radius: 6px;
+}
+
+.mobile-close-btn:hover {
+  background: var(--bg-main);
+  color: var(--fg-main);
+}
+
+/* Search input in sidebar */
+.sidebar-search-box {
+  display: flex;
+  align-items: center;
+  background: var(--bg-main);
+  border: 1px solid var(--border-line);
+  border-radius: 8px;
+  padding: 0.42rem 0.7rem;
+  gap: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.sidebar-search-box:focus-within {
+  border-color: var(--accent-seal);
+  background: var(--bg-elevated);
+  box-shadow: 0 0 0 3px rgba(194, 65, 12, 0.12);
+}
+
+.search-icon {
+  color: var(--fg-subtle);
+  flex-shrink: 0;
+}
+
+.sidebar-search-input {
+  border: none;
+  background: transparent;
+  width: 100%;
+  font-size: 0.84rem;
+  color: var(--fg-main);
+  outline: none;
+}
+
+.sidebar-search-input::placeholder {
+  color: var(--fg-subtle);
+  font-size: 0.82rem;
+}
+
+.clear-search-btn {
+  color: var(--fg-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.1rem;
+}
+
+.clear-search-btn:hover {
+  color: var(--fg-main);
+}
+
+/* Sidebar mode tabs: Tất cả vs Sổ tay */
+.sidebar-mode-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.25rem;
+  background: var(--bg-main);
+  padding: 0.25rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-light);
+}
+
+.mode-tab-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.5rem;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--fg-muted);
+  transition: all 0.18s ease;
+}
+
+.mode-tab-btn:hover {
+  color: var(--fg-main);
+}
+
+.mode-tab-btn.active {
+  background: var(--bg-elevated);
+  color: var(--fg-main);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+}
+
+/* HSK filter row */
+.sidebar-filter-cluster {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.hsk-standard-badge {
+  font-family: inherit;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.32rem 0.55rem;
+  background: rgba(194, 65, 12, 0.08);
+  border: 1px solid rgba(194, 65, 12, 0.2);
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--accent-seal);
+  user-select: none;
+  transition: all 0.18s ease;
+  flex-shrink: 0;
+  line-height: 1.2;
+}
+
+.hsk-standard-badge:hover {
+  background: rgba(194, 65, 12, 0.15);
+}
+
+.hsk-level-pills {
+  display: flex;
+  gap: 0.22rem;
+  flex: 1;
+}
+
+.lvl-pill {
+  flex: 1;
+  padding: 0.32rem 0;
+  text-align: center;
+  border-radius: 6px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  background: var(--bg-main);
+  border: 1px solid var(--border-light);
+  color: var(--fg-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  line-height: 1.2;
+}
+
+.lvl-pill:hover {
+  background: var(--bg-elevated);
+  border-color: var(--border-line);
+  color: var(--fg-main);
+}
+
+.lvl-pill.active {
+  background: var(--accent-seal);
+  color: #ffffff;
+  border-color: var(--accent-seal);
+  box-shadow: 0 1px 4px rgba(194, 65, 12, 0.25);
+}
+
+/* Character list items */
+.sidebar-item-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  scroll-behavior: smooth;
+}
+
+.sidebar-empty-state {
+  text-align: center;
+  padding: 3rem 1.5rem;
+  color: var(--fg-muted);
+  font-size: 0.85rem;
+}
+
+.sidebar-char-card {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.72rem 0.85rem;
+  border-radius: 9px;
+  border: 1px solid var(--border-light);
+  background: var(--bg-elevated);
+  cursor: pointer;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+  position: relative;
+}
+
+.sidebar-char-card:hover {
+  background: var(--bg-main);
+  border-color: var(--border-line);
+  transform: translateX(3px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+}
+
+.sidebar-char-card.selected {
+  background: var(--bg-main);
+  border-color: rgba(194, 65, 12, 0.35);
+  box-shadow: 0 2px 10px rgba(194, 65, 12, 0.08);
+}
+
+.sidebar-char-card.selected::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 6px;
+  bottom: 6px;
+  width: 3.5px;
+  background: var(--accent-seal);
+  border-radius: 0 3px 3px 0;
+}
+
+.char-card-glyph {
+  font-size: 1.75rem;
+  font-family: 'Ma Shan Zheng', 'Noto Serif SC', serif;
+  width: 2.7rem;
+  height: 2.7rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fbf9f5;
+  border: 1px solid var(--border-line);
+  border-radius: 8px;
+  color: var(--fg-main);
+  flex-shrink: 0;
+  box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.03);
+}
+
+html.dark .char-card-glyph {
+  background: #171b23;
+  border-color: #262c38;
+}
+
+.sidebar-char-card.selected .char-card-glyph {
+  border-color: rgba(194, 65, 12, 0.4);
+  color: var(--accent-seal);
+  background: rgba(194, 65, 12, 0.05);
+}
+
+.char-card-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.char-card-top {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+/* Distinct Vermilion Seal Mini Tag (NO DOT SEPARATION) */
+.seal-mini-tag {
+  background: linear-gradient(135deg, #b91c1c, #991b1b);
+  color: #ffffff;
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  padding: 0.12rem 0.45rem;
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(185, 28, 28, 0.25);
+  flex-shrink: 0;
+  font-family: var(--font-ui);
+}
+
+.pinyin-tag {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--accent-blue);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.char-card-mean {
+  font-size: 0.74rem;
+  color: var(--fg-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.char-card-badges {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.25rem;
+  flex-shrink: 0;
+}
+
+.fav-star-icon {
+  color: var(--accent-gold);
+}
+
+.lvl-mini-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--fg-subtle);
+  background: var(--bg-main);
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+  border: 1px solid var(--border-light);
+}
+
+/* --------------------------------------------------------------------------
+   Center Pane: Studio Canvas, HanziWriter & Vermilion Seal
+   -------------------------------------------------------------------------- */
+.studio-col-center {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--bg-main);
+  position: relative;
+  height: 100%;
+}
+
+/* Center Empty Workspace (In-place notification when filter has 0 items) */
+.center-empty-workspace {
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 3rem 2rem;
+  max-width: 480px;
+  position: relative;
+  animation: fadeIn 0.3s ease;
+}
+
+.empty-calligraphy-seal {
+  font-family: var(--font-calligraphy, 'Ma Shan Zheng', cursive);
+  font-size: 5.5rem;
+  line-height: 1;
+  color: var(--accent-seal);
+  opacity: 0.22;
+  margin-bottom: 0.75rem;
+  user-select: none;
+  filter: drop-shadow(0 2px 10px rgba(194, 65, 12, 0.2));
+  transform: rotate(-3deg);
+}
+
+.empty-workspace-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.empty-workspace-title {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--fg-main);
+  letter-spacing: -0.015em;
+  margin: 0;
+}
+
+.empty-workspace-desc {
+  font-size: 0.9rem;
+  color: var(--fg-muted);
+  line-height: 1.55;
+  margin: 0;
+  max-width: 380px;
+}
+
+.empty-reset-pill-btn {
+  margin-top: 0.75rem;
+  padding: 0.55rem 1.4rem;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, #c2410c, #ea580c);
+  border: none;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(194, 65, 12, 0.35);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.empty-reset-pill-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(194, 65, 12, 0.45);
+  background: linear-gradient(135deg, #ea580c, #f97316);
+}
+
+.empty-reset-pill-btn:active {
+  transform: translateY(0);
+}
+
+.studio-canvas-pane {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  padding: 0.85rem 2.2rem 1rem;
+  max-width: 1100px;
+  margin: 0 auto;
+  width: 100%;
+  justify-content: space-between;
+}
+
+.canvas-header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+  flex-shrink: 0;
+}
+
+.canvas-badges-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.mobile-drawer-toggle-btn {
+  display: none;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0.35rem 0.8rem;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-line);
+  border-radius: var(--radius-full);
+  color: var(--accent-seal);
+}
+
+.badge-hsk-level {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.25rem 0.7rem;
+  border-radius: var(--radius-full);
+  background: rgba(194, 65, 12, 0.08);
+  color: var(--accent-seal);
+  border: 1px solid rgba(194, 65, 12, 0.2);
+}
+
+.badge-progress-count {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.25rem 0.7rem;
+  border-radius: var(--radius-full);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-line);
+  color: var(--fg-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.badge-stroke-count {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.25rem 0.7rem;
+  border-radius: var(--radius-full);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-line);
+  color: var(--fg-muted);
+}
+
+.badge-traditional {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.25rem 0.7rem;
+  border-radius: var(--radius-full);
+  background: rgba(2, 132, 199, 0.08);
+  border: 1px solid rgba(2, 132, 199, 0.2);
+  color: var(--accent-blue);
+}
+
+.canvas-actions-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.font-switch-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.32rem 0.75rem;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-line);
+  border-radius: var(--radius-full);
+  font-size: 0.8rem;
+  color: var(--fg-muted);
+  transition: all 0.2s ease;
+}
+
+.font-switch-btn:hover {
+  color: var(--fg-main);
+  border-color: var(--fg-muted);
+}
+
+.fav-action-btn {
+  padding: 0.42rem;
+  border-radius: var(--radius-full);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-line);
+  color: var(--fg-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.fav-action-btn:hover {
+  border-color: var(--accent-gold);
+  color: var(--accent-gold);
+}
+
+.fav-action-btn.starred {
+  color: var(--accent-gold);
+  border-color: var(--accent-gold);
+  background: rgba(245, 158, 11, 0.12);
+}
+
+/* Hanzi Canvas Frame & Horizontal Hero Stage (Single-view, Balanced Proportions) */
+.canvas-hero-body {
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 4.5rem;
+  padding: 0.25rem 0;
+  width: 100%;
+}
+
+.canvas-glyph-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.hanzi-writer-canvas-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.mige-canvas-frame {
+  position: relative;
+  background: #fdfbf7;
+  border: 2px solid var(--border-line);
+  border-radius: 16px;
+  box-shadow: 
+    0 10px 30px rgba(28, 25, 23, 0.06),
+    0 1px 3px rgba(28, 25, 23, 0.04),
+    inset 0 0 12px rgba(194, 65, 12, 0.02);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  user-select: none;
+  color: #c2410c;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+html.dark .mige-canvas-frame {
+  background: #131720;
+  border-color: #262c38;
+  color: #f87171;
+  box-shadow: 
+    0 10px 30px rgba(0, 0, 0, 0.4),
+    inset 0 0 12px rgba(248, 113, 113, 0.03);
+}
+
+.mige-canvas-frame:hover {
+  border-color: rgba(194, 65, 12, 0.35);
+}
+
+/* Authentic vector SVG grid */
+.mige-svg-grid {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.hanzi-static-glyph {
+  font-size: 10.2rem;
+  line-height: 1;
+  color: var(--fg-main);
+  cursor: pointer;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 2;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.hanzi-static-glyph:hover {
+  transform: scale(1.04);
+}
+
+.hanzi-writer-surface {
+  position: relative;
+  z-index: 2;
+}
+
+.quiz-result-overlay {
+  position: absolute;
+  bottom: 14px;
+  background: rgba(16, 185, 129, 0.95);
+  backdrop-filter: blur(4px);
+  color: #ffffff;
+  padding: 0.4rem 1rem;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  z-index: 5;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);
+  animation: fadeIn 0.2s ease;
+}
+
+/* Redesigned Segmented Control Action Bar */
+.canvas-segmented-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: var(--bg-elevated);
+  padding: 0.35rem 0.5rem;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border-line);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+}
+
+.toolbar-seg-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.9rem;
+  border-radius: var(--radius-full);
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--fg-muted);
+  transition: all 0.18s ease;
+}
+
+.toolbar-seg-btn:hover {
+  color: var(--fg-main);
+  background: var(--bg-main);
+}
+
+.toolbar-seg-btn.active {
+  background: linear-gradient(135deg, var(--accent-seal), #b91c1c);
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(194, 65, 12, 0.32);
+}
+
+.toolbar-divider {
+  width: 1px;
+  height: 18px;
+  background: var(--border-line);
+  margin: 0 0.15rem;
+}
+
+.toolbar-tool-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.4rem;
+  border-radius: var(--radius-full);
+  color: var(--fg-muted);
+  transition: all 0.18s ease;
+}
+
+.toolbar-tool-icon:hover {
+  background: var(--bg-main);
+  color: var(--fg-main);
+}
+
+.toolbar-tool-speed {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.35rem 0.6rem;
+  border-radius: var(--radius-full);
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--accent-blue);
+  background: rgba(2, 132, 199, 0.08);
+  border: 1px solid rgba(2, 132, 199, 0.18);
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.toolbar-tool-speed:hover {
+  background: rgba(2, 132, 199, 0.15);
+}
+
+/* --------------------------------------------------------------------------
+   Linguistic Identity Block: Sitting side-by-side with canvas on desktop
+   -------------------------------------------------------------------------- */
+.linguistic-identity-block {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  gap: 1.15rem;
+  max-width: 520px;
+  width: 100%;
+  flex: 1;
+}
+
+.pinyin-voice-cluster {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  min-height: 2.8rem;
+}
+
+.poly-indicator-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.76rem;
+  font-weight: 700;
+  padding: 0.25rem 0.65rem;
+  border-radius: var(--radius-full);
+  background: rgba(194, 65, 12, 0.12);
+  color: var(--accent-seal);
+  border: 1px solid rgba(194, 65, 12, 0.25);
+  margin-left: 0.25rem;
+}
+
+.pinyin-text-hero {
+  font-size: 2.6rem;
+  font-weight: 800;
+  color: var(--accent-blue);
+  letter-spacing: 0.04em;
+  font-family: var(--font-ui);
+  line-height: 1;
+}
+
+.speak-hero-btn {
+  padding: 0.55rem;
+  border-radius: var(--radius-full);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-line);
+  color: var(--accent-blue);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.speak-hero-btn:hover {
+  transform: scale(1.12);
+  border-color: var(--accent-blue);
+  background: rgba(2, 132, 199, 0.12);
+}
+
+/* Authentic Imperial Vermilion Seal Stamp (Con Dấu Triện Son Hán Việt) */
+.hanviet-seal-wrapper {
+  display: flex;
+  justify-content: flex-start;
+  width: 100%;
+}
+
+.vermilion-seal-card {
+  position: relative;
+  background: radial-gradient(circle at 35% 30%, #dc2626 0%, #b91c1c 45%, #991b1b 100%);
+  border: 3px solid #ef4444;
+  border-radius: 12px;
+  padding: 5px;
+  box-shadow: 
+    0 8px 24px rgba(185, 28, 28, 0.4),
+    0 2px 5px rgba(0, 0, 0, 0.2),
+    inset 0 0 16px rgba(0, 0, 0, 0.25);
+  cursor: pointer;
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s ease;
+  user-select: none;
+}
+
+.vermilion-seal-card:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 
+    0 12px 30px rgba(185, 28, 28, 0.48),
+    0 3px 6px rgba(0, 0, 0, 0.3),
+    inset 0 0 18px rgba(0, 0, 0, 0.3);
+}
+
+.seal-inner-frame {
+  display: flex;
+  align-items: center;
+  gap: 1.1rem;
+  border: 1.5px dashed rgba(255, 255, 255, 0.45);
+  border-radius: 8px;
+  padding: 0.6rem 1.65rem 0.6rem 1.15rem;
+}
+
+.seal-emblem {
+  font-family: 'Ma Shan Zheng', serif;
+  font-size: 1.6rem;
+  color: #fffdf5;
+  background: rgba(0, 0, 0, 0.18);
+  width: 2.3rem;
+  height: 2.3rem;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.seal-text-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+}
+
+.seal-label-sub {
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  color: rgba(255, 255, 255, 0.9);
+  text-transform: uppercase;
+}
+
+.seal-word-main {
+  font-size: 2.05rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  line-height: 1.1;
+  font-family: 'Noto Serif SC', serif;
+  color: #fffdf2;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.45);
+}
+
+/* Vietnamese Primary Definition with elegant quote framing */
+.vietnamese-definition-box {
+  width: 100%;
+  max-width: 520px;
+}
+
+.definition-card-inner {
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-start;
+  gap: 0.5rem;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  padding: 0.85rem 1.4rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+}
+
+.quote-mark-symbol {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 1.6rem;
+  font-weight: 900;
+  color: var(--accent-seal);
+  opacity: 0.65;
+  line-height: 1;
+}
+
+.vietnamese-def-text {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--fg-main);
+  line-height: 1.5;
+}
+
+/* Reading Variant Slot - Fixed position container below definition */
+.reading-variant-slot {
+  width: 100%;
+  max-width: 520px;
+}
+
+/* Single Reading Status Card (For Monophonic Characters like 银, 明, 休) */
+.single-reading-status-card {
+  width: 100%;
+  background: var(--bg-elevated);
+  border: 1px dashed var(--border-line);
+  border-radius: 10px;
+  padding: 0.65rem 0.95rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  text-align: left;
+  transition: all 0.2s ease;
+}
+
+.single-status-header {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.single-status-icon {
+  color: #10b981;
+}
+
+.single-status-label {
+  color: var(--fg-main);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.single-status-desc {
+  font-size: 0.78rem;
+  color: var(--fg-muted);
+  line-height: 1.45;
+  margin: 0;
+}
+
+/* Polyphonic Readings Card (For Multi-reading Characters like 好, 行) */
+.polyphonic-readings-card {
+  width: 100%;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-line);
+  border-radius: 10px;
+  padding: 0.65rem 0.9rem;
+  text-align: left;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+}
+
+.polyphonic-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.poly-title-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--accent-seal);
+}
+
+.sparkle-poly {
+  color: var(--accent-seal);
+}
+
+.poly-hint-text {
+  font-size: 0.7rem;
+  color: var(--fg-muted);
+}
+
+.polyphonic-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.45rem;
+}
+
+.poly-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  background: var(--bg-main);
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-light);
+  cursor: pointer;
+  transition: all 0.18s ease;
+  position: relative;
+}
+
+.poly-item:hover {
+  background: var(--bg-elevated);
+  border-color: var(--border-line);
+}
+
+.poly-item.active-reading {
+  border-color: rgba(194, 65, 12, 0.45);
+  background: rgba(194, 65, 12, 0.06);
+}
+
+.poly-top {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.poly-pinyin {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--accent-blue);
+  font-family: var(--font-ui);
+}
+
+.poly-speak {
+  padding: 0.15rem;
+  border-radius: var(--radius-full);
+  color: var(--accent-blue);
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s ease;
+}
+
+.poly-speak:hover {
+  transform: scale(1.15);
+}
+
+.poly-hanviet {
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: var(--accent-seal);
+  font-family: 'Noto Serif SC', serif;
+}
+
+.primary-pill-tag {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 0.1rem 0.45rem;
+  border-radius: var(--radius-full);
+  background: rgba(194, 65, 12, 0.14);
+  color: var(--accent-seal);
+  margin-left: auto;
+}
+
+.secondary-pill-tag {
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 0.1rem 0.45rem;
+  border-radius: var(--radius-full);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-line);
+  color: var(--fg-muted);
+  margin-left: auto;
+}
+
+.active-dot-indicator {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent-seal);
+  box-shadow: 0 0 6px rgba(194, 65, 12, 0.6);
+}
+
+.poly-meaning {
+  font-size: 0.8rem;
+  color: var(--fg-muted);
+  line-height: 1.45;
+}
+
+/* Canvas Footer Navigation Bar */
+.canvas-footer-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 1.1rem;
+  border-top: 1px solid var(--border-light);
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.nav-btn-cluster {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.nav-step-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.52rem 1.05rem;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-line);
+  border-radius: var(--radius-full);
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--fg-main);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+  transition: all 0.18s ease;
+  cursor: pointer;
+}
+
+.nav-step-btn:hover {
+  background: var(--bg-main);
+  border-color: var(--accent-seal);
+  color: var(--accent-seal);
+  transform: translateY(-1px);
+}
+
+.nav-random-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.52rem 1.35rem;
+  background: linear-gradient(135deg, var(--accent-seal), #b91c1c);
+  color: #ffffff;
+  border-radius: var(--radius-full);
+  font-size: 0.88rem;
+  font-weight: 700;
+  box-shadow: 0 3px 12px rgba(194, 65, 12, 0.3);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+}
+
+.nav-random-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(194, 65, 12, 0.42);
+}
+
+.key-hint-light {
+  font-size: 0.68rem;
+  font-family: inherit;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.22);
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+  color: #ffffff;
+}
+
+
+
+/* --------------------------------------------------------------------------
+   Right Sidebar: Deep Hán Việt & Chiết Tự Breakdown
+   -------------------------------------------------------------------------- */
+.studio-col-right {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-elevated);
+  border-left: 1px solid var(--border-line);
+  overflow: hidden;
+}
+
+.right-panel-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.85rem 1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.studio-sidebar-right {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  flex: 1;
+  overflow: hidden;
+}
+
+.breakdown-loading,
+.breakdown-empty {
+  padding: 3rem 1.5rem;
+  text-align: center;
+  color: var(--fg-muted);
+  font-size: 0.9rem;
+}
+
+.breakdown-empty-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 3.5rem 1.5rem;
+  color: var(--fg-muted);
+}
+
+.placeholder-watermark {
+  font-family: var(--font-calligraphy, 'Ma Shan Zheng', cursive);
+  font-size: 3.5rem;
+  line-height: 1;
+  color: var(--fg-muted);
+  opacity: 0.16;
+  margin-bottom: 0.75rem;
+  user-select: none;
+}
+
+.placeholder-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--fg-main);
+  margin-bottom: 0.4rem;
+}
+
+.placeholder-desc {
+  font-size: 0.82rem;
+  line-height: 1.55;
+  color: var(--fg-muted);
+  max-width: 260px;
+  margin: 0;
+}
+
+.spinner-ring-mini {
+  width: 28px;
+  height: 28px;
+  border: 3px solid rgba(194, 65, 12, 0.2);
+  border-top-color: var(--accent-seal);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 0 auto 0.75rem;
+}
+
+.breakdown-panel-header {
+  border-bottom: 1px solid var(--border-light);
+  padding-bottom: 0.55rem;
+}
+
+.breakdown-title {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--fg-main);
+  letter-spacing: -0.01em;
+}
+
+.panel-subtitle {
+  font-size: 0.75rem;
+  color: var(--fg-muted);
+}
+
+/* Common Breakdown Section Card */
+.breakdown-card {
+  background: var(--bg-main);
+  border: 1px solid var(--border-light);
+  border-radius: 10px;
+  padding: 0.7rem 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.02);
+}
+
+.card-micro-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: var(--fg-subtle);
+}
+
+.card-icon {
+  color: var(--accent-seal);
+}
+
+.tag-type-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  letter-spacing: normal;
+}
+
+.tag-type-badge.mnemonic {
+  background: rgba(217, 119, 6, 0.12);
+  color: var(--accent-gold);
+  border: 1px solid rgba(217, 119, 6, 0.25);
+}
+
+.tag-type-badge.etymology {
+  background: rgba(5, 150, 105, 0.12);
+  color: var(--accent-jade);
+  border: 1px solid rgba(5, 150, 105, 0.25);
+}
+
+/* 1. Radical Card: Imperial Tile aesthetic */
+.radical-content-row {
+  display: flex;
+  align-items: center;
+  gap: 0.95rem;
+}
+
+.radical-box-glyph {
+  width: 3.4rem;
+  height: 3.4rem;
+  background: #fbf9f5;
+  border: 2px solid var(--accent-seal);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.9rem;
+  font-family: 'Ma Shan Zheng', serif;
+  color: var(--accent-seal);
+  cursor: pointer;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(194, 65, 12, 0.15);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
+}
+
+html.dark .radical-box-glyph {
+  background: #171b23;
+}
+
+.radical-box-glyph:hover {
+  transform: scale(1.08);
+  box-shadow: 0 4px 14px rgba(194, 65, 12, 0.25);
+}
+
+.radical-meta-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.radical-name-title {
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: var(--fg-main);
+  font-family: 'Noto Serif SC', serif;
+}
+
+.radical-sino-badge {
+  font-size: 0.8rem;
+  color: var(--accent-seal);
+}
+
+.radical-meaning-text {
+  font-size: 0.82rem;
+  color: var(--fg-muted);
+  line-height: 1.45;
+}
+
+/* 2. Visual Lego Formula Decomposition */
+.lego-formula-container {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  padding: 0.3rem 0;
+}
+
+.lego-step-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.lego-part-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-line);
+  padding: 0.4rem 0.65rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+.lego-part-chip:hover {
+  border-color: var(--accent-seal);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(194, 65, 12, 0.15);
+}
+
+.lego-glyph {
+  font-size: 1.35rem;
+  font-family: 'Ma Shan Zheng', serif;
+  color: var(--accent-seal);
+  line-height: 1;
+}
+
+.lego-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.lego-hv {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: var(--fg-main);
+}
+
+.lego-mean {
+  font-size: 0.68rem;
+  color: var(--fg-muted);
+}
+
+.lego-plus-symbol {
+  font-weight: 800;
+  color: var(--fg-subtle);
+  font-size: 0.95rem;
+}
+
+.lego-arrow-symbol {
+  color: var(--accent-seal);
+  flex-shrink: 0;
+}
+
+.lego-result-chip {
+  background: linear-gradient(135deg, var(--accent-seal), #b91c1c);
+  padding: 0.4rem 0.8rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(194, 65, 12, 0.3);
+}
+
+.lego-glyph.main-result {
+  color: #ffffff;
+  font-size: 1.45rem;
+}
+
+/* 3. Mnemonics / Etymology Scroll card */
+.mnemonic-narrative-text {
+  font-size: 0.94rem;
+  line-height: 1.65;
+  color: var(--fg-main);
+  background: var(--bg-elevated);
+  padding: 0.85rem 1rem;
+  border-radius: 8px;
+  border-left: 3.5px solid var(--accent-gold);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+/* 4. Compound Words Bridge (Sức mạnh Hán Việt) */
+.compound-helper-tip {
+  font-size: 0.78rem;
+  color: var(--fg-muted);
+}
+
+.compound-words-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.compound-word-item {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-light);
+  border-radius: 10px;
+  padding: 0.7rem 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+.compound-word-item:hover {
+  border-color: rgba(194, 65, 12, 0.4);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
+}
+
+.word-glyph-line {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.word-chinese-text {
+  font-size: 1.22rem;
+  font-weight: 700;
+  font-family: 'Noto Serif SC', serif;
+  color: var(--fg-main);
+  cursor: pointer;
+  transition: color 0.18s ease;
+}
+
+.word-chinese-text:hover {
+  color: var(--accent-seal);
+}
+
+.word-audio-btn {
+  color: var(--fg-muted);
+  display: flex;
+  padding: 0.2rem;
+  border-radius: 4px;
+}
+
+.word-audio-btn:hover {
+  color: var(--accent-blue);
+  background: rgba(2, 132, 199, 0.08);
+}
+
+.word-pinyin-label {
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--accent-blue);
+  font-family: var(--font-ui);
+}
+
+.word-hanviet-row {
+  display: flex;
+}
+
+/* Red Vermilion Seal Tag for Words */
+.word-seal-hv {
+  background: linear-gradient(135deg, #b91c1c, #991b1b);
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  padding: 0.15rem 0.6rem;
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(185, 28, 28, 0.25);
+  font-family: var(--font-ui);
+}
+
+.word-meaning-box {
+  font-size: 0.84rem;
+  color: var(--fg-muted);
+  line-height: 1.45;
+}
+
+/* --------------------------------------------------------------------------
+   Mobile Zen Floating Widget & Responsive Breakpoints
+   -------------------------------------------------------------------------- */
+.mobile-zen-tabbar {
+  display: none;
+}
+
+@media (max-width: 1024px) {
+  .studio-shortcuts-bar {
+    display: none;
+  }
+
+  .mobile-drawer-toggle-btn {
+    display: inline-flex;
+  }
+
+  /* Mobile Tab Bar */
+  .mobile-zen-tabbar {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+    padding: 0.65rem 1rem;
+    background: var(--bg-elevated);
+    border-bottom: 1px solid var(--border-line);
+    position: sticky;
+    top: 65px;
+    z-index: 20;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+  }
+
+  .zen-tab-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    padding: 0.55rem;
+    border-radius: var(--radius-full);
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--fg-muted);
+    background: var(--bg-main);
+    border: 1px solid var(--border-light);
+    transition: all 0.2s ease;
+  }
+
+  .zen-tab-btn.active {
+    background: linear-gradient(135deg, var(--accent-seal), #b91c1c);
+    color: #ffffff;
+    border-color: var(--accent-seal);
+    box-shadow: 0 2px 8px rgba(194, 65, 12, 0.3);
+  }
+
+  /* Switchable Mobile Views */
+  .studio-split-layout {
+    display: block;
+    height: auto;
+    overflow: visible;
+  }
+
+  /* Left Sidebar converts to Slide-in Drawer */
+  .studio-sidebar-left {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 320px;
+    max-width: 85vw;
+    z-index: 100;
+    box-shadow: 8px 0 32px rgba(0, 0, 0, 0.3);
+    transform: translateX(-100%);
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .studio-sidebar-left.mobile-open {
+    transform: translateX(0);
+  }
+
+  .mobile-close-btn {
+    display: block;
+  }
+
+  /* Show / Hide based on Mobile Tabs */
+  .studio-split-layout.mobile-view-canvas .studio-col-center {
+    display: flex;
+  }
+
+  .studio-split-layout.mobile-view-canvas .studio-col-right {
+    display: none;
+  }
+
+  .studio-split-layout.mobile-view-breakdown .studio-col-center {
+    display: none;
+  }
+
+  .studio-split-layout.mobile-view-breakdown .studio-col-right {
+    display: flex;
+    border-left: none;
+  }
+
+  .studio-canvas-pane {
+    padding: 1.25rem 1rem 3.5rem;
+    height: auto;
+  }
+
+  .canvas-hero-body {
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .linguistic-identity-block {
+    align-items: center;
+    text-align: center;
+  }
+
+  .hanviet-seal-wrapper {
+    justify-content: center;
+  }
+
+  .definition-card-inner {
+    justify-content: center;
+  }
+
+  .mige-canvas-frame {
+    width: 240px !important;
+    height: 240px !important;
+  }
+
+  .hanzi-static-glyph {
+    font-size: 6.6rem;
+  }
+}
+
+

@@ -1,12 +1,13 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { PenTool, Layers } from 'lucide-react'
 import type { HskLevel, HskStandard } from './core'
 import { pickRandom } from './core'
 import { api } from './api'
 import { Navbar } from './components/Navbar'
-import { WidgetCard } from './components/WidgetCard'
-import { HanziWriterModal } from './components/HanziWriterModal'
-import { DetailModal } from './components/DetailModal'
+import { LeftSidebar } from './components/LeftSidebar'
+import { StudioCenter } from './components/StudioCenter'
+import { RightBreakdown } from './components/RightBreakdown'
 import { SearchModal } from './components/SearchModal'
 import { FavoritesModal } from './components/FavoritesModal'
 
@@ -25,14 +26,11 @@ export function App() {
   const [selectedLevel, setSelectedLevel] = useState<HskLevel | null>(null)
   const [currentHanzi, setCurrentHanzi] = useState<string | null>(null)
 
-  // Timer cycle
-  const [timerSeconds, setTimerSeconds] = useState<number>(0)
-  const [timeRemaining, setTimeRemaining] = useState<number>(0)
-  const [isTimerPaused, setIsTimerPaused] = useState<boolean>(false)
+  // Mobile state
+  const [mobileTab, setMobileTab] = useState<'canvas' | 'breakdown'>('canvas')
+  const [isMobileListOpen, setIsMobileListOpen] = useState(false)
 
   // Modals
-  const [showWriter, setShowWriter] = useState<boolean>(false)
-  const [showDetail, setShowDetail] = useState<boolean>(false)
   const [showSearch, setShowSearch] = useState<boolean>(false)
   const [showFavorites, setShowFavorites] = useState<boolean>(false)
 
@@ -128,35 +126,19 @@ export function App() {
     setCurrentHanzi(filteredCharacters[prevIdx].hanzi)
   }, [filteredCharacters, currentIndex])
 
-  // Timer auto-cycle countdown effect
-  useEffect(() => {
-    if (timerSeconds <= 0 || isTimerPaused) return
 
-    setTimeRemaining(timerSeconds)
-    const interval = setInterval(() => {
-      setTimeRemaining((prev) => {
-        if (prev <= 1) {
-          pickNextRandom()
-          return timerSeconds
-        }
-        return prev - 1
-      })
-    }, 1000)
-
-    return () => clearInterval(interval)
-  }, [timerSeconds, isTimerPaused, pickNextRandom])
 
   // Toggle favorite
-  const handleToggleFavorite = () => {
+  const handleToggleFavorite = useCallback(() => {
     if (!activeChar) return
     setFavorites((prev) =>
       prev.includes(activeChar.hanzi)
         ? prev.filter((h) => h !== activeChar.hanzi)
         : [...prev, activeChar.hanzi],
     )
-  }
+  }, [activeChar])
 
-  // Fetch character details for the modal
+  // Fetch character details for breakdown
   const detailQuery = useQuery({
     queryKey: ['character', activeChar?.hanzi],
     queryFn: () => (activeChar ? api.getCharacter(activeChar.hanzi) : null),
@@ -195,28 +177,17 @@ export function App() {
           e.preventDefault()
           handleToggleFavorite()
           break
-        case 'w':
-        case 'W':
-          e.preventDefault()
-          setShowWriter(true)
-          break
-        case 'd':
-        case 'D':
-          e.preventDefault()
-          setShowDetail(true)
-          break
         case 'Escape':
-          setShowWriter(false)
-          setShowDetail(false)
           setShowSearch(false)
           setShowFavorites(false)
+          setIsMobileListOpen(false)
           break
       }
     }
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [handleNext, handlePrev, pickNextRandom, activeChar])
+  }, [handleNext, handlePrev, pickNextRandom, handleToggleFavorite])
 
   const toggleFont = () => {
     setFontStyle((prev) =>
@@ -225,21 +196,9 @@ export function App() {
   }
 
   return (
-    <div className="app-layout">
-      {/* Top Navigation */}
+    <div className="studio-app-root">
+      {/* Top Header / Navigation */}
       <Navbar
-        standard={standard}
-        onStandardChange={setStandard}
-        selectedLevel={selectedLevel}
-        onLevelChange={setSelectedLevel}
-        timerSeconds={timerSeconds}
-        onTimerChange={(sec) => {
-          setTimerSeconds(sec)
-          setTimeRemaining(sec)
-        }}
-        isTimerPaused={isTimerPaused}
-        onToggleTimerPause={() => setIsTimerPaused(!isTimerPaused)}
-        timeRemaining={timeRemaining}
         fontStyle={fontStyle}
         onToggleFont={toggleFont}
         isDarkMode={isDarkMode}
@@ -249,17 +208,17 @@ export function App() {
         onOpenSearch={() => setShowSearch(true)}
       />
 
-      {/* Main Content Area */}
-      <main className="main-content-viewport">
+      {/* Main Study Studio Content */}
+      <main className="studio-main-viewport">
         {bundle.isPending && (
-          <div className="state-card loading-card">
+          <div className="studio-state-center">
             <div className="spinner-ring" />
-            <p>Đang chuẩn bị dữ liệu Hán tự…</p>
+            <p>Đang chuẩn bị kho dữ liệu Hán tự & Chiết tự…</p>
           </div>
         )}
 
         {bundle.isError && (
-          <div className="state-card error-card">
+          <div className="studio-state-center error">
             <p className="error-title">Chưa tải được dữ liệu</p>
             <p className="error-sub">Vui lòng kiểm tra lại kết nối và thử lại.</p>
             <button type="button" className="pill-btn active" onClick={() => bundle.refetch()}>
@@ -268,95 +227,109 @@ export function App() {
           </div>
         )}
 
-        {bundle.isSuccess && activeChar && (
-          <WidgetCard
-            character={activeChar}
-            currentIndex={currentIndex}
-            totalCount={filteredCharacters.length}
-            isFavorite={favorites.includes(activeChar.hanzi)}
-            fontStyle={fontStyle}
-            onToggleFavorite={handleToggleFavorite}
-            onOpenWriter={() => setShowWriter(true)}
-            onOpenDetail={() => setShowDetail(true)}
-            onNext={handleNext}
-            onPrev={handlePrev}
-            onRandom={pickNextRandom}
-          />
-        )}
+        {bundle.isSuccess && (
+          <>
+            {/* Mobile Tab Switcher: "Zen Floating Widget" Tabs */}
+            <div className="mobile-zen-tabbar" role="tablist">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={mobileTab === 'canvas'}
+                className={`zen-tab-btn ${mobileTab === 'canvas' ? 'active' : ''}`}
+                onClick={() => setMobileTab('canvas')}
+              >
+                <PenTool size={15} />
+                <span>Chữ & Nét viết</span>
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={mobileTab === 'breakdown'}
+                className={`zen-tab-btn ${mobileTab === 'breakdown' ? 'active' : ''}`}
+                onClick={() => setMobileTab('breakdown')}
+              >
+                <Layers size={15} />
+                <span>Chiết tự & Hán Việt</span>
+              </button>
+            </div>
 
-        {bundle.isSuccess && filteredCharacters.length === 0 && (
-          <div className="state-card empty-card">
-            <p>Không có chữ nào thuộc cấp độ HSK này.</p>
-            <button
-              type="button"
-              className="pill-btn active"
-              onClick={() => setSelectedLevel(null)}
-            >
-              Xem tất cả cấp độ
-            </button>
-          </div>
-        )}
+            {/* Studio 3-Column Split Workspace: Always preserved */}
+            <div className={`studio-split-layout mobile-view-${mobileTab}`}>
+              {/* Left Column: Character Library & Filters */}
+              <LeftSidebar
+                characters={allCharacters}
+                activeHanzi={activeChar?.hanzi ?? null}
+                onSelectHanzi={(h) => setCurrentHanzi(h)}
+                standard={standard}
+                onStandardChange={setStandard}
+                selectedLevel={selectedLevel}
+                onLevelChange={setSelectedLevel}
+                favorites={favorites}
+                isOpenMobile={isMobileListOpen}
+                onCloseMobile={() => setIsMobileListOpen(false)}
+              />
 
-        {/* Shortcuts guide */}
-        <footer className="keyboard-shortcuts-bar">
-          <span className="shortcut-item">
-            <kbd>Space</kbd> Chữ ngẫu nhiên
-          </span>
-          <span className="shortcut-item">
-            <kbd>→</kbd> Tiếp
-          </span>
-          <span className="shortcut-item">
-            <kbd>←</kbd> Trước
-          </span>
-          <span className="shortcut-item">
-            <kbd>W</kbd> Nét viết
-          </span>
-          <span className="shortcut-item">
-            <kbd>D</kbd> Chiết tự
-          </span>
-          <span className="shortcut-item">
-            <kbd>F</kbd> Lưu
-          </span>
-          <span className="shortcut-item">
-            <kbd>Ctrl+K</kbd> Tìm kiếm
-          </span>
-        </footer>
+              {/* Center Column: Hero Canvas OR In-Place Empty State */}
+              <div className="studio-col-center">
+                {activeChar ? (
+                  <StudioCenter
+                    character={activeChar}
+                    detail={detailQuery.data ?? null}
+                    currentIndex={currentIndex}
+                    totalCount={filteredCharacters.length}
+                    isFavorite={favorites.includes(activeChar.hanzi)}
+                    fontStyle={fontStyle}
+                    onToggleFont={toggleFont}
+                    onToggleFavorite={handleToggleFavorite}
+                    onNext={handleNext}
+                    onPrev={handlePrev}
+                    onRandom={pickNextRandom}
+                    onOpenMobileList={() => setIsMobileListOpen(true)}
+                  />
+                ) : (
+                  <div className="center-empty-workspace">
+                    <div className="empty-calligraphy-seal" aria-hidden="true">無</div>
+                    <div className="empty-workspace-content">
+                      <h3 className="empty-workspace-title">Chưa có chữ Hán ở bộ lọc này</h3>
+                      <p className="empty-workspace-desc">
+                        Cấp độ {standard === '2.0' ? 'HSK 2.0' : 'HSK 3.0'} {selectedLevel ? `Cấp ${selectedLevel}` : ''} hiện chưa có từ trong gói dữ liệu hiện tại.
+                      </p>
+                      <button
+                        type="button"
+                        className="empty-reset-pill-btn"
+                        onClick={() => setSelectedLevel(null)}
+                      >
+                        Xem tất cả cấp độ
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Right Column: Deep Hán Việt & Chiết Tự Breakdown */}
+              <div className="studio-col-right">
+                <RightBreakdown
+                  detail={detailQuery.data ?? null}
+                  isLoading={detailQuery.isPending}
+                  onSelectHanzi={(h) => setCurrentHanzi(h)}
+                />
+              </div>
+            </div>
+          </>
+        )}
       </main>
 
-      {/* Stroke Order Animation & Practice Modal */}
-      {showWriter && activeChar && (
-        <HanziWriterModal
-          hanzi={activeChar.hanzi}
-          pinyin={activeChar.readings[0]?.pinyin}
-          hanViet={activeChar.readings[0]?.hanViet ?? undefined}
-          meaningVi={activeChar.readings[0]?.meaningVi}
-          strokeCount={detailQuery.data?.character.strokeCount}
-          onClose={() => setShowWriter(false)}
-        />
-      )}
 
-      {/* Chiết tự & Radical Detail Modal */}
-      {showDetail && detailQuery.data && (
-        <DetailModal
-          detail={detailQuery.data}
-          onSelectHanzi={(h) => {
-            setCurrentHanzi(h)
-            setShowDetail(false)
-          }}
-          onOpenWriter={() => {
-            setShowDetail(false)
-            setShowWriter(true)
-          }}
-          onClose={() => setShowDetail(false)}
-        />
-      )}
 
       {/* Search Modal */}
       {showSearch && (
         <SearchModal
           characters={allCharacters}
           words={allWords}
-          onSelectHanzi={(h) => setCurrentHanzi(h)}
+          onSelectHanzi={(h) => {
+            setCurrentHanzi(h)
+            setShowSearch(false)
+          }}
           onClose={() => setShowSearch(false)}
         />
       )}
@@ -366,7 +339,10 @@ export function App() {
         <FavoritesModal
           favorites={favorites}
           characters={allCharacters}
-          onSelectHanzi={(h) => setCurrentHanzi(h)}
+          onSelectHanzi={(h) => {
+            setCurrentHanzi(h)
+            setShowFavorites(false)
+          }}
           onRemoveFavorite={(h) => setFavorites((prev) => prev.filter((fav) => fav !== h))}
           onClearAll={() => setFavorites([])}
           onClose={() => setShowFavorites(false)}

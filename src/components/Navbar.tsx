@@ -1,16 +1,7 @@
-import { Search, Star, Moon, Sun, Type, Clock, Pause, Play } from 'lucide-react'
-import type { HskLevel, HskStandard } from '../core'
+import { useState, useRef, useEffect } from 'react'
+import { Search, Star, Moon, Sun, Type, Keyboard } from 'lucide-react'
 
 interface NavbarProps {
-  standard: HskStandard
-  onStandardChange: (std: HskStandard) => void
-  selectedLevel: HskLevel | null
-  onLevelChange: (lvl: HskLevel | null) => void
-  timerSeconds: number // 0 = off, 15, 30, 60, 300
-  onTimerChange: (sec: number) => void
-  isTimerPaused: boolean
-  onToggleTimerPause: () => void
-  timeRemaining: number
   fontStyle: 'calligraphy' | 'serif' | 'sans'
   onToggleFont: () => void
   isDarkMode: boolean
@@ -21,15 +12,6 @@ interface NavbarProps {
 }
 
 export function Navbar({
-  standard,
-  onStandardChange,
-  selectedLevel,
-  onLevelChange,
-  timerSeconds,
-  onTimerChange,
-  isTimerPaused,
-  onToggleTimerPause,
-  timeRemaining,
   fontStyle,
   onToggleFont,
   isDarkMode,
@@ -38,6 +20,19 @@ export function Navbar({
   onOpenFavorites,
   onOpenSearch,
 }: NavbarProps) {
+  const [showShortcutsPopover, setShowShortcutsPopover] = useState(false)
+  const shortcutsRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (shortcutsRef.current && !shortcutsRef.current.contains(e.target as Node)) {
+        setShowShortcutsPopover(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
   return (
     <header className="app-header">
       <div className="header-container">
@@ -49,70 +44,6 @@ export function Navbar({
           <div className="brand-text">
             <h1 className="brand-name">Hibu Hanzi</h1>
             <span className="brand-sub">Hán Việt & Chiết tự</span>
-          </div>
-        </div>
-
-        {/* Center Controls: HSK and Timer */}
-        <div className="center-controls">
-          {/* HSK Standard & Level */}
-          <div className="pill-group hsk-selector">
-            <button
-              type="button"
-              className="std-toggle-btn"
-              onClick={() => onStandardChange(standard === '2.0' ? '3.0' : '2.0')}
-              title="Chuyển chuẩn HSK"
-            >
-              HSK {standard}
-            </button>
-            <div className="divider-vert" />
-            <button
-              type="button"
-              className={`pill-btn ${selectedLevel === null ? 'active' : ''}`}
-              onClick={() => onLevelChange(null)}
-            >
-              Tất cả
-            </button>
-            {[1, 2, 3].map((lvl) => (
-              <button
-                key={lvl}
-                type="button"
-                className={`pill-btn ${selectedLevel === lvl ? 'active' : ''}`}
-                onClick={() => onLevelChange(selectedLevel === lvl ? null : (lvl as HskLevel))}
-              >
-                Cấp {lvl}
-              </button>
-            ))}
-          </div>
-
-          {/* Auto-cycle Timer */}
-          <div className="pill-group timer-selector">
-            <Clock size={15} className="timer-icon" />
-            <select
-              className="timer-dropdown"
-              value={timerSeconds}
-              onChange={(e) => onTimerChange(Number(e.target.value))}
-              aria-label="Chu kỳ tự đổi chữ"
-            >
-              <option value={0}>Đổi: Tắt</option>
-              <option value={15}>15 giây</option>
-              <option value={30}>30 giây</option>
-              <option value={60}>1 phút</option>
-              <option value={300}>5 phút</option>
-            </select>
-
-            {timerSeconds > 0 && (
-              <div className="timer-countdown-chip">
-                <button
-                  type="button"
-                  className="timer-pause-btn"
-                  onClick={onToggleTimerPause}
-                  title={isTimerPaused ? 'Tiếp tục đếm' : 'Tạm dừng đếm'}
-                >
-                  {isTimerPaused ? <Play size={12} /> : <Pause size={12} />}
-                </button>
-                <span className="timer-sec">{timeRemaining}s</span>
-              </div>
-            )}
           </div>
         </div>
 
@@ -146,6 +77,53 @@ export function Navbar({
           >
             <Type size={18} />
           </button>
+
+          {/* Keyboard Shortcuts Helper */}
+          <div className="shortcuts-trigger-wrapper" ref={shortcutsRef}>
+            <button
+              type="button"
+              className={`tool-btn shortcuts-btn ${showShortcutsPopover ? 'active' : ''}`}
+              onClick={() => setShowShortcutsPopover(!showShortcutsPopover)}
+              title="Phím tắt thao tác nhanh"
+              aria-label="Phím tắt"
+            >
+              <Keyboard size={18} />
+            </button>
+
+            {showShortcutsPopover && (
+              <div className="shortcuts-popover-dropdown">
+                <div className="shortcuts-popover-header">
+                  <Keyboard size={15} />
+                  <span>Phím tắt bàn phím</span>
+                </div>
+                <div className="shortcuts-list">
+                  <div className="shortcut-row">
+                    <kbd className="sc-kbd">Space</kbd>
+                    <span className="sc-desc">Đổi chữ ngẫu nhiên</span>
+                  </div>
+                  <div className="shortcut-row">
+                    <div className="sc-kbd-group">
+                      <kbd className="sc-kbd">←</kbd>
+                      <kbd className="sc-kbd">→</kbd>
+                    </div>
+                    <span className="sc-desc">Chữ trước / tiếp theo</span>
+                  </div>
+                  <div className="shortcut-row">
+                    <kbd className="sc-kbd">F</kbd>
+                    <span className="sc-desc">Lưu / Bỏ lưu sổ tay</span>
+                  </div>
+                  <div className="shortcut-row">
+                    <kbd className="sc-kbd">Ctrl+K</kbd>
+                    <span className="sc-desc">Tra cứu nhanh</span>
+                  </div>
+                  <div className="shortcut-row">
+                    <kbd className="sc-kbd">Esc</kbd>
+                    <span className="sc-desc">Đóng cửa sổ bật lên</span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
 
           <button
             type="button"
