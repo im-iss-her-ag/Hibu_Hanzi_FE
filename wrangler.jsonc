@@ -1,0 +1,11 @@
+// Cloudflare Workers static-assets config for the web app (built by Workers Builds:
+// `npm run build`, then `npx wrangler deploy`).
+{
+  "name": "hibu-hanzi-fe",
+  "compatibility_date": "2026-05-01",
+  "assets": {
+    "directory": "./dist",
+    // Any path that is not a file (/admin, deep links) serves index.html, so the SPA routes it.
+    "not_found_handling": "single-page-application"
+  }
+}
