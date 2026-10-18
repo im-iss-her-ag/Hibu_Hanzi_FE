@@ -1,7 +1,7 @@
 // Cloudflare Workers static-assets config for the web app (built by Workers Builds:
 // `npm run build`, then `npx wrangler deploy`).
 {
-  "name": "hibu-hanzi-fe",
+  "name": "hibuhanzi",
   "compatibility_date": "2026-05-01",
   "assets": {
     "directory": "./dist",
