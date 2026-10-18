@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { Search, Star, Moon, Sun, Type, Keyboard } from 'lucide-react'
+import { Search, Star, Moon, Sun, Type, Keyboard, Grid } from 'lucide-react'
 
 interface NavbarProps {
   fontStyle: 'calligraphy' | 'serif' | 'sans'
@@ -9,6 +9,7 @@ interface NavbarProps {
   favoritesCount: number
   onOpenFavorites: () => void
   onOpenSearch: () => void
+  onOpenPinyinChart: () => void
 }
 
 export function Navbar({
@@ -19,6 +20,7 @@ export function Navbar({
   favoritesCount,
   onOpenFavorites,
   onOpenSearch,
+  onOpenPinyinChart,
 }: NavbarProps) {
   const [showShortcutsPopover, setShowShortcutsPopover] = useState(false)
   const shortcutsRef = useRef<HTMLDivElement>(null)
@@ -47,8 +49,18 @@ export function Navbar({
           </div>
         </div>
 
-        {/* Right Tools: Search, Favorites, Font, Dark Mode */}
+        {/* Right Tools: Pinyin Chart, Search, Favorites, Font, Dark Mode */}
         <div className="right-tools">
+          <button
+            type="button"
+            className="tool-btn pinyin-chart-trigger-btn"
+            onClick={onOpenPinyinChart}
+            title="Mở Bảng Pinyin Toàn Diện & Quy tắc biến điệu (P)"
+          >
+            <Grid size={17} />
+            <span className="pinyin-chart-label">Bảng Pinyin</span>
+          </button>
+
           <button
             type="button"
             className="tool-btn search-trigger-btn"
@@ -111,6 +123,10 @@ export function Navbar({
                   <div className="shortcut-row">
                     <kbd className="sc-kbd">F</kbd>
                     <span className="sc-desc">Lưu / Bỏ lưu sổ tay</span>
+                  </div>
+                  <div className="shortcut-row">
+                    <kbd className="sc-kbd">P</kbd>
+                    <span className="sc-desc">Mở Bảng Pinyin toàn diện</span>
                   </div>
                   <div className="shortcut-row">
                     <kbd className="sc-kbd">Ctrl+K</kbd>

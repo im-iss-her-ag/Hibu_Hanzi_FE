@@ -27,6 +27,8 @@ interface StudioCenterProps {
   onRandom: () => void
   // Mobile drawer trigger
   onOpenMobileList?: () => void
+  // Pronunciation & mouth shape modal
+  onOpenPronunciation?: (pinyin: string, hanViet?: string | null, meaningVi?: string | null) => void
 }
 
 export function StudioCenter({
@@ -42,6 +44,7 @@ export function StudioCenter({
   onPrev,
   onRandom,
   onOpenMobileList,
+  onOpenPronunciation,
 }: StudioCenterProps) {
   const readings = character.readings || []
   const [selectedReadingIndex, setSelectedReadingIndex] = useState(0)
@@ -135,7 +138,7 @@ export function StudioCenter({
 
         {/* Structured Linguistic Info: NO mid-dot separation (好 · HẢO · hǎo) */}
         <div className="linguistic-identity-block">
-          {/* Layer 1: Pinyin with Pronunciation audio & Polyphonic Badge */}
+          {/* Layer 1: Pinyin with Pronunciation audio & Polyphonic Badge & Mouth Shape Guide */}
           <div className="pinyin-voice-cluster">
             <span className="pinyin-text-hero">{activeReading?.pinyin}</span>
             <button
@@ -146,6 +149,21 @@ export function StudioCenter({
               aria-label="Phát âm"
             >
               <Volume2 size={22} />
+            </button>
+            <button
+              type="button"
+              className="pronounce-guide-pill-btn"
+              onClick={() =>
+                onOpenPronunciation?.(
+                  activeReading?.pinyin || '',
+                  activeReading?.hanViet,
+                  activeReading?.meaningVi,
+                )
+              }
+              title="Xem hướng dẫn khẩu hình & thanh điệu"
+            >
+              <span className="pill-mouth-icon">👄</span>
+              <span>Khẩu hình</span>
             </button>
             {isPolyphonic && (
               <span className="poly-indicator-badge">
@@ -212,6 +230,17 @@ export function StudioCenter({
                             title="Phát âm"
                           >
                             <Volume2 size={13} />
+                          </button>
+                          <button
+                            type="button"
+                            className="poly-pronounce-trigger"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              onOpenPronunciation?.(r.pinyin, r.hanViet, r.meaningVi)
+                            }}
+                            title={`Xem khẩu hình & phát âm cho ${r.pinyin}`}
+                          >
+                            👄
                           </button>
                           <span className="poly-hanviet">{r.hanViet?.toUpperCase()}</span>
                           {r.isPrimary ? (

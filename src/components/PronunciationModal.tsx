@@ -1,0 +1,295 @@
+import { useState, useMemo, useEffect } from 'react'
+import { X, Volume2, Wind, Sparkles, BookOpen, Mic } from 'lucide-react'
+import { parsePinyin } from '../utils/pinyinData'
+import { MouthShapeDiagram } from './MouthShapeDiagram'
+import { ToneContourDiagram } from './ToneContourDiagram'
+import { speakChinese } from '../utils/speech'
+
+interface PronunciationModalProps {
+  hanzi: string
+  pinyin: string
+  hanViet?: string | null
+  meaningVi?: string | null
+  onClose: () => void
+}
+
+export function PronunciationModal({
+  hanzi,
+  pinyin,
+  hanViet,
+  meaningVi,
+  onClose,
+}: PronunciationModalProps) {
+  const [activeTab, setActiveTab] = useState<'initial' | 'final' | 'tone'>('initial')
+
+  const parsed = useMemo(() => parsePinyin(pinyin), [pinyin])
+  const [selectedTone, setSelectedTone] = useState<1 | 2 | 3 | 4 | 0>(parsed.tone || 1)
+
+  useEffect(() => {
+    setSelectedTone(parsed.tone || 1)
+  }, [parsed])
+
+  // ESC to close
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose()
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [onClose])
+
+  const handleSpeak = (text: string) => {
+    speakChinese(text)
+  }
+
+  const { initial, final, initialInfo, finalInfo, toneInfo, toneVariants } = parsed
+
+  return (
+    <div className="modal-backdrop" onClick={onClose} role="dialog" aria-modal="true">
+      <div
+        className="modal-content pronunciation-modal-content"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header with Hero Character info */}
+        <div className="pronounce-modal-header">
+          <div className="pronounce-hero-profile">
+            <div className="hero-hanzi-seal" title="Chữ Hán">
+              {hanzi}
+            </div>
+
+            <div className="hero-meta-col">
+              <div className="hero-pinyin-row">
+                <span className="hero-pinyin-display">{pinyin}</span>
+                <button
+                  type="button"
+                  className="hero-listen-btn"
+                  onClick={() => handleSpeak(hanzi)}
+                  title="Nghe phát âm chuẩn"
+                  aria-label="Phát âm"
+                >
+                  <Volume2 size={18} />
+                  <span>Phát âm</span>
+                </button>
+              </div>
+
+              <div className="hero-hanviet-sub">
+                {hanViet && <span className="hero-hanviet-tag">HÁN VIỆT: {hanViet.toUpperCase()}</span>}
+                {meaningVi && <span className="hero-meaning-text">“{meaningVi}”</span>}
+              </div>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            className="icon-btn close-btn"
+            onClick={onClose}
+            aria-label="Đóng cửa sổ"
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        {/* 3 Main Tab Buttons: Thanh mẫu / Vận mẫu / Thanh điệu */}
+        <div className="pronounce-tabs-nav">
+          <button
+            type="button"
+            className={`pronounce-tab-btn ${activeTab === 'initial' ? 'active' : ''}`}
+            onClick={() => setActiveTab('initial')}
+          >
+            <span className="tab-pill-icon">👄</span>
+            <div className="tab-btn-text">
+              <span className="tab-main-label">Thanh Mẫu (Phụ âm đầu)</span>
+              <span className="tab-sub-slug">
+                {initial ? `Âm [ ${initial} ]` : 'Khởi âm zero'}
+              </span>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            className={`pronounce-tab-btn ${activeTab === 'final' ? 'active' : ''}`}
+            onClick={() => setActiveTab('final')}
+          >
+            <span className="tab-pill-icon">🗣️</span>
+            <div className="tab-btn-text">
+              <span className="tab-main-label">Vận Mẫu (Nguyên âm & Vần)</span>
+              <span className="tab-sub-slug">Vần [ {final} ]</span>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            className={`pronounce-tab-btn ${activeTab === 'tone' ? 'active' : ''}`}
+            onClick={() => setActiveTab('tone')}
+          >
+            <span className="tab-pill-icon">📈</span>
+            <div className="tab-btn-text">
+              <span className="tab-main-label">Thanh Điệu (Tone)</span>
+              <span className="tab-sub-slug">{toneInfo.nameVi}</span>
+            </div>
+          </button>
+        </div>
+
+        {/* Modal Body: Switch between 3 views */}
+        <div className="pronounce-modal-body">
+          {/* TAB 1: THANH MẪU (INITIAL) */}
+          {activeTab === 'initial' && (
+            <div className="tab-pane-content">
+              {initialInfo ? (
+                <>
+                  <div className="linguistic-summary-card">
+                    <div className="summary-card-left">
+                      <span className="big-phoneme-badge">{initial}</span>
+                      <div className="phoneme-titles">
+                        <h3 className="phoneme-name">{initialInfo.name}</h3>
+                        <span className="phoneme-group-tag">
+                          {initialInfo.groupNameVi} · {initialInfo.soundType}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="summary-card-right">
+                      {initialInfo.isAspirated && (
+                        <span className="badge-aspirate-tag">
+                          <Wind size={13} />
+                          Bật hơi mạnh
+                        </span>
+                      )}
+                      <button
+                        type="button"
+                        className="btn-hear-phoneme"
+                        onClick={() => handleSpeak(`${initial}a`)}
+                        title="Nghe mẫu phụ âm này"
+                      >
+                        <Volume2 size={16} />
+                        <span>Nghe mẫu</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* SVG Sagittal and Frontal Mouth Diagram */}
+                  <MouthShapeDiagram initialInfo={initialInfo} />
+
+                  {/* Step by step Articulation Guide */}
+                  <div className="articulation-guide-box">
+                    <h4 className="guide-box-title">
+                      <BookOpen size={16} />
+                      Hướng dẫn khẩu hình chi tiết cho người Việt
+                    </h4>
+                    <p className="guide-box-text">{initialInfo.guideVi}</p>
+
+                    <div className="guide-compare-note">
+                      <strong>Âm tương đương trong tiếng Việt:</strong>{' '}
+                      {initialInfo.vietnameseEquivalent}
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="zero-initial-notice">
+                  <Sparkles size={28} className="zero-icon" />
+                  <h3>Âm tiết này không có phụ âm đầu (Khởi âm zero)</h3>
+                  <p>
+                    Âm tiết bắt đầu trực tiếp bằng nguyên âm <strong>{final}</strong>. Hãy chuyển
+                    sang tab <strong>Vận Mẫu</strong> để xem chi tiết cách mở khẩu hình!
+                  </p>
+                  <button
+                    type="button"
+                    className="pill-btn active"
+                    onClick={() => setActiveTab('final')}
+                  >
+                    Xem Vận Mẫu [{final}]
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* TAB 2: VẬN MẪU (FINAL) */}
+          {activeTab === 'final' && (
+            <div className="tab-pane-content">
+              {finalInfo ? (
+                <>
+                  <div className="linguistic-summary-card">
+                    <div className="summary-card-left">
+                      <span className="big-phoneme-badge final-badge">{final}</span>
+                      <div className="phoneme-titles">
+                        <h3 className="phoneme-name">{finalInfo.name}</h3>
+                        <span className="phoneme-group-tag">
+                          {finalInfo.groupNameVi} · Khẩu hình{' '}
+                          {finalInfo.mouthShape === 'round'
+                            ? 'Tròn môi'
+                            : finalInfo.mouthShape === 'spread'
+                              ? 'Dẹt môi'
+                              : 'Mở rộng'}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="summary-card-right">
+                      <button
+                        type="button"
+                        className="btn-hear-phoneme"
+                        onClick={() => handleSpeak(final)}
+                        title="Nghe mẫu vần này"
+                      >
+                        <Volume2 size={16} />
+                        <span>Nghe vần</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Mouth Shape Diagram tailored for Final */}
+                  <MouthShapeDiagram finalInfo={finalInfo} />
+
+                  {/* Step by step Articulation Guide */}
+                  <div className="articulation-guide-box">
+                    <h4 className="guide-box-title">
+                      <BookOpen size={16} />
+                      Hướng dẫn khẩu hình & luồng hơi
+                    </h4>
+                    <p className="guide-box-text">{finalInfo.guideVi}</p>
+
+                    <div className="guide-compare-note">
+                      <strong>Mẹo liên hệ tiếng Việt:</strong> {finalInfo.vietnameseEquivalent}
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="zero-initial-notice">
+                  <p>Vận mẫu <strong>{final}</strong> hiện đang dùng hướng dẫn tổng quát.</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* TAB 3: THANH ĐIỆU (TONE) */}
+          {activeTab === 'tone' && (
+            <div className="tab-pane-content">
+              <ToneContourDiagram
+                activeTone={selectedTone}
+                toneVariants={toneVariants}
+                onSelectTone={(t) => setSelectedTone(t)}
+              />
+            </div>
+          )}
+        </div>
+
+        {/* Footer Info */}
+        <div className="pronounce-modal-footer">
+          <div className="pronounce-footer-tip">
+            <Mic size={14} />
+            <span>
+              Mẹo luyện nói: Tập từ <strong>Khẩu hình thanh mẫu</strong> $\rightarrow$ lướt vào{' '}
+              <strong>Vận mẫu</strong> $\rightarrow$ điều chỉnh theo <strong>Cao độ thanh điệu</strong>.
+            </span>
+          </div>
+          <button type="button" className="pill-btn primary" onClick={onClose}>
+            Đã hiểu, quay lại
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}

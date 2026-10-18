@@ -10,6 +10,8 @@ import { StudioCenter } from './components/StudioCenter'
 import { RightBreakdown } from './components/RightBreakdown'
 import { SearchModal } from './components/SearchModal'
 import { FavoritesModal } from './components/FavoritesModal'
+import { PronunciationModal } from './components/PronunciationModal'
+import { PinyinChartModal } from './components/PinyinChartModal'
 
 export function App() {
   // Query full bundle (server or local offline dataset)
@@ -33,6 +35,13 @@ export function App() {
   // Modals
   const [showSearch, setShowSearch] = useState<boolean>(false)
   const [showFavorites, setShowFavorites] = useState<boolean>(false)
+  const [showPinyinChart, setShowPinyinChart] = useState<boolean>(false)
+  const [pronounceTarget, setPronounceTarget] = useState<{
+    hanzi: string
+    pinyin: string
+    hanViet?: string | null
+    meaningVi?: string | null
+  } | null>(null)
 
   // Appearance
   const [fontStyle, setFontStyle] = useState<'calligraphy' | 'serif' | 'sans'>('calligraphy')
@@ -177,9 +186,16 @@ export function App() {
           e.preventDefault()
           handleToggleFavorite()
           break
+        case 'p':
+        case 'P':
+          e.preventDefault()
+          setShowPinyinChart((prev) => !prev)
+          break
         case 'Escape':
           setShowSearch(false)
           setShowFavorites(false)
+          setShowPinyinChart(false)
+          setPronounceTarget(null)
           setIsMobileListOpen(false)
           break
       }
@@ -206,6 +222,7 @@ export function App() {
         favoritesCount={favorites.length}
         onOpenFavorites={() => setShowFavorites(true)}
         onOpenSearch={() => setShowSearch(true)}
+        onOpenPinyinChart={() => setShowPinyinChart(true)}
       />
 
       {/* Main Study Studio Content */}
@@ -285,6 +302,14 @@ export function App() {
                     onPrev={handlePrev}
                     onRandom={pickNextRandom}
                     onOpenMobileList={() => setIsMobileListOpen(true)}
+                    onOpenPronunciation={(pinyin, hanViet, meaningVi) =>
+                      setPronounceTarget({
+                        hanzi: activeChar.hanzi,
+                        pinyin,
+                        hanViet,
+                        meaningVi,
+                      })
+                    }
                   />
                 ) : (
                   <div className="center-empty-workspace">
@@ -319,8 +344,6 @@ export function App() {
         )}
       </main>
 
-
-
       {/* Search Modal */}
       {showSearch && (
         <SearchModal
@@ -346,6 +369,32 @@ export function App() {
           onRemoveFavorite={(h) => setFavorites((prev) => prev.filter((fav) => fav !== h))}
           onClearAll={() => setFavorites([])}
           onClose={() => setShowFavorites(false)}
+        />
+      )}
+
+      {/* Comprehensive Pinyin Chart Modal */}
+      {showPinyinChart && (
+        <PinyinChartModal
+          onClose={() => setShowPinyinChart(false)}
+          onInspectPinyin={(pinyin) => {
+            setPronounceTarget({
+              hanzi: activeChar?.hanzi || '音',
+              pinyin,
+              hanViet: 'ÂM TIẾT PINYIN',
+              meaningVi: `Tra cứu khẩu hình và cách phát âm cho âm tiết [ ${pinyin} ]`,
+            })
+          }}
+        />
+      )}
+
+      {/* Pronunciation & Mouth Shape Modal for Individual Syllable */}
+      {pronounceTarget && (
+        <PronunciationModal
+          hanzi={pronounceTarget.hanzi}
+          pinyin={pronounceTarget.pinyin}
+          hanViet={pronounceTarget.hanViet}
+          meaningVi={pronounceTarget.meaningVi}
+          onClose={() => setPronounceTarget(null)}
         />
       )}
     </div>

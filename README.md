@@ -56,6 +56,16 @@ Dự án được tối ưu 100% để chạy tĩnh (Static SPA) trên **Cloudfl
   - Chiết tự mẹo nhớ dân gian và nguồn gốc hình thành chữ Hán.
   - Phân tích từng thành phần cấu tạo (bấm vào thành phần để tra cứu tiếp).
   - Danh sách từ ghép thông dụng (bấm vào chữ trong từ ghép để xem chi tiết chữ đó).
+- **Phát âm & Khẩu hình chuẩn (Pronunciation & Mouth Articulation)**:
+  - Tách bạch khoa học: **Thanh mẫu (Phụ âm đầu)** + **Vận mẫu (Nguyên âm & Vần)** + **Thanh điệu (Tones)**.
+  - **Sơ đồ mặt cắt sinh học cơ quan phát âm (Sagittal diagram)**: Thể hiện vị trí lưỡi (uốn ngạc cứng, áp ngạc, chạm răng...), trạng thái ngạc mềm và luồng hơi bùng nổ (Aspirated).
+  - **Mô phỏng hình dáng môi (Frontal lips)**: Mím môi, dẹt môi, tròn môi, răng cắn môi dưới...
+  - **Biểu đồ cao độ thanh điệu (Tone Pitch Contour)**: Hệ tọa độ 5 bậc thanh điệu (55, 35, 214, 51), kèm âm thanh mẫu 4 thanh điệu của âm tiết.
+  - **Mẹo phát âm & Cảnh báo lỗi sai đặc thù cho người Việt**: Hướng dẫn chi tiết cách đặt lưỡi và khắc phục các âm dễ nhầm lẫn (`zh/ch/sh`, `j/q/x`, `z/c/s`).
+- **Bảng Pinyin Toàn Diện (Hanyu Pinyin Master Chart)**:
+  - Ma trận tra cứu hàng trăm âm tiết hợp lệ của tiếng Trung kèm âm thanh đọc trực tiếp.
+  - Bảng tổng hợp 21 Thanh mẫu & 36 Vận mẫu phân loại theo ngữ âm học.
+  - Bảng tổng kết **5 Quy tắc biến điệu quan trọng**: Biến điệu hai thanh 3, biến điệu `一` (yī), biến điệu `不` (bù), quy tắc bỏ hai chấm của `ü` (`ju, qu, xu, yu`), và nguyên âm `i` sau 7 phụ âm răng/cuộn lưỡi.
 - **Chu kỳ tự chuyển chữ (Auto-cycle Timer)**:
   - Chọn chu kỳ: 15s, 30s, 1 phút, 5 phút, hoặc Tắt (chuyển thủ công).
   - Thanh đếm ngược và nút tạm dừng/tiếp tục.
@@ -68,8 +78,7 @@ Dự án được tối ưu 100% để chạy tĩnh (Static SPA) trên **Cloudfl
 |---|---|
 | `Space` | Chọn chữ ngẫu nhiên khác |
 | `→` / `←` | Chữ kế tiếp / Chữ trước đó |
-| `W` | Mở màn hình tập nét viết |
-| `D` | Mở màn hình chiết tự & bộ thủ |
+| `P` | Mở **Bảng Pinyin toàn diện** |
 | `F` | Bật/tắt lưu chữ vào sổ tay |
 | `Ctrl+K` | Mở hộp thoại tìm kiếm |
 | `Esc` | Đóng các hộp thoại đang mở |
