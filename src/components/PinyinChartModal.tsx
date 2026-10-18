@@ -306,13 +306,16 @@ export function PinyinChartModal({ onClose, onInspectPinyin }: PinyinChartModalP
                       {grp.initials.map((initKey) => {
                         const data = INITIALS_DATA[initKey]
                         if (!data) return null
+                        const cleanName = data.name.replace(/^Âm\s+/i, '').replace(/\s*-\s*(bật hơi|cuộn lưỡi)/gi, '')
                         return (
                           <div key={initKey} className="phonetic-clean-card">
                             <div className="clean-card-header">
                               <div className="clean-card-header-left">
                                 <span className="clean-initial-symbol">{data.initial}</span>
                                 <div className="clean-name-group">
-                                  <span className="clean-name-text">{data.name}</span>
+                                  <span className="clean-name-text" title={`Âm ${cleanName}`}>
+                                    Âm {cleanName}
+                                  </span>
                                   <div className="clean-badges-row">
                                     {data.isAspirated && (
                                       <span className="clean-badge aspirate">Bật hơi</span>
