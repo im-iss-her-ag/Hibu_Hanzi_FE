@@ -308,40 +308,46 @@ export function PinyinChartModal({ onClose, onInspectPinyin }: PinyinChartModalP
                         if (!data) return null
                         return (
                           <div key={initKey} className="phonetic-clean-card">
-                            <div className="clean-card-left">
-                              <span className="clean-initial-symbol">{data.initial}</span>
-                              <div className="clean-initial-info">
-                                <div className="clean-name-row">
+                            <div className="clean-card-header">
+                              <div className="clean-card-header-left">
+                                <span className="clean-initial-symbol">{data.initial}</span>
+                                <div className="clean-name-group">
                                   <span className="clean-name-text">{data.name}</span>
-                                  {data.isAspirated && (
-                                    <span className="clean-badge aspirate">Bật hơi</span>
-                                  )}
-                                  {data.group === 'retroflex' && (
-                                    <span className="clean-badge retroflex">Cuộn lưỡi</span>
-                                  )}
+                                  <div className="clean-badges-row">
+                                    {data.isAspirated && (
+                                      <span className="clean-badge aspirate">Bật hơi</span>
+                                    )}
+                                    {data.group === 'retroflex' && (
+                                      <span className="clean-badge retroflex">Cuộn lưỡi</span>
+                                    )}
+                                  </div>
                                 </div>
-                                <span className="clean-equiv-text" title={data.vietnameseEquivalent}>
-                                  {data.vietnameseEquivalent.split(',')[0]}
-                                </span>
+                              </div>
+
+                              <div className="clean-card-actions">
+                                <button
+                                  type="button"
+                                  className="clean-audio-btn"
+                                  onClick={() => handleSpeak(`${data.initial}a`)}
+                                  title={`Nghe phụ âm ${data.initial}`}
+                                  aria-label={`Nghe phụ âm ${data.initial}`}
+                                >
+                                  <Volume2 size={16} />
+                                </button>
+                                <button
+                                  type="button"
+                                  className="clean-detail-btn"
+                                  onClick={() => onInspectPinyin(`${data.initial}a`)}
+                                >
+                                  Khẩu hình
+                                </button>
                               </div>
                             </div>
-                            <div className="clean-card-actions">
-                              <button
-                                type="button"
-                                className="clean-audio-btn"
-                                onClick={() => handleSpeak(`${data.initial}a`)}
-                                title={`Nghe phụ âm ${data.initial}`}
-                                aria-label={`Nghe phụ âm ${data.initial}`}
-                              >
-                                <Volume2 size={16} />
-                              </button>
-                              <button
-                                type="button"
-                                className="clean-detail-btn"
-                                onClick={() => onInspectPinyin(`${data.initial}a`)}
-                              >
-                                Khẩu hình
-                              </button>
+
+                            <div className="clean-card-body">
+                              <p className="clean-equiv-full">
+                                {data.vietnameseEquivalent}
+                              </p>
                             </div>
                           </div>
                         )

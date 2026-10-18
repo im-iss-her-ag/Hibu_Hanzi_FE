@@ -4321,7 +4321,7 @@ html.dark .mistake-title {
    Pinyin Master Chart Modal
    ========================================================================== */
 .pinyin-chart-modal-content {
-  max-width: 960px;
+  max-width: 1060px;
   width: 96vw;
   max-height: 92vh;
   border-radius: var(--radius-lg);
@@ -4676,29 +4676,36 @@ html.dark .mistake-title {
 
 .phonetic-items-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+  gap: 0.85rem;
 }
 
 .phonetic-clean-card {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.7rem 0.9rem;
+  flex-direction: column;
+  padding: 0.85rem 1rem;
   background: var(--bg-elevated);
   border: 1px solid var(--border-light);
   border-radius: var(--radius-md);
   transition: all 0.18s ease;
-  gap: 0.5rem;
+  gap: 0.55rem;
 }
 
 .phonetic-clean-card:hover {
   border-color: var(--accent-seal);
   background: var(--bg-main);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
 }
 
-.clean-card-left {
+.clean-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.clean-card-header-left {
   display: flex;
   align-items: center;
   gap: 0.75rem;
@@ -4706,32 +4713,32 @@ html.dark .mistake-title {
 }
 
 .clean-initial-symbol {
-  font-size: 1.5rem;
+  font-size: 1.6rem;
   font-weight: 900;
   color: var(--accent-seal);
   font-family: monospace;
   line-height: 1;
-  min-width: 2rem;
+  min-width: 1.8rem;
 }
 
-.clean-initial-info {
+.clean-name-group {
   display: flex;
   flex-direction: column;
-  gap: 0.15rem;
+  gap: 0.2rem;
   min-width: 0;
 }
 
-.clean-name-row {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  flex-wrap: wrap;
-}
-
 .clean-name-text {
-  font-size: 0.86rem;
+  font-size: 0.9rem;
   font-weight: 700;
   color: var(--fg-main);
+}
+
+.clean-badges-row {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
 }
 
 .clean-badge {
@@ -4751,13 +4758,18 @@ html.dark .mistake-title {
   color: #d97706;
 }
 
-.clean-equiv-text {
-  font-size: 0.76rem;
+.clean-card-body {
+  border-top: 1px dashed var(--border-light);
+  padding-top: 0.45rem;
+  width: 100%;
+}
+
+.clean-equiv-full {
+  font-size: 0.78rem;
   color: var(--fg-muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 140px;
+  line-height: 1.45;
+  margin: 0;
+  word-break: break-word;
 }
 
 .clean-card-actions {
