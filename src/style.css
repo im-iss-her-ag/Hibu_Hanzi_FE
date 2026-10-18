@@ -3613,13 +3613,13 @@ html.dark .pronounce-guide-pill-btn {
 .pronounce-tab-btn {
   display: flex;
   align-items: center;
-  gap: 0.65rem;
-  padding: 0.6rem 0.85rem;
-  border-radius: var(--radius-md);
+  justify-content: center;
+  padding: 0.65rem 0.85rem;
+  border-radius: var(--radius-sm);
   border: 1px solid transparent;
   background: transparent;
   cursor: pointer;
-  text-align: left;
+  text-align: center;
   transition: all 0.2s ease;
 }
 
@@ -3633,20 +3633,22 @@ html.dark .pronounce-guide-pill-btn {
   box-shadow: var(--shadow-sm);
 }
 
-.tab-pill-icon {
-  font-size: 1.35rem;
-  line-height: 1;
+.pronounce-tab-btn.active .tab-main-label {
+  color: var(--accent-seal);
 }
 
 .tab-btn-text {
   display: flex;
   flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
 }
 
 .tab-main-label {
-  font-size: 0.82rem;
-  font-weight: 700;
+  font-size: 0.84rem;
+  font-weight: 800;
   color: var(--fg-main);
+  letter-spacing: 0.02em;
 }
 
 .tab-sub-slug {
@@ -3755,355 +3757,148 @@ html.dark .pronounce-guide-pill-btn {
   border-color: var(--accent-seal);
 }
 
-/* Action Steps Banner: 3 Quick Practical Steps */
-.action-steps-banner {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 0.75rem;
-}
-
-@media (max-width: 640px) {
-  .action-steps-banner {
-    grid-template-columns: 1fr;
-  }
-}
-
-.action-step-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border-line);
-  border-radius: var(--radius-md);
-  padding: 0.85rem 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  transition: all 0.2s ease;
-}
-
-.action-step-card:hover {
-  border-color: var(--accent-seal);
-  box-shadow: var(--shadow-sm);
-}
-
-.action-step-card.highlight {
-  background: rgba(194, 65, 12, 0.05);
-  border-color: rgba(194, 65, 12, 0.3);
-}
-
-html.dark .action-step-card.highlight {
-  background: rgba(248, 113, 113, 0.08);
-  border-color: rgba(248, 113, 113, 0.3);
-}
-
-.step-badge-row {
-  display: flex;
-  align-items: center;
-  gap: 0.45rem;
-}
-
-.step-num-pill {
-  font-size: 0.68rem;
-  font-weight: 800;
-  text-transform: uppercase;
-  padding: 0.1rem 0.45rem;
-  border-radius: var(--radius-full);
-  background: var(--fg-main);
-  color: var(--bg-main);
-}
-
-.action-step-card.highlight .step-num-pill {
-  background: var(--accent-seal);
-  color: #ffffff;
-}
-
-.step-title-icon {
-  font-size: 0.78rem;
-  font-weight: 700;
-  color: var(--fg-main);
-}
-
-.step-instruction {
-  font-size: 0.8rem;
-  color: var(--fg-main);
-  line-height: 1.45;
-}
-
-/* Mouth Shape Diagrams */
-.mouth-diagram-container {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.diagrams-dual-stage {
-  display: grid;
-  grid-template-columns: 1.2fr 1fr;
 /* ==========================================================================
-   Phonetic Text Guide System (Comprehensive Linguistic Architecture)
+   Phonetic Specification Guide (Zero Icons, Pure Typography & Architecture)
    ========================================================================== */
-.phonetic-text-guide-container {
+.phonetic-spec-layout {
   display: flex;
   flex-direction: column;
-  gap: 1.15rem;
+  gap: 0.85rem;
   width: 100%;
 }
 
-/* 3 Pillars Grid: Tongue, Lips, Airflow */
-.guide-pillars-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.85rem;
-}
-
-@media (max-width: 768px) {
-  .guide-pillars-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-.guide-pillar-card {
+/* 1. Primary Method Card */
+.spec-primary-card {
   background: var(--bg-card);
   border: 1px solid var(--border-line);
   border-radius: var(--radius-md);
-  padding: 1rem 1.15rem;
+  padding: 1.1rem 1.35rem;
   display: flex;
   flex-direction: column;
-  gap: 0.65rem;
-  transition: all 0.2s ease;
+  gap: 0.35rem;
 }
 
-.guide-pillar-card:hover {
-  border-color: var(--accent-seal);
-  box-shadow: var(--shadow-sm);
-}
-
-.guide-pillar-card.highlight-aspirated {
-  border-color: rgba(2, 132, 199, 0.4);
-  background: rgba(2, 132, 199, 0.03);
-}
-
-.pillar-header {
-  display: flex;
-  align-items: center;
-  gap: 0.65rem;
-  border-bottom: 1px solid var(--border-light);
-  padding-bottom: 0.5rem;
-}
-
-.pillar-icon {
-  font-size: 1.45rem;
-  line-height: 1;
-}
-
-.pillar-title-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-  min-width: 0;
-}
-
-.pillar-badge {
-  font-size: 0.65rem;
+.spec-card-kicker {
+  font-size: 0.72rem;
   font-weight: 800;
-  color: var(--fg-muted);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.pillar-badge.badge-seal {
-  color: #0284c7;
-}
-
-.pillar-title {
-  font-size: 0.88rem;
-  font-weight: 800;
-  color: var(--fg-main);
-  margin: 0;
-}
-
-.pillar-body {
-  display: flex;
-  flex-direction: column;
-  gap: 0.45rem;
-}
-
-.pillar-main-text {
-  font-size: 0.82rem;
-  color: var(--fg-main);
-  line-height: 1.5;
-  margin: 0;
-}
-
-.pillar-sub-note {
-  font-size: 0.76rem;
-  color: var(--fg-muted);
-  line-height: 1.45;
-  padding: 0.45rem 0.65rem;
-  background: var(--bg-main);
-  border-radius: var(--radius-sm);
-  border-left: 2.5px solid var(--accent-gold);
-}
-
-/* Steps Timeline */
-.guide-steps-container {
-  background: var(--bg-card);
-  border: 1px solid var(--border-line);
-  border-radius: var(--radius-md);
-  padding: 1.15rem 1.35rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.95rem;
-}
-
-.guide-section-heading {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.92rem;
-  font-weight: 800;
-  color: var(--fg-main);
-  margin: 0;
-}
-
-.heading-icon {
+  letter-spacing: 0.08em;
   color: var(--accent-seal);
 }
 
-.guide-steps-timeline {
-  display: flex;
-  flex-direction: column;
-  gap: 0.65rem;
-}
-
-.step-timeline-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.85rem;
-  position: relative;
-}
-
-.step-timeline-left {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 26px;
-  flex-shrink: 0;
-}
-
-.step-number-circle {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background: var(--accent-seal);
-  color: #ffffff;
-  font-size: 0.75rem;
-  font-weight: 800;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 2px 5px rgba(194, 65, 12, 0.25);
-}
-
-.step-timeline-line {
-  width: 2px;
-  flex: 1;
-  min-height: 24px;
-  background: var(--border-line);
-  margin-top: 4px;
-}
-
-.step-timeline-content {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-  padding-bottom: 0.4rem;
-}
-
-.step-title-text {
-  font-size: 0.84rem;
-  font-weight: 800;
+.spec-primary-text {
+  font-size: 0.92rem;
+  font-weight: 600;
   color: var(--fg-main);
+  line-height: 1.6;
   margin: 0;
 }
 
-.step-body-text {
-  font-size: 0.8rem;
-  color: var(--fg-muted);
-  line-height: 1.5;
-  margin: 0;
-}
-
-/* Compare Box */
-.guide-vietnamese-compare-box {
+/* 2. Structured Specifications Table */
+.spec-table-card {
   background: var(--bg-card);
   border: 1px solid var(--border-line);
-  border-left: 3.5px solid #0284c7;
-  border-radius: 0 var(--radius-md) var(--radius-md) 0;
-  padding: 0.9rem 1.25rem;
+  border-radius: var(--radius-md);
+  overflow: hidden;
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
 }
 
-.compare-header {
+.spec-row {
+  display: grid;
+  grid-template-columns: 160px 1fr;
+  align-items: baseline;
+  padding: 0.85rem 1.25rem;
+  border-bottom: 1px solid var(--border-light);
+  gap: 1rem;
+}
+
+.spec-row:last-child {
+  border-bottom: none;
+}
+
+@media (max-width: 640px) {
+  .spec-row {
+    grid-template-columns: 1fr;
+    gap: 0.25rem;
+    padding: 0.75rem 1rem;
+  }
+}
+
+.spec-label-col {
   display: flex;
   align-items: center;
   gap: 0.45rem;
 }
 
-.compare-icon {
-  color: #0284c7;
+.spec-label {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: var(--fg-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
-.compare-title {
-  font-size: 0.82rem;
+.spec-badge-inline {
+  font-size: 0.68rem;
   font-weight: 800;
   color: #0284c7;
+  background: rgba(2, 132, 199, 0.1);
+  padding: 0.1rem 0.4rem;
+  border-radius: var(--radius-full);
+  margin-left: 0.25rem;
+  text-transform: none;
+  letter-spacing: normal;
 }
 
-.compare-content {
-  font-size: 0.82rem;
+.spec-value-col {
+  flex: 1;
+}
+
+.spec-value {
+  font-size: 0.86rem;
   color: var(--fg-main);
-  line-height: 1.5;
+  line-height: 1.55;
   margin: 0;
 }
 
-/* Mistake Warning Box */
-.guide-mistake-warning-box {
-  background: rgba(239, 68, 68, 0.06);
-  border: 1px solid rgba(239, 68, 68, 0.25);
-  border-left: 3.5px solid #ef4444;
-  border-radius: 0 var(--radius-md) var(--radius-md) 0;
-  padding: 0.9rem 1.25rem;
+/* 3. Info Callout Rows: Vietnamese Comparison & Pitfall Alert */
+.spec-info-row {
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
+  padding: 0.85rem 1.25rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-line);
+  background: var(--bg-card);
 }
 
-.mistake-header {
-  display: flex;
-  align-items: center;
-  gap: 0.45rem;
+.spec-info-row.compare {
+  border-left: 4px solid var(--accent-blue);
+  background: rgba(2, 132, 199, 0.04);
 }
 
-.mistake-icon {
-  color: #ef4444;
+.spec-info-row.warning {
+  border-left: 4px solid var(--accent-seal);
+  background: rgba(194, 65, 12, 0.04);
 }
 
-.mistake-title {
-  font-size: 0.82rem;
+.spec-tag-heading {
+  font-size: 0.72rem;
   font-weight: 800;
-  color: #b91c1c;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--accent-blue);
 }
 
-html.dark .mistake-title {
-  color: #fca5a5;
+.spec-tag-heading.alert {
+  color: var(--accent-seal);
 }
 
-.mistake-content {
-  font-size: 0.82rem;
+.spec-info-text {
+  font-size: 0.85rem;
   color: var(--fg-main);
-  line-height: 1.5;
+  line-height: 1.55;
   margin: 0;
 }
 

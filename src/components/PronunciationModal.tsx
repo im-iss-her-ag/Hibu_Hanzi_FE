@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react'
-import { X, Volume2, Wind, Sparkles, Mic } from 'lucide-react'
+import { X, Volume2 } from 'lucide-react'
 import { parsePinyin } from '../utils/pinyinData'
 import { MouthShapeDiagram } from './MouthShapeDiagram'
 import { ToneContourDiagram } from './ToneContourDiagram'
@@ -92,18 +92,16 @@ export function PronunciationModal({
         </div>
 
         {/* 3 Main Tab Buttons: Thanh mẫu / Vận mẫu / Thanh điệu */}
-        {/* 3 Main Tab Buttons: Thanh mẫu / Vận mẫu / Thanh điệu */}
         <div className="pronounce-tabs-nav">
           <button
             type="button"
             className={`pronounce-tab-btn ${activeTab === 'initial' ? 'active' : ''}`}
             onClick={() => setActiveTab('initial')}
           >
-            <span className="tab-pill-icon">📝</span>
             <div className="tab-btn-text">
-              <span className="tab-main-label">Thanh Mẫu (Phụ âm đầu)</span>
+              <span className="tab-main-label">Thanh Mẫu</span>
               <span className="tab-sub-slug">
-                {initial ? `Âm [ ${initial} ]` : 'Khởi âm zero'}
+                {initial ? `Phụ âm [ ${initial} ]` : 'Khởi âm zero'}
               </span>
             </div>
           </button>
@@ -113,10 +111,9 @@ export function PronunciationModal({
             className={`pronounce-tab-btn ${activeTab === 'final' ? 'active' : ''}`}
             onClick={() => setActiveTab('final')}
           >
-            <span className="tab-pill-icon">🎯</span>
             <div className="tab-btn-text">
-              <span className="tab-main-label">Vận Mẫu (Nguyên âm & Vần)</span>
-              <span className="tab-sub-slug">Vần [ {final} ]</span>
+              <span className="tab-main-label">Vận Mẫu</span>
+              <span className="tab-sub-slug">Nguyên âm [ {final} ]</span>
             </div>
           </button>
 
@@ -125,9 +122,8 @@ export function PronunciationModal({
             className={`pronounce-tab-btn ${activeTab === 'tone' ? 'active' : ''}`}
             onClick={() => setActiveTab('tone')}
           >
-            <span className="tab-pill-icon">📈</span>
             <div className="tab-btn-text">
-              <span className="tab-main-label">Thanh Điệu (Tone)</span>
+              <span className="tab-main-label">Thanh Điệu</span>
               <span className="tab-sub-slug">{toneInfo.nameVi}</span>
             </div>
           </button>
@@ -153,10 +149,7 @@ export function PronunciationModal({
 
                     <div className="summary-card-right">
                       {initialInfo.isAspirated && (
-                        <span className="badge-aspirate-tag">
-                          <Wind size={13} />
-                          Bật hơi mạnh
-                        </span>
+                        <span className="badge-aspirate-tag">Bật hơi mạnh</span>
                       )}
                       <button
                         type="button"
@@ -175,11 +168,10 @@ export function PronunciationModal({
                 </>
               ) : (
                 <div className="zero-initial-notice">
-                  <Sparkles size={28} className="zero-icon" />
                   <h3>Âm tiết này không có phụ âm đầu (Khởi âm zero)</h3>
                   <p>
                     Âm tiết bắt đầu trực tiếp bằng nguyên âm <strong>{final}</strong>. Hãy chuyển
-                    sang tab <strong>Vận Mẫu</strong> để xem chi tiết hướng dẫn phát âm!
+                    sang tab <strong>Vận Mẫu</strong> để xem chi tiết hướng dẫn phát âm.
                   </p>
                   <button
                     type="button"
@@ -253,14 +245,12 @@ export function PronunciationModal({
         {/* Footer Info */}
         <div className="pronounce-modal-footer">
           <div className="pronounce-footer-tip">
-            <Mic size={14} />
             <span>
-              Mẹo luyện nói: Tập từ <strong>Khẩu hình thanh mẫu</strong> → lướt vào{' '}
-              <strong>Vận mẫu</strong> → điều chỉnh theo <strong>Cao độ thanh điệu</strong>.
+              Luyện phát âm theo thứ tự: <strong>Thanh mẫu</strong> → <strong>Vận mẫu</strong> → <strong>Thanh điệu</strong>.
             </span>
           </div>
           <button type="button" className="pill-btn primary" onClick={onClose}>
-            Đã hiểu, quay lại
+            Đóng cửa sổ
           </button>
         </div>
       </div>
