@@ -2520,6 +2520,15 @@ html.dark .mige-canvas-frame {
   background: rgba(2, 132, 199, 0.12);
 }
 
+.speak-hero-btn.slow-speak-btn {
+  color: #10b981;
+}
+
+.speak-hero-btn.slow-speak-btn:hover {
+  border-color: #10b981;
+  background: rgba(16, 185, 129, 0.12);
+}
+
 /* Authentic Imperial Vermilion Seal Stamp (Con Dấu Triện Son Hán Việt) */
 .hanviet-seal-wrapper {
   display: flex;
@@ -2818,7 +2827,7 @@ html.dark .mige-canvas-frame {
 .canvas-footer-bar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   padding-top: 1.1rem;
   border-top: 1px solid var(--border-light);
   gap: 1rem;
@@ -3746,6 +3755,78 @@ html.dark .pronounce-guide-pill-btn {
   border-color: var(--accent-seal);
 }
 
+/* Action Steps Banner: 3 Quick Practical Steps */
+.action-steps-banner {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+}
+
+@media (max-width: 640px) {
+  .action-steps-banner {
+    grid-template-columns: 1fr;
+  }
+}
+
+.action-step-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-line);
+  border-radius: var(--radius-md);
+  padding: 0.85rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  transition: all 0.2s ease;
+}
+
+.action-step-card:hover {
+  border-color: var(--accent-seal);
+  box-shadow: var(--shadow-sm);
+}
+
+.action-step-card.highlight {
+  background: rgba(194, 65, 12, 0.05);
+  border-color: rgba(194, 65, 12, 0.3);
+}
+
+html.dark .action-step-card.highlight {
+  background: rgba(248, 113, 113, 0.08);
+  border-color: rgba(248, 113, 113, 0.3);
+}
+
+.step-badge-row {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.step-num-pill {
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  padding: 0.1rem 0.45rem;
+  border-radius: var(--radius-full);
+  background: var(--fg-main);
+  color: var(--bg-main);
+}
+
+.action-step-card.highlight .step-num-pill {
+  background: var(--accent-seal);
+  color: #ffffff;
+}
+
+.step-title-icon {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--fg-main);
+}
+
+.step-instruction {
+  font-size: 0.8rem;
+  color: var(--fg-main);
+  line-height: 1.45;
+}
+
 /* Mouth Shape Diagrams */
 .mouth-diagram-container {
   display: flex;
@@ -4556,72 +4637,139 @@ html.dark .mistake-title {
   margin-bottom: 1rem;
 }
 
-/* Phonemes Card Grid */
-.phonemes-groups-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 0.85rem;
-}
-
-.phoneme-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border-line);
-  border-radius: var(--radius-md);
-  padding: 1rem;
+/* Phonetic Group Section (Organized scientifically by place of articulation) */
+.phonetic-sections-wrapper {
   display: flex;
   flex-direction: column;
-  gap: 0.65rem;
-  transition: all 0.2s ease;
+  gap: 1.25rem;
 }
 
-.phoneme-card:hover {
-  border-color: var(--accent-seal);
-  box-shadow: var(--shadow-sm);
+.phonetic-group-section {
+  background: var(--bg-card);
+  border: 1px solid var(--border-line);
+  border-radius: var(--radius-lg);
+  padding: 1.1rem 1.25rem;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
 }
 
-.phoneme-card-header {
+.phonetic-group-header {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  margin-bottom: 0.9rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border-light);
+  flex-wrap: wrap;
+}
+
+.phonetic-group-title {
+  font-size: 1.02rem;
+  font-weight: 800;
+  color: var(--fg-main);
+  margin: 0;
+}
+
+.phonetic-group-sub {
+  font-size: 0.8rem;
+  color: var(--fg-muted);
+}
+
+.phonetic-items-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 0.75rem;
+}
+
+.phonetic-clean-card {
   display: flex;
   align-items: center;
   justify-content: space-between;
-}
-
-.phoneme-badge-wrap {
-  display: flex;
-  align-items: center;
+  padding: 0.7rem 0.9rem;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  transition: all 0.18s ease;
   gap: 0.5rem;
 }
 
-.phoneme-char {
+.phonetic-clean-card:hover {
+  border-color: var(--accent-seal);
+  background: var(--bg-main);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.clean-card-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.clean-initial-symbol {
   font-size: 1.5rem;
   font-weight: 900;
   color: var(--accent-seal);
   font-family: monospace;
+  line-height: 1;
+  min-width: 2rem;
 }
 
-.badge-aspirate-pill {
-  display: inline-flex;
+.clean-initial-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.clean-name-row {
+  display: flex;
   align-items: center;
-  gap: 0.25rem;
-  font-size: 0.68rem;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.clean-name-text {
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: var(--fg-main);
+}
+
+.clean-badge {
+  font-size: 0.65rem;
   font-weight: 800;
-  padding: 0.15rem 0.45rem;
+  padding: 0.1rem 0.45rem;
   border-radius: var(--radius-full);
+}
+
+.clean-badge.aspirate {
   background: rgba(2, 132, 199, 0.12);
   color: #0284c7;
 }
 
-.badge-retroflex-pill {
-  font-size: 0.68rem;
-  font-weight: 800;
-  padding: 0.15rem 0.45rem;
-  border-radius: var(--radius-full);
+.clean-badge.retroflex {
   background: rgba(217, 119, 6, 0.12);
   color: #d97706;
 }
 
-.phoneme-sound-btn {
-  width: 32px;
-  height: 32px;
+.clean-equiv-text {
+  font-size: 0.76rem;
+  color: var(--fg-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 140px;
+}
+
+.clean-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+
+.clean-audio-btn {
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
   background: var(--bg-main);
   border: 1px solid var(--border-line);
@@ -4633,47 +4781,27 @@ html.dark .mistake-title {
   transition: all 0.15s ease;
 }
 
-.phoneme-sound-btn:hover {
+.clean-audio-btn:hover {
   background: var(--accent-seal);
   color: #ffffff;
   border-color: var(--accent-seal);
 }
 
-.phoneme-card-title {
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: var(--fg-main);
-}
-
-.phoneme-card-group {
-  font-size: 0.75rem;
-  color: var(--fg-muted);
-}
-
-.phoneme-mini-guide {
-  font-size: 0.78rem;
-  line-height: 1.45;
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  color: var(--fg-main);
-}
-
-.card-inspect-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  font-size: 0.75rem;
+.clean-detail-btn {
+  font-size: 0.72rem;
   font-weight: 700;
   color: var(--accent-seal);
+  background: transparent;
+  border: 1px solid rgba(194, 65, 12, 0.25);
+  border-radius: var(--radius-full);
+  padding: 0.28rem 0.6rem;
   cursor: pointer;
-  padding: 0.25rem 0;
   transition: all 0.15s ease;
 }
 
-.card-inspect-btn:hover {
-  opacity: 0.8;
-  transform: translateX(2px);
+.clean-detail-btn:hover {
+  background: rgba(194, 65, 12, 0.08);
+  border-color: var(--accent-seal);
 }
 
 /* Finals block */
@@ -4857,7 +4985,27 @@ html.dark .mistake-title {
   align-items: center;
   gap: 0.3rem;
   color: var(--accent-seal);
+}
+
+.rule-audio-btn {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--bg-card);
+  border: 1px solid var(--border-line);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent-seal);
   cursor: pointer;
+  transition: all 0.15s ease;
+  margin-left: 0.35rem;
+}
+
+.rule-audio-btn:hover {
+  background: var(--accent-seal);
+  color: #ffffff;
+  border-color: var(--accent-seal);
 }
 
 .rule-footnote {

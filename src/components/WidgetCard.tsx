@@ -32,7 +32,7 @@ export function WidgetCard({
   const primary = character.readings.find((r) => r.isPrimary) ?? character.readings[0]
 
   const handleSpeak = () => {
-    speakChinese(character.hanzi)
+    speakChinese(primary?.pinyin || character.hanzi)
   }
 
   const fontClass =

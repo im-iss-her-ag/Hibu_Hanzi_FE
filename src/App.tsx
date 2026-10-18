@@ -302,14 +302,6 @@ export function App() {
                     onPrev={handlePrev}
                     onRandom={pickNextRandom}
                     onOpenMobileList={() => setIsMobileListOpen(true)}
-                    onOpenPronunciation={(pinyin, hanViet, meaningVi) =>
-                      setPronounceTarget({
-                        hanzi: activeChar.hanzi,
-                        pinyin,
-                        hanViet,
-                        meaningVi,
-                      })
-                    }
                   />
                 ) : (
                   <div className="center-empty-workspace">
@@ -378,7 +370,7 @@ export function App() {
           onClose={() => setShowPinyinChart(false)}
           onInspectPinyin={(pinyin) => {
             setPronounceTarget({
-              hanzi: activeChar?.hanzi || '音',
+              hanzi: '拼',
               pinyin,
               hanViet: 'ÂM TIẾT PINYIN',
               meaningVi: `Tra cứu khẩu hình và cách phát âm cho âm tiết [ ${pinyin} ]`,

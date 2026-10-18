@@ -55,8 +55,8 @@ export function PronunciationModal({
         {/* Header with Hero Character info */}
         <div className="pronounce-modal-header">
           <div className="pronounce-hero-profile">
-            <div className="hero-hanzi-seal" title="Chữ Hán">
-              {hanzi}
+            <div className="hero-hanzi-seal" title={hanzi === '拼' || hanzi === '音' ? 'Âm tiết Pinyin' : 'Chữ Hán'}>
+              {hanzi === '拼' || hanzi === '音' ? '拼' : hanzi}
             </div>
 
             <div className="hero-meta-col">
@@ -65,7 +65,7 @@ export function PronunciationModal({
                 <button
                   type="button"
                   className="hero-listen-btn"
-                  onClick={() => handleSpeak(hanzi)}
+                  onClick={() => handleSpeak(hanzi === '拼' || hanzi === '音' ? pinyin : hanzi)}
                   title="Nghe phát âm chuẩn"
                   aria-label="Phát âm"
                 >
@@ -281,8 +281,8 @@ export function PronunciationModal({
           <div className="pronounce-footer-tip">
             <Mic size={14} />
             <span>
-              Mẹo luyện nói: Tập từ <strong>Khẩu hình thanh mẫu</strong> $\rightarrow$ lướt vào{' '}
-              <strong>Vận mẫu</strong> $\rightarrow$ điều chỉnh theo <strong>Cao độ thanh điệu</strong>.
+              Mẹo luyện nói: Tập từ <strong>Khẩu hình thanh mẫu</strong> → lướt vào{' '}
+              <strong>Vận mẫu</strong> → điều chỉnh theo <strong>Cao độ thanh điệu</strong>.
             </span>
           </div>
           <button type="button" className="pill-btn primary" onClick={onClose}>

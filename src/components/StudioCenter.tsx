@@ -2,16 +2,37 @@ import { useState, useEffect } from 'react'
 import {
   Volume2,
   Star,
-  ChevronLeft,
-  ChevronRight,
-  Shuffle,
-  Type,
-  Sparkles,
-  CheckCircle2,
 } from 'lucide-react'
 import type { BundleCharacter, CharacterDetail } from '../core'
 import { HanziWriterCanvas } from './HanziWriterCanvas'
 import { speakChinese } from '../utils/speech'
+
+function TurtleIcon({ size = 20 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <ellipse cx="12" cy="13" rx="6" ry="5" />
+      <path d="M12 8v10" />
+      <path d="M7 11h10" />
+      <path d="M7 15h10" />
+      <path d="M12 8V5a1.5 1.5 0 0 1 3 0v1" />
+      <path d="m6.5 10.5-2.5-1.5" />
+      <path d="m17.5 10.5 2.5-1.5" />
+      <path d="m6.5 15.5-2.5 1.5" />
+      <path d="m17.5 15.5 2.5 1.5" />
+      <path d="M12 18v2" />
+    </svg>
+  )
+}
 
 interface StudioCenterProps {
   character: BundleCharacter
@@ -20,31 +41,25 @@ interface StudioCenterProps {
   totalCount: number
   isFavorite: boolean
   fontStyle: 'calligraphy' | 'serif' | 'sans'
-  onToggleFont: () => void
+  onToggleFont?: () => void
   onToggleFavorite: () => void
   onNext: () => void
   onPrev: () => void
   onRandom: () => void
   // Mobile drawer trigger
   onOpenMobileList?: () => void
-  // Pronunciation & mouth shape modal
-  onOpenPronunciation?: (pinyin: string, hanViet?: string | null, meaningVi?: string | null) => void
 }
 
 export function StudioCenter({
   character,
-  detail,
-  currentIndex,
   totalCount,
   isFavorite,
   fontStyle,
-  onToggleFont,
   onToggleFavorite,
   onNext,
   onPrev,
   onRandom,
   onOpenMobileList,
-  onOpenPronunciation,
 }: StudioCenterProps) {
   const readings = character.readings || []
   const [selectedReadingIndex, setSelectedReadingIndex] = useState(0)
@@ -58,8 +73,8 @@ export function StudioCenter({
   const activeReading = readings[selectedReadingIndex] ?? readings[0]
   const isPolyphonic = readings.length > 1
 
-  const handleSpeak = (text: string) => {
-    speakChinese(text)
+  const handleSpeak = (text: string, rate: number = 1.0) => {
+    speakChinese(text, rate)
   }
 
   return (
@@ -77,41 +92,9 @@ export function StudioCenter({
               Kho chữ ({totalCount})
             </button>
           )}
-
-          <span className="badge-hsk-level">
-            {character.hsk2Level ? `HSK ${character.hsk2Level}` : 'HSK Cơ Bản'}
-          </span>
-
-          <span className="badge-progress-count" title="Vị trí chữ hiện tại">
-            {currentIndex + 1} / {totalCount}
-          </span>
-
-          {detail?.character.strokeCount && (
-            <span className="badge-stroke-count">
-              {detail.character.strokeCount} nét
-            </span>
-          )}
-
-          {character.traditional && character.traditional !== character.hanzi && (
-            <span className="badge-traditional" title="Chữ phồn thể">
-              Phồn thể: {character.traditional}
-            </span>
-          )}
         </div>
 
         <div className="canvas-actions-right">
-          <button
-            type="button"
-            className="font-switch-btn"
-            onClick={onToggleFont}
-            title={`Phông chữ: ${fontStyle === 'calligraphy' ? 'Thư pháp' : fontStyle === 'serif' ? 'Khải thư' : 'Không chân'}`}
-          >
-            <Type size={16} />
-            <span className="font-name-label">
-              {fontStyle === 'calligraphy' ? 'Thư pháp' : fontStyle === 'serif' ? 'Khải thư' : 'Hiện đại'}
-            </span>
-          </button>
-
           <button
             type="button"
             className={`fav-action-btn ${isFavorite ? 'starred' : ''}`}
@@ -144,30 +127,23 @@ export function StudioCenter({
             <button
               type="button"
               className="speak-hero-btn"
-              onClick={() => handleSpeak(character.hanzi)}
-              title="Phát âm tiếng Trung chuẩn Bắc Kinh"
-              aria-label="Phát âm"
+              onClick={() => handleSpeak(activeReading?.pinyin || character.hanzi, 1.0)}
+              title="Phát âm chuẩn (1.0x)"
+              aria-label="Phát âm chuẩn"
             >
               <Volume2 size={22} />
             </button>
             <button
               type="button"
-              className="pronounce-guide-pill-btn"
-              onClick={() =>
-                onOpenPronunciation?.(
-                  activeReading?.pinyin || '',
-                  activeReading?.hanViet,
-                  activeReading?.meaningVi,
-                )
-              }
-              title="Xem hướng dẫn khẩu hình & thanh điệu"
+              className="speak-hero-btn slow-speak-btn"
+              onClick={() => handleSpeak(activeReading?.pinyin || character.hanzi, 0.65)}
+              title="Đọc chậm (0.65x)"
+              aria-label="Đọc chậm"
             >
-              <span className="pill-mouth-icon">👄</span>
-              <span>Khẩu hình</span>
+              <TurtleIcon size={20} />
             </button>
             {isPolyphonic && (
               <span className="poly-indicator-badge">
-                <Sparkles size={12} />
                 Đa âm ({readings.length})
               </span>
             )}
@@ -203,7 +179,6 @@ export function StudioCenter({
               <div className="polyphonic-readings-card">
                 <div className="polyphonic-header">
                   <div className="poly-title-badge">
-                    <Sparkles size={13} className="sparkle-poly" />
                     <span>Cách đọc & Âm Hán Việt ({readings.length})</span>
                   </div>
                   <span className="poly-hint-text">Bấm vào âm để đổi con dấu & nghĩa</span>
@@ -225,22 +200,22 @@ export function StudioCenter({
                             className="poly-speak"
                             onClick={(e) => {
                               e.stopPropagation()
-                              handleSpeak(character.hanzi)
+                              handleSpeak(r.pinyin, 1.0)
                             }}
-                            title="Phát âm"
+                            title="Phát âm chuẩn (1.0x)"
                           >
                             <Volume2 size={13} />
                           </button>
                           <button
                             type="button"
-                            className="poly-pronounce-trigger"
+                            className="poly-speak slow"
                             onClick={(e) => {
                               e.stopPropagation()
-                              onOpenPronunciation?.(r.pinyin, r.hanViet, r.meaningVi)
+                              handleSpeak(r.pinyin, 0.65)
                             }}
-                            title={`Xem khẩu hình & phát âm cho ${r.pinyin}`}
+                            title="Đọc chậm (0.65x)"
                           >
-                            👄
+                            <TurtleIcon size={13} />
                           </button>
                           <span className="poly-hanviet">{r.hanViet?.toUpperCase()}</span>
                           {r.isPrimary ? (
@@ -259,7 +234,6 @@ export function StudioCenter({
             ) : (
               <div className="single-reading-status-card">
                 <div className="single-status-header">
-                  <CheckCircle2 size={14} className="single-status-icon" />
                   <span className="single-status-label">Chữ đơn âm</span>
                 </div>
                 <p className="single-status-desc">
@@ -273,7 +247,7 @@ export function StudioCenter({
 
       {/* Canvas Footer: Navigation & Auto-cycle Timer */}
       <div className="canvas-footer-bar">
-        {/* Navigation Buttons */}
+        {/* Navigation Buttons centered */}
         <div className="nav-btn-cluster">
           <button
             type="button"
@@ -281,8 +255,7 @@ export function StudioCenter({
             onClick={onPrev}
             title="Chữ trước đó (Phím ←)"
           >
-            <ChevronLeft size={18} />
-            <span>Trước</span>
+            Trước
           </button>
 
           <button
@@ -291,8 +264,7 @@ export function StudioCenter({
             onClick={onRandom}
             title="Đổi chữ ngẫu nhiên (Phím Space)"
           >
-            <Shuffle size={16} />
-            <span>Ngẫu nhiên</span>
+            Ngẫu nhiên
           </button>
 
           <button
@@ -301,8 +273,7 @@ export function StudioCenter({
             onClick={onNext}
             title="Chữ tiếp theo (Phím →)"
           >
-            <span>Tiếp</span>
-            <ChevronRight size={18} />
+            Tiếp
           </button>
         </div>
       </div>

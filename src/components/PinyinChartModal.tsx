@@ -3,17 +3,10 @@ import {
   X,
   Search,
   Volume2,
-  Wind,
-  BookOpen,
-  Filter,
-  Layers,
-  ChevronRight,
-  Info,
 } from 'lucide-react'
 import {
   INITIALS_DATA,
   FINALS_DATA,
-  PINYIN_INITIALS_LIST,
   VALID_SYLLABLES,
   generateToneVariants,
 } from '../utils/pinyinData'
@@ -23,6 +16,44 @@ interface PinyinChartModalProps {
   onClose: () => void
   onInspectPinyin: (pinyin: string) => void
 }
+
+const INITIAL_GROUPS = [
+  {
+    title: 'Âm môi',
+    sub: 'Hai môi / Môi - Răng (b, p, m, f)',
+    initials: ['b', 'p', 'm', 'f'],
+  },
+  {
+    title: 'Âm đầu lưỡi giữa',
+    sub: 'Đầu lưỡi chạm nướu trên rồi bật ra (d, t, n, l)',
+    initials: ['d', 't', 'n', 'l'],
+  },
+  {
+    title: 'Âm cuống lưỡi (Gốc lưỡi)',
+    sub: 'Gốc lưỡi tiếp xúc nâng lên ngạc mềm (g, k, h)',
+    initials: ['g', 'k', 'h'],
+  },
+  {
+    title: 'Âm mặt lưỡi',
+    sub: 'Mặt lưỡi áp sát ngạc cứng (j, q, x)',
+    initials: ['j', 'q', 'x'],
+  },
+  {
+    title: 'Âm đầu lưỡi trước (Âm răng)',
+    sub: 'Đầu lưỡi phẳng chạm mặt sau răng trên (z, c, s)',
+    initials: ['z', 'c', 's'],
+  },
+  {
+    title: 'Âm đầu lưỡi sau (Cuộn lưỡi)',
+    sub: 'Đầu lưỡi uốn cong lên chạm ngạc cứng (zh, ch, sh, r)',
+    initials: ['zh', 'ch', 'sh', 'r'],
+  },
+  {
+    title: 'Bán nguyên âm (Zero Initial)',
+    sub: 'Khởi âm thay thế khi không có thanh mẫu (y, w)',
+    initials: ['y', 'w'],
+  },
+]
 
 export function PinyinChartModal({ onClose, onInspectPinyin }: PinyinChartModalProps) {
   const [activeTab, setActiveTab] = useState<'matrix' | 'initials' | 'finals' | 'rules'>('matrix')
@@ -102,37 +133,35 @@ export function PinyinChartModal({ onClose, onInspectPinyin }: PinyinChartModalP
           </div>
         </div>
 
-        {/* Navigation Tabs */}
+        {/* Navigation Tabs (Text only, clean and uncluttered) */}
         <div className="pinyin-chart-tabbar">
           <button
             type="button"
             className={`chart-tab-btn ${activeTab === 'matrix' ? 'active' : ''}`}
             onClick={() => setActiveTab('matrix')}
           >
-            <Layers size={16} />
-            <span>Ma Trận Ghép Âm ({validSyllablesList.length})</span>
+            Ma Trận Ghép Âm ({validSyllablesList.length})
           </button>
           <button
             type="button"
             className={`chart-tab-btn ${activeTab === 'initials' ? 'active' : ''}`}
             onClick={() => setActiveTab('initials')}
           >
-            <span>👄 21 Thanh Mẫu</span>
+            21 Thanh Mẫu
           </button>
           <button
             type="button"
             className={`chart-tab-btn ${activeTab === 'finals' ? 'active' : ''}`}
             onClick={() => setActiveTab('finals')}
           >
-            <span>🗣️ 36 Vận Mẫu</span>
+            36 Vận Mẫu
           </button>
           <button
             type="button"
             className={`chart-tab-btn ${activeTab === 'rules' ? 'active' : ''}`}
             onClick={() => setActiveTab('rules')}
           >
-            <BookOpen size={16} />
-            <span>Quy Tắc Biến Điệu</span>
+            Quy Tắc Biến Điệu
           </button>
         </div>
 
@@ -164,9 +193,7 @@ export function PinyinChartModal({ onClose, onInspectPinyin }: PinyinChartModalP
                 </div>
 
                 <div className="initial-filter-pills">
-                  <span className="filter-pill-label">
-                    <Filter size={13} /> Lọc nhóm âm:
-                  </span>
+                  <span className="filter-pill-label">Nhóm âm:</span>
                   {[
                     { id: 'all', label: 'Tất cả' },
                     { id: 'bilabial', label: 'Âm môi (b, p, m, f)' },
@@ -211,7 +238,6 @@ export function PinyinChartModal({ onClose, onInspectPinyin }: PinyinChartModalP
                         onClick={() => handleSpeak(v.pinyin)}
                         title={`Nghe thanh ${v.tone}: ${v.pinyin}`}
                       >
-                        <Volume2 size={13} />
                         <span className="tone-pinyin-text">{v.pinyin}</span>
                         <span className="tone-sub-num">Thanh {v.tone}</span>
                       </button>
@@ -222,8 +248,7 @@ export function PinyinChartModal({ onClose, onInspectPinyin }: PinyinChartModalP
                       className="inspector-action-btn"
                       onClick={() => onInspectPinyin(activeSyllableVariants[2]?.pinyin || selectedSyllable)}
                     >
-                      <span>Xem khẩu hình</span>
-                      <ChevronRight size={15} />
+                      Xem khẩu hình
                     </button>
                   </div>
                 </div>
@@ -246,7 +271,6 @@ export function PinyinChartModal({ onClose, onInspectPinyin }: PinyinChartModalP
                         title={`Bấm để chọn và nghe âm [ ${syl} ]`}
                       >
                         <span className="cell-syllable-name">{syl}</span>
-                        <Volume2 size={12} className="cell-audio-icon" />
                       </button>
                     )
                   })
@@ -259,76 +283,72 @@ export function PinyinChartModal({ onClose, onInspectPinyin }: PinyinChartModalP
             </div>
           )}
 
-          {/* TAB 2: 21 THANH MẪU (INITIALS TABLE) */}
+          {/* TAB 2: 21 THANH MẪU (PHONETIC GROUPED TABLE) */}
           {activeTab === 'initials' && (
             <div className="initials-cards-list">
               <div className="chart-info-note">
-                <Info size={16} />
                 <span>
-                  Tiếng Trung có <strong>21 thanh mẫu</strong> chia làm 6 nhóm âm học. Các âm{' '}
+                  Tiếng Trung có <strong>21 thanh mẫu</strong> phân loại theo 6 vị trí cấu âm chuẩn. Các âm{' '}
                   <strong style={{ color: 'var(--accent-seal)' }}>BẬT HƠI</strong> và{' '}
-                  <strong style={{ color: 'var(--accent-gold)' }}>CUỘN LƯỠI</strong> là đặc trưng
-                  quan trọng nhất cần luyện tập.
+                  <strong style={{ color: 'var(--accent-gold)' }}>CUỘN LƯỠI</strong> là đặc trưng quan trọng nhất cần luyện tập.
                 </span>
               </div>
 
-              <div className="phonemes-groups-grid">
-                {PINYIN_INITIALS_LIST.map((initKey) => {
-                  const data = INITIALS_DATA[initKey]
-                  if (!data) return null
-                  return (
-                    <div key={initKey} className="phoneme-card">
-                      <div className="phoneme-card-header">
-                        <div className="phoneme-badge-wrap">
-                          <span className="phoneme-char">{data.initial}</span>
-                          {data.isAspirated && (
-                            <span className="badge-aspirate-pill">
-                              <Wind size={11} /> Bật hơi
-                            </span>
-                          )}
-                          {data.group === 'retroflex' && (
-                            <span className="badge-retroflex-pill">Cuộn lưỡi</span>
-                          )}
-                        </div>
-                        <button
-                          type="button"
-                          className="phoneme-sound-btn"
-                          onClick={() => handleSpeak(`${data.initial}a`)}
-                          title={`Nghe phát âm phụ âm [ ${data.initial} ]`}
-                        >
-                          <Volume2 size={16} />
-                        </button>
-                      </div>
-
-                      <div className="phoneme-card-body">
-                        <h4 className="phoneme-card-title">{data.name}</h4>
-                        <span className="phoneme-card-group">
-                          {data.groupNameVi} · {data.soundType}
-                        </span>
-
-                        <div className="phoneme-mini-guide">
-                          <p className="guide-hint">
-                            <strong>Khẩu hình:</strong> {data.guideVi}
-                          </p>
-                          <p className="vi-equiv">
-                            <strong>Tương đương tiếng Việt:</strong> {data.vietnameseEquivalent}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="phoneme-card-footer">
-                        <button
-                          type="button"
-                          className="card-inspect-btn"
-                          onClick={() => onInspectPinyin(`${data.initial}a`)}
-                        >
-                          <span>Xem khẩu hình & sơ đồ</span>
-                          <ChevronRight size={14} />
-                        </button>
-                      </div>
+              <div className="phonetic-sections-wrapper">
+                {INITIAL_GROUPS.map((grp) => (
+                  <div key={grp.title} className="phonetic-group-section">
+                    <div className="phonetic-group-header">
+                      <h3 className="phonetic-group-title">{grp.title}</h3>
+                      <span className="phonetic-group-sub">{grp.sub}</span>
                     </div>
-                  )
-                })}
+
+                    <div className="phonetic-items-grid">
+                      {grp.initials.map((initKey) => {
+                        const data = INITIALS_DATA[initKey]
+                        if (!data) return null
+                        return (
+                          <div key={initKey} className="phonetic-clean-card">
+                            <div className="clean-card-left">
+                              <span className="clean-initial-symbol">{data.initial}</span>
+                              <div className="clean-initial-info">
+                                <div className="clean-name-row">
+                                  <span className="clean-name-text">{data.name}</span>
+                                  {data.isAspirated && (
+                                    <span className="clean-badge aspirate">Bật hơi</span>
+                                  )}
+                                  {data.group === 'retroflex' && (
+                                    <span className="clean-badge retroflex">Cuộn lưỡi</span>
+                                  )}
+                                </div>
+                                <span className="clean-equiv-text" title={data.vietnameseEquivalent}>
+                                  {data.vietnameseEquivalent.split(',')[0]}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="clean-card-actions">
+                              <button
+                                type="button"
+                                className="clean-audio-btn"
+                                onClick={() => handleSpeak(`${data.initial}a`)}
+                                title={`Nghe phụ âm ${data.initial}`}
+                                aria-label={`Nghe phụ âm ${data.initial}`}
+                              >
+                                <Volume2 size={16} />
+                              </button>
+                              <button
+                                type="button"
+                                className="clean-detail-btn"
+                                onClick={() => onInspectPinyin(`${data.initial}a`)}
+                              >
+                                Khẩu hình
+                              </button>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           )}
@@ -337,7 +357,6 @@ export function PinyinChartModal({ onClose, onInspectPinyin }: PinyinChartModalP
           {activeTab === 'finals' && (
             <div className="finals-cards-list">
               <div className="chart-info-note">
-                <Info size={16} />
                 <span>
                   Gồm <strong>6 vận mẫu đơn</strong>, <strong>13 vận mẫu kép</strong>,{' '}
                   <strong>16 vận mẫu mũi</strong> (mũi trước tận cùng bằng <code>-n</code>, mũi sau
@@ -349,7 +368,7 @@ export function PinyinChartModal({ onClose, onInspectPinyin }: PinyinChartModalP
                 {/* Section 1: Vận mẫu đơn */}
                 <div className="final-group-block">
                   <h3 className="final-group-title">
-                    <span>🌟 6 Vận Mẫu Đơn Cơ Bản (Monophthongs)</span>
+                    <span>6 Vận Mẫu Đơn (Monophthongs)</span>
                   </h3>
                   <div className="finals-mini-grid">
                     {['a', 'o', 'e', 'i', 'u', 'ü'].map((fin) => {
@@ -364,6 +383,7 @@ export function PinyinChartModal({ onClose, onInspectPinyin }: PinyinChartModalP
                               className="final-speak-btn"
                               onClick={() => handleSpeak(data.final)}
                               title={`Nghe vần ${data.final}`}
+                              aria-label={`Nghe vần ${data.final}`}
                             >
                               <Volume2 size={15} />
                             </button>
@@ -388,7 +408,7 @@ export function PinyinChartModal({ onClose, onInspectPinyin }: PinyinChartModalP
                 {/* Section 2: Vận mẫu kép */}
                 <div className="final-group-block">
                   <h3 className="final-group-title">
-                    <span>💫 13 Vận Mẫu Kép (Compound Finals)</span>
+                    <span>13 Vận Mẫu Kép (Compound Finals)</span>
                   </h3>
                   <div className="finals-mini-grid">
                     {[
@@ -407,6 +427,7 @@ export function PinyinChartModal({ onClose, onInspectPinyin }: PinyinChartModalP
                               className="final-speak-btn"
                               onClick={() => handleSpeak(data.final)}
                               title={`Nghe vần ${data.final}`}
+                              aria-label={`Nghe vần ${data.final}`}
                             >
                               <Volume2 size={15} />
                             </button>
@@ -431,7 +452,7 @@ export function PinyinChartModal({ onClose, onInspectPinyin }: PinyinChartModalP
                 {/* Section 3: Vận mẫu mũi */}
                 <div className="final-group-block">
                   <h3 className="final-group-title">
-                    <span>👃 16 Vận Mẫu Mũi (Nasal Finals)</span>
+                    <span>16 Vận Mẫu Mũi & Âm Uốn Lưỡi (Nasal Finals)</span>
                   </h3>
                   <div className="finals-mini-grid">
                     {[
@@ -451,6 +472,7 @@ export function PinyinChartModal({ onClose, onInspectPinyin }: PinyinChartModalP
                               className="final-speak-btn"
                               onClick={() => handleSpeak(data.final)}
                               title={`Nghe vần ${data.final}`}
+                              aria-label={`Nghe vần ${data.final}`}
                             >
                               <Volume2 size={15} />
                             </button>
@@ -480,7 +502,7 @@ export function PinyinChartModal({ onClose, onInspectPinyin }: PinyinChartModalP
             <div className="rules-view-container">
               <div className="rule-card">
                 <div className="rule-badge">Quy tắc 1</div>
-                <h3 className="rule-title">Biến điệu của hai Thanh 3 (3 + 3 $\rightarrow$ 2 + 3)</h3>
+                <h3 className="rule-title">Biến điệu của hai Thanh 3 (3 + 3 → 2 + 3)</h3>
                 <p className="rule-explanation">
                   Khi hai âm tiết mang thanh 3 đi liền nhau, âm tiết thứ nhất sẽ biến điệu thành{' '}
                   <strong>Thanh 2</strong>, âm tiết thứ hai giữ nguyên thanh 3.
@@ -489,15 +511,33 @@ export function PinyinChartModal({ onClose, onInspectPinyin }: PinyinChartModalP
                   <div className="example-item">
                     <span className="ex-pinyin">nǐ hǎo (你好)</span>
                     <span className="arrow-sym">→</span>
-                    <span className="ex-spoken" onClick={() => handleSpeak('你好')}>
-                      đọc thành <strong>ní hǎo</strong> <Volume2 size={14} />
+                    <span className="ex-spoken">
+                      đọc thành <strong>ní hǎo</strong>
+                      <button
+                        type="button"
+                        className="rule-audio-btn"
+                        onClick={() => handleSpeak('你好')}
+                        title="Nghe phát âm"
+                        aria-label="Nghe phát âm"
+                      >
+                        <Volume2 size={13} />
+                      </button>
                     </span>
                   </div>
                   <div className="example-item">
                     <span className="ex-pinyin">wǒ yě (我也)</span>
                     <span className="arrow-sym">→</span>
-                    <span className="ex-spoken" onClick={() => handleSpeak('我也')}>
-                      đọc thành <strong>wó yě</strong> <Volume2 size={14} />
+                    <span className="ex-spoken">
+                      đọc thành <strong>wó yě</strong>
+                      <button
+                        type="button"
+                        className="rule-audio-btn"
+                        onClick={() => handleSpeak('我也')}
+                        title="Nghe phát âm"
+                        aria-label="Nghe phát âm"
+                      >
+                        <Volume2 size={13} />
+                      </button>
                     </span>
                   </div>
                 </div>
@@ -512,14 +552,32 @@ export function PinyinChartModal({ onClose, onInspectPinyin }: PinyinChartModalP
                   </li>
                   <li>
                     Đứng trước âm mang <strong>Thanh 4</strong>: Đổi thành <strong>Thanh 2 (yí)</strong>.
-                    <span className="inline-ex" onClick={() => handleSpeak('一定')}>
-                      Ví dụ: yí dìng (一定) <Volume2 size={13} />
+                    <span className="inline-ex">
+                      Ví dụ: yí dìng (一定)
+                      <button
+                        type="button"
+                        className="rule-audio-btn"
+                        onClick={() => handleSpeak('一定')}
+                        title="Nghe phát âm"
+                        aria-label="Nghe phát âm"
+                      >
+                        <Volume2 size={13} />
+                      </button>
                     </span>
                   </li>
                   <li>
                     Đứng trước âm mang <strong>Thanh 1, 2, 3</strong>: Đổi thành <strong>Thanh 4 (yì)</strong>.
-                    <span className="inline-ex" onClick={() => handleSpeak('一天')}>
-                      Ví dụ: yì tiān (一天), yì qǐ (一起) <Volume2 size={13} />
+                    <span className="inline-ex">
+                      Ví dụ: yì tiān (一天), yì qǐ (一起)
+                      <button
+                        type="button"
+                        className="rule-audio-btn"
+                        onClick={() => handleSpeak('一天')}
+                        title="Nghe phát âm"
+                        aria-label="Nghe phát âm"
+                      >
+                        <Volume2 size={13} />
+                      </button>
                     </span>
                   </li>
                 </ul>
@@ -534,8 +592,17 @@ export function PinyinChartModal({ onClose, onInspectPinyin }: PinyinChartModalP
                   </li>
                   <li>
                     Đứng trước âm mang <strong>Thanh 4</strong>: Đổi thành <strong>Thanh 2 (bú)</strong>.
-                    <span className="inline-ex" onClick={() => handleSpeak('不是')}>
-                      Ví dụ: bú shì (不是), bú qù (不去) <Volume2 size={13} />
+                    <span className="inline-ex">
+                      Ví dụ: bú shì (不是), bú qù (不去)
+                      <button
+                        type="button"
+                        className="rule-audio-btn"
+                        onClick={() => handleSpeak('不是')}
+                        title="Nghe phát âm"
+                        aria-label="Nghe phát âm"
+                      >
+                        <Volume2 size={13} />
+                      </button>
                     </span>
                   </li>
                 </ul>

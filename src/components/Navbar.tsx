@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { Search, Star, Moon, Sun, Type, Keyboard, Grid } from 'lucide-react'
+import { Star, Moon, Sun, Type, Keyboard } from 'lucide-react'
 
 interface NavbarProps {
   fontStyle: 'calligraphy' | 'serif' | 'sans'
@@ -57,7 +57,6 @@ export function Navbar({
             onClick={onOpenPinyinChart}
             title="Mở Bảng Pinyin Toàn Diện & Quy tắc biến điệu (P)"
           >
-            <Grid size={17} />
             <span className="pinyin-chart-label">Bảng Pinyin</span>
           </button>
 
@@ -67,7 +66,6 @@ export function Navbar({
             onClick={onOpenSearch}
             title="Tìm kiếm chữ Hán, Pinyin, Hán Việt (Ctrl+K)"
           >
-            <Search size={18} />
             <span className="search-shortcut">Tìm kiếm</span>
           </button>
 
