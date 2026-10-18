@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react'
-import { X, Volume2, Wind, Sparkles, BookOpen, Mic } from 'lucide-react'
+import { X, Volume2, Wind, Sparkles, Mic } from 'lucide-react'
 import { parsePinyin } from '../utils/pinyinData'
 import { MouthShapeDiagram } from './MouthShapeDiagram'
 import { ToneContourDiagram } from './ToneContourDiagram'
@@ -92,13 +92,14 @@ export function PronunciationModal({
         </div>
 
         {/* 3 Main Tab Buttons: Thanh mẫu / Vận mẫu / Thanh điệu */}
+        {/* 3 Main Tab Buttons: Thanh mẫu / Vận mẫu / Thanh điệu */}
         <div className="pronounce-tabs-nav">
           <button
             type="button"
             className={`pronounce-tab-btn ${activeTab === 'initial' ? 'active' : ''}`}
             onClick={() => setActiveTab('initial')}
           >
-            <span className="tab-pill-icon">👄</span>
+            <span className="tab-pill-icon">📝</span>
             <div className="tab-btn-text">
               <span className="tab-main-label">Thanh Mẫu (Phụ âm đầu)</span>
               <span className="tab-sub-slug">
@@ -112,7 +113,7 @@ export function PronunciationModal({
             className={`pronounce-tab-btn ${activeTab === 'final' ? 'active' : ''}`}
             onClick={() => setActiveTab('final')}
           >
-            <span className="tab-pill-icon">🗣️</span>
+            <span className="tab-pill-icon">🎯</span>
             <div className="tab-btn-text">
               <span className="tab-main-label">Vận Mẫu (Nguyên âm & Vần)</span>
               <span className="tab-sub-slug">Vần [ {final} ]</span>
@@ -169,22 +170,8 @@ export function PronunciationModal({
                     </div>
                   </div>
 
-                  {/* SVG Sagittal and Frontal Mouth Diagram */}
+                  {/* Comprehensive Text Articulation Guide */}
                   <MouthShapeDiagram initialInfo={initialInfo} />
-
-                  {/* Step by step Articulation Guide */}
-                  <div className="articulation-guide-box">
-                    <h4 className="guide-box-title">
-                      <BookOpen size={16} />
-                      Hướng dẫn khẩu hình chi tiết cho người Việt
-                    </h4>
-                    <p className="guide-box-text">{initialInfo.guideVi}</p>
-
-                    <div className="guide-compare-note">
-                      <strong>Âm tương đương trong tiếng Việt:</strong>{' '}
-                      {initialInfo.vietnameseEquivalent}
-                    </div>
-                  </div>
                 </>
               ) : (
                 <div className="zero-initial-notice">
@@ -192,7 +179,7 @@ export function PronunciationModal({
                   <h3>Âm tiết này không có phụ âm đầu (Khởi âm zero)</h3>
                   <p>
                     Âm tiết bắt đầu trực tiếp bằng nguyên âm <strong>{final}</strong>. Hãy chuyển
-                    sang tab <strong>Vận Mẫu</strong> để xem chi tiết cách mở khẩu hình!
+                    sang tab <strong>Vận Mẫu</strong> để xem chi tiết hướng dẫn phát âm!
                   </p>
                   <button
                     type="button"
@@ -240,21 +227,8 @@ export function PronunciationModal({
                     </div>
                   </div>
 
-                  {/* Mouth Shape Diagram tailored for Final */}
+                  {/* Comprehensive Text Articulation Guide */}
                   <MouthShapeDiagram finalInfo={finalInfo} />
-
-                  {/* Step by step Articulation Guide */}
-                  <div className="articulation-guide-box">
-                    <h4 className="guide-box-title">
-                      <BookOpen size={16} />
-                      Hướng dẫn khẩu hình & luồng hơi
-                    </h4>
-                    <p className="guide-box-text">{finalInfo.guideVi}</p>
-
-                    <div className="guide-compare-note">
-                      <strong>Mẹo liên hệ tiếng Việt:</strong> {finalInfo.vietnameseEquivalent}
-                    </div>
-                  </div>
                 </>
               ) : (
                 <div className="zero-initial-notice">

@@ -224,7 +224,7 @@ export function PinyinChartModal({ onClose, onInspectPinyin }: PinyinChartModalP
                     <div className="inspector-meta-info">
                       <span className="inspector-title">Âm tiết đang chọn</span>
                       <span className="inspector-desc">
-                        Bấm vào từng thanh điệu để nghe hoặc xem phân tích khẩu hình chi tiết:
+                        Bấm vào từng thanh điệu để nghe hoặc xem hướng dẫn phát âm chi tiết:
                       </span>
                     </div>
                   </div>
@@ -248,7 +248,7 @@ export function PinyinChartModal({ onClose, onInspectPinyin }: PinyinChartModalP
                       className="inspector-action-btn"
                       onClick={() => onInspectPinyin(activeSyllableVariants[2]?.pinyin || selectedSyllable)}
                     >
-                      Xem khẩu hình
+                      Xem hướng dẫn
                     </button>
                   </div>
                 </div>
@@ -337,13 +337,14 @@ export function PinyinChartModal({ onClose, onInspectPinyin }: PinyinChartModalP
                                 >
                                   <Volume2 size={16} />
                                 </button>
-                                <button
-                                  type="button"
-                                  className="clean-detail-btn"
-                                  onClick={() => onInspectPinyin(`${data.initial}a`)}
-                                >
-                                  Khẩu hình
-                                </button>
+                                  <button
+                                    type="button"
+                                    className="clean-detail-btn"
+                                    onClick={() => onInspectPinyin(`${data.initial}a`)}
+                                    title="Xem hướng dẫn phát âm chi tiết"
+                                  >
+                                    Hướng dẫn
+                                  </button>
                               </div>
                             </div>
 
@@ -405,8 +406,9 @@ export function PinyinChartModal({ onClose, onInspectPinyin }: PinyinChartModalP
                             type="button"
                             className="final-action-inspect"
                             onClick={() => onInspectPinyin(data.final)}
+                            title="Xem hướng dẫn phát âm vần này"
                           >
-                            Khẩu hình
+                            Hướng dẫn
                           </button>
                         </div>
                       )
@@ -449,8 +451,9 @@ export function PinyinChartModal({ onClose, onInspectPinyin }: PinyinChartModalP
                             type="button"
                             className="final-action-inspect"
                             onClick={() => onInspectPinyin(data.final)}
+                            title="Xem hướng dẫn phát âm vần này"
                           >
-                            Khẩu hình
+                            Hướng dẫn
                           </button>
                         </div>
                       )
@@ -494,8 +497,9 @@ export function PinyinChartModal({ onClose, onInspectPinyin }: PinyinChartModalP
                             type="button"
                             className="final-action-inspect"
                             onClick={() => onInspectPinyin(data.final)}
+                            title="Xem hướng dẫn phát âm vần này"
                           >
-                            Khẩu hình
+                            Hướng dẫn
                           </button>
                         </div>
                       )
@@ -667,7 +671,7 @@ export function PinyinChartModal({ onClose, onInspectPinyin }: PinyinChartModalP
         {/* Modal Bottom Bar */}
         <div className="pinyin-chart-footer">
           <span className="chart-footer-desc">
-            Bấm vào bất kỳ âm tiết hoặc nút "Khẩu hình" nào để xem ảnh động mô phỏng cơ quan phát âm.
+            Bấm vào loa để nghe phát âm chuẩn hoặc bấm nút "Hướng dẫn" để xem chi tiết phương pháp cấu âm.
           </span>
           <button type="button" className="pill-btn primary" onClick={onClose}>
             Đóng bảng
