@@ -306,25 +306,19 @@ export function PinyinChartModal({ onClose, onInspectPinyin }: PinyinChartModalP
                       {grp.initials.map((initKey) => {
                         const data = INITIALS_DATA[initKey]
                         if (!data) return null
-                        const cleanName = data.name.replace(/^Âm\s+/i, '').replace(/\s*-\s*(bật hơi|cuộn lưỡi)/gi, '')
+                        const match = data.name.match(/\(([^)]+)\)/)
+                        const reading = match
+                          ? match[1]
+                              .replace(/\s*-\s*bật hơi/i, '')
+                              .replace(/\s*-\s*cuộn lưỡi/i, '')
+                              .trim()
+                          : ''
                         return (
                           <div key={initKey} className="phonetic-clean-card">
                             <div className="clean-card-header">
                               <div className="clean-card-header-left">
                                 <span className="clean-initial-symbol">{data.initial}</span>
-                                <div className="clean-name-group">
-                                  <span className="clean-name-text" title={`Âm ${cleanName}`}>
-                                    Âm {cleanName}
-                                  </span>
-                                  <div className="clean-badges-row">
-                                    {data.isAspirated && (
-                                      <span className="clean-badge aspirate">Bật hơi</span>
-                                    )}
-                                    {data.group === 'retroflex' && (
-                                      <span className="clean-badge retroflex">Cuộn lưỡi</span>
-                                    )}
-                                  </div>
-                                </div>
+                                {reading && <span className="clean-reading-text">({reading})</span>}
                               </div>
 
                               <div className="clean-card-actions">
@@ -337,14 +331,14 @@ export function PinyinChartModal({ onClose, onInspectPinyin }: PinyinChartModalP
                                 >
                                   <Volume2 size={16} />
                                 </button>
-                                  <button
-                                    type="button"
-                                    className="clean-detail-btn"
-                                    onClick={() => onInspectPinyin(`${data.initial}a`)}
-                                    title="Xem hướng dẫn phát âm chi tiết"
-                                  >
-                                    Hướng dẫn
-                                  </button>
+                                <button
+                                  type="button"
+                                  className="clean-detail-btn"
+                                  onClick={() => onInspectPinyin(`${data.initial}a`)}
+                                  title="Xem hướng dẫn phát âm chi tiết"
+                                >
+                                  Hướng dẫn
+                                </button>
                               </div>
                             </div>
 
@@ -666,16 +660,6 @@ export function PinyinChartModal({ onClose, onInspectPinyin }: PinyinChartModalP
               </div>
             </div>
           )}
-        </div>
-
-        {/* Modal Bottom Bar */}
-        <div className="pinyin-chart-footer">
-          <span className="chart-footer-desc">
-            Bấm vào loa để nghe phát âm chuẩn hoặc bấm nút "Hướng dẫn" để xem chi tiết phương pháp cấu âm.
-          </span>
-          <button type="button" className="pill-btn primary" onClick={onClose}>
-            Đóng bảng
-          </button>
         </div>
       </div>
     </div>
