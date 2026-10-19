@@ -20,7 +20,7 @@ export interface FinalData {
   name: string
   group: 'simple' | 'compound' | 'front_nasal' | 'back_nasal' | 'er'
   groupNameVi: string
-  mouthShape: 'round' | 'spread' | 'open' | 'semi_round' | 'curled' | 'closed'
+  mouthShape: 'round' | 'spread' | 'open' | 'semi_round' | 'unrounded' | 'curled' | 'closed'
   guideVi: string
   vietnameseEquivalent: string
   commonMistakes: string
@@ -166,7 +166,7 @@ export const INITIALS_DATA: Record<string, InitialData> = {
   },
   k: {
     initial: 'k',
-    name: 'Âm k (khơ - bật hơi)',
+    name: 'Âm k (cơ - bật hơi)',
     group: 'velar',
     groupNameVi: 'Âm gốc lưỡi (cuống lưỡi)',
     soundType: 'Tắc vô thanh, BẬT HƠI MẠNH',
@@ -174,8 +174,8 @@ export const INITIALS_DATA: Record<string, InitialData> = {
     tonguePosition: 'Gốc lưỡi nâng áp ngạc mềm',
     mouthShape: 'open_round',
     guideVi: 'Vị trí giống âm "g", nhưng nén luồng khí rất mạnh từ cổ họng rồi bật bung cuống lưỡi phụt luồng khí ra.',
-    vietnameseEquivalent: 'Gần giống âm "kh" tiếng Việt (khó, khăn) nhưng có độ bật hơi mạnh hơn từ cuống họng.',
-    commonMistakes: 'Chỉ đọc xát như "kh" tiếng Việt mà không có lực tắc-bật từ cuống họng.',
+    vietnameseEquivalent: 'Là âm "c / k" tiếng Việt (cá, kém) kèm một luồng hơi bật mạnh ra ngoài [kʰ]. KHÔNG phải "kh" tiếng Việt (kh là âm xát, không có độ tắc).',
+    commonMistakes: 'Đọc thành "kh" tiếng Việt (chỉ xát, không tắc) hoặc đọc như "c" mà quên bật hơi.',
     articulationType: 'velar',
   },
   h: {
@@ -188,8 +188,8 @@ export const INITIALS_DATA: Record<string, InitialData> = {
     tonguePosition: 'Gốc lưỡi nâng gần ngạc mềm tạo khe hẹp',
     mouthShape: 'open_round',
     guideVi: 'Gốc lưỡi nâng gần sát ngạc mềm nhưng không chạm hẳn, luồng khí cọ xát qua khe hẹp cổ họng đi ra ngoài.',
-    vietnameseEquivalent: 'Nằm giữa âm "h" và "kh" nhẹ trong tiếng Việt (ví dụ: "hǎo" đọc tựa "hảo" pha chút ma sát cuống họng).',
-    commonMistakes: 'Đọc âm "h" quá nhẹ như tiếng Việt (thiếu ma sát cuống lưỡi) hoặc đọc quá nặng thành "kh".',
+    vietnameseEquivalent: 'Gần nhất với âm "kh" tiếng Việt (khá, khó) [x], chỉ hơi lùi sâu và nhám hơn một chút. Ví dụ: "hǎo" đọc gần như "khảo", không phải "hảo".',
+    commonMistakes: 'Đọc thành "h" tiếng Việt (chỉ là hơi thở từ thanh hầu, thiếu ma sát ở cuống lưỡi).',
     articulationType: 'velar',
   },
   j: {
@@ -306,7 +306,7 @@ export const INITIALS_DATA: Record<string, InitialData> = {
   },
   c: {
     initial: 'c',
-    name: 'Âm c (thơ - đầu lưỡi răng bật hơi)',
+    name: 'Âm c (ts - đầu lưỡi răng bật hơi)',
     group: 'dental',
     groupNameVi: 'Âm đầu lưỡi trước (chân răng)',
     soundType: 'Tắc xát vô thanh, BẬT HƠI MẠNH',
@@ -314,8 +314,8 @@ export const INITIALS_DATA: Record<string, InitialData> = {
     tonguePosition: 'Đầu lưỡi duỗi thẳng chạm chân răng trên',
     mouthShape: 'spread',
     guideVi: 'Vị trí hệt như "z", nhưng nén hơi cực mạnh sau răng cửa, rồi bung luồng khí phụt qua kẽ hai hàm răng tạo tiếng gió rít.',
-    vietnameseEquivalent: 'Âm "ts" bật hơi thật mạnh qua kẽ răng cửa (như tiếng xì lốp xe dứt khoát).',
-    commonMistakes: 'Đọc thành "x" nhẹ hoặc không bật đủ luồng hơi.',
+    vietnameseEquivalent: 'Âm "x / ts" (như "ts" trong "cats") kèm bật hơi mạnh [tsʰ]. KHÔNG đọc là "th" tiếng Việt.',
+    commonMistakes: 'Đọc thành "th" hoặc "x" nhẹ, hoặc không bật đủ luồng hơi.',
     articulationType: 'dental',
   },
   s: {
@@ -388,7 +388,7 @@ export const FINALS_DATA: Record<string, FinalData> = {
     name: 'Vận mẫu e',
     group: 'simple',
     groupNameVi: 'Vận mẫu đơn',
-    mouthShape: 'semi_round',
+    mouthShape: 'unrounded',
     guideVi: 'Miệng hé nửa mở, khóe môi hơi kéo sang hai bên, cuống lưỡi nâng cao.',
     vietnameseEquivalent: 'Nằm giữa âm "ưa" và "ơ" trong tiếng Việt (như "hưa" - hơ).',
     commonMistakes: 'Đọc thành "e" hoặc "ê" tiếng Việt.',
@@ -401,7 +401,7 @@ export const FINALS_DATA: Record<string, FinalData> = {
     mouthShape: 'spread',
     guideVi: 'Khóe môi dẹt căng kéo sang hai bên như đang cười mỉm, mặt lưỡi nâng sát ngạc cứng.',
     vietnameseEquivalent: 'Giống âm "i" trong tiếng Việt (đi, tí).',
-    commonMistakes: 'Sau nhóm zh, ch, sh, r, z, c, s thì chữ "i" đọc thành âm "ư" (âm ngạc), người mới học hay quên.',
+    commonMistakes: 'Sau nhóm zh, ch, sh, r, z, c, s thì chữ "i" đọc thành nguyên âm đầu lưỡi (舌尖元音 [ɿ]/[ʅ]), nghe gần như "ư", người mới học hay quên.',
   },
   u: {
     final: 'u',
@@ -472,6 +472,16 @@ export const FINALS_DATA: Record<string, FinalData> = {
     guideVi: 'Bắt đầu từ khóe môi dẹt "i", mở bung rộng miệng sang âm "a".',
     vietnameseEquivalent: 'Giống âm "ia / ya" tiếng Việt (tia, lia).',
     commonMistakes: 'Đọc âm "i" quá nặng.',
+  },
+  io: {
+    final: 'io',
+    name: 'Vận mẫu io',
+    group: 'compound',
+    groupNameVi: 'Vận mẫu kép',
+    mouthShape: 'round',
+    guideVi: 'Bắt đầu từ âm "i" môi dẹt, lướt nhanh sang âm "o" tròn môi. Chỉ gặp trong thán từ "yō / yo" (哟).',
+    vietnameseEquivalent: 'Gần âm "iô / dô" đọc liền (như "yo" trong tiếng hô).',
+    commonMistakes: 'Hiếm gặp; không dùng kết hợp với phụ âm đầu nào khác.',
   },
   ie: {
     final: 'ie',
@@ -568,7 +578,7 @@ export const FINALS_DATA: Record<string, FinalData> = {
     name: 'Vận mẫu en',
     group: 'front_nasal',
     groupNameVi: 'Vận mẫu mũi trước',
-    mouthShape: 'semi_round',
+    mouthShape: 'unrounded',
     guideVi: 'Bắt đầu từ "e", kết thúc bằng đầu lưỡi chạm nướu răng trên tạo âm mũi.',
     vietnameseEquivalent: 'Giống âm "ân" tiếng Việt (thần, cân).',
     commonMistakes: 'Đọc thành "en" (khen) tiếng Việt.',
@@ -600,7 +610,7 @@ export const FINALS_DATA: Record<string, FinalData> = {
     groupNameVi: 'Vận mẫu mũi trước',
     mouthShape: 'round',
     guideVi: 'Bắt đầu bằng "ü" tròn môi, kết thúc bằng đầu lưỡi chạm nướu răng trên.',
-    vietnameseEquivalent: 'Tương tự "uyên" tiếng Việt (chuyên, duyên).',
+    vietnameseEquivalent: 'Là [yn]: giữ nguyên âm "ü" tròn môi rồi thêm "n", KHÔNG có "ê" ở giữa (không đọc là "uyên").',
     commonMistakes: 'Bỏ mất trạng thái tròn môi.',
   },
   ang: {
@@ -618,7 +628,7 @@ export const FINALS_DATA: Record<string, FinalData> = {
     name: 'Vận mẫu eng',
     group: 'back_nasal',
     groupNameVi: 'Vận mẫu mũi sau',
-    mouthShape: 'semi_round',
+    mouthShape: 'unrounded',
     guideVi: 'Bắt đầu bằng "e", kết thúc bằng gốc lưỡi chạm ngạc mềm tạo âm vang ng mũi sau.',
     vietnameseEquivalent: 'Giống âm "âng" tiếng Việt (vâng, tâng).',
     commonMistakes: 'Đọc nhầm thành "eng" (keng) tiếng Việt.',
@@ -660,7 +670,7 @@ export const FINALS_DATA: Record<string, FinalData> = {
     groupNameVi: 'Vận mẫu mũi sau',
     mouthShape: 'open',
     guideVi: 'Bắt đầu từ "i", lướt sang "a" rồi kết thúc âm mũi sau "ng".',
-    vietnameseEquivalent: 'Giống âm "iang" tiếng Việt (giang, siêng).',
+    vietnameseEquivalent: 'Đọc là "i + ang" lướt liền (gần như "i-ang" nói nhanh), KHÔNG đọc thành "giang" hay "iêng".',
     commonMistakes: 'Bỏ mất âm đệm "i".',
   },
   iong: {
@@ -682,6 +692,16 @@ export const FINALS_DATA: Record<string, FinalData> = {
     guideVi: 'Bắt đầu bằng "u", mở "a" rồi kết thúc ở đầu lưỡi "n". (Lưu ý: sau j, q, x thì uan chính là üan đọc là "oen/uyên").',
     vietnameseEquivalent: 'Giống âm "oan" tiếng Việt (hoàn, toàn).',
     commonMistakes: 'Quên biến âm sau j, q, x.',
+  },
+  üan: {
+    final: 'üan',
+    name: 'Vận mẫu üan (viết juan, quan, xuan, yuan)',
+    group: 'front_nasal',
+    groupNameVi: 'Vận mẫu mũi trước',
+    mouthShape: 'round',
+    guideVi: 'Bắt đầu bằng "ü" tròn môi, lướt sang "a/e" rồi kết thúc ở đầu lưỡi "n". Chỉ xuất hiện sau j, q, x, y và được viết là "uan".',
+    vietnameseEquivalent: 'Gần giống "uyên" tiếng Việt (xuyên, khuyên), mở miệng rộng hơn một chút.',
+    commonMistakes: 'Đọc thành "oan" như uan sau các phụ âm khác.',
   },
   uang: {
     final: 'uang',
@@ -710,7 +730,7 @@ export const FINALS_DATA: Record<string, FinalData> = {
     groupNameVi: 'Vận mẫu đặc biệt',
     mouthShape: 'curled',
     guideVi: 'Phát âm "e/ơ" đồng thời uốn cong đầu lưỡi lên ngạc cứng tạo âm cuộn lưỡi đặc trưng.',
-    vietnameseEquivalent: 'Tương tự âm "ơ" nhưng cuộn tròn đầu lưỡi sâu vào trong họng (như "ear/er" tiếng Anh).',
+    vietnameseEquivalent: 'Tương tự âm "ơ" đồng thời uốn đầu lưỡi cong về phía sau trong khoang miệng (như "er" giọng Mỹ), lưỡi không chạm vòm.',
     commonMistakes: 'Quên uốn lưỡi khiến âm bị cụt.',
   },
 }
@@ -743,7 +763,7 @@ export const TONES_DATA: Record<number, ToneData> = {
     pitchNumber: '214',
     symbol: 'ˇ (mǎ)',
     descriptionVi: 'Bắt đầu ở mức 2, hạ sâu xuống mức đáy cổ họng 1, rồi vút nhẹ lên mức 4. Khi đi trước một thanh khác, thường đọc nửa thanh 3 (chỉ hạ từ 2 xuống 1).',
-    vietnameseToneCompare: 'Gần giống dấu Hỏi kết hợp dấu Ngã nhẹ trong tiếng Việt, có độ võng sâu ở cuống họng.',
+    vietnameseToneCompare: 'Thanh 3 đầy đủ (214) gần giống dấu Hỏi tiếng Việt (hạ xuống rồi lên). Nửa thanh 3 (21) chỉ trầm thấp, giống dấu Nặng nhưng không bị tắc họng đột ngột ở cuối.',
     sampleToneText: 'mǎ, hǎo, nǐ, wǒ',
   },
   4: {
@@ -793,7 +813,8 @@ export interface ParsedPinyin {
   raw: string
   normalized: string
   initial: string
-  final: string
+  final: string // written spelling, e.g. "u" in "yu"
+  phoneticFinal: string // underlying final, e.g. "ü" in "yu", "iou" in "you"
   tone: 1 | 2 | 3 | 4 | 0
   toneVariants: {
     tone: 1 | 2 | 3 | 4
@@ -805,7 +826,9 @@ export interface ParsedPinyin {
 }
 
 // Generate the 4 tone variations for a syllable
-export function generateToneVariants(initial: string, final: string): { tone: 1 | 2 | 3 | 4; pinyin: string }[] {
+export function generateToneVariants(initial: string, rawFinal: string): { tone: 1 | 2 | 3 | 4; pinyin: string }[] {
+  // Input "v" (e.g. lv, nv) stands for ü
+  const final = rawFinal.replace(/v/g, 'ü')
   // Determine which vowel gets the tone mark in pinyin rules:
   // Rule: a, o, e get it first. If 'iu' or 'ui', the second vowel gets it. Otherwise whichever comes first.
   let targetVowel = ''
@@ -833,6 +856,58 @@ export function generateToneVariants(initial: string, final: string): { tone: 1 
   })
 }
 
+// Spelling abbreviations -> full finals that exist as keys in FINALS_DATA
+const FINAL_LOOKUP_ALIASES: Record<string, string> = {
+  iou: 'iu',
+  uei: 'ui',
+  uen: 'un',
+}
+
+// Convert the written final (after the initial) into the underlying phonetic final
+// e.g. ju -> ü, xue -> üe, you -> iou, wei -> uei, yan -> ian, wu -> u
+function toPhoneticFinal(initial: string, spelled: string): string {
+  if (initial === 'j' || initial === 'q' || initial === 'x') {
+    return spelled.startsWith('u') ? `ü${spelled.slice(1)}` : spelled
+  }
+  if (initial === 'y') {
+    if (spelled.startsWith('u')) return `ü${spelled.slice(1)}` // yu, yue, yuan, yun
+    if (spelled.startsWith('i')) return spelled // yi, yin, ying
+    if (spelled === 'ou') return 'iou'
+    return `i${spelled}` // ya, ye, yao, yan, yang, yong
+  }
+  if (initial === 'w') {
+    if (spelled.startsWith('u')) return spelled // wu
+    if (spelled === 'ei') return 'uei'
+    if (spelled === 'en') return 'uen'
+    return `u${spelled}` // wa, wo, wai, wan, wang, weng
+  }
+  return spelled
+}
+
+// Look up articulation guide data for a phonetic final (undefined if not covered)
+export function lookupFinalInfo(phoneticFinal: string): FinalData | undefined {
+  return FINALS_DATA[phoneticFinal] || FINALS_DATA[FINAL_LOOKUP_ALIASES[phoneticFinal] || '']
+}
+
+// Real syllables used to play a bare final (a final alone like "ing" or "ün" is not a valid audio syllable)
+const FINAL_SAMPLE_SYLLABLES: Record<string, string> = {
+  i: 'yi', u: 'wu', ü: 'yu',
+  ia: 'ya', ie: 'ye', iao: 'yao', iu: 'you', iou: 'you',
+  ian: 'yan', in: 'yin', iang: 'yang', ing: 'ying', iong: 'yong',
+  ua: 'wa', uo: 'wo', uai: 'wai', ui: 'wei', uei: 'wei',
+  uan: 'wan', un: 'wen', uen: 'wen', uang: 'wang', ueng: 'weng',
+  üe: 'yue', üan: 'yuan', ün: 'yun',
+  ong: 'hong',
+}
+
+// Get a toned, playable syllable demonstrating a final (e.g. "ing" -> "yīng")
+export function getFinalSampleSyllable(final: string, tone: 1 | 2 | 3 | 4 = 1): string {
+  const key = final.replace(/v/g, 'ü')
+  const syllable = FINAL_SAMPLE_SYLLABLES[key] || key
+  const parsed = parsePinyin(syllable)
+  return parsed.toneVariants[tone - 1]?.pinyin || syllable
+}
+
 // Parse a pinyin string (e.g., "hǎo", "zhōng", "nǚ", "rén", "ài")
 export function parsePinyin(pinyin: string): ParsedPinyin {
   const clean = pinyin.trim().toLowerCase()
@@ -849,6 +924,9 @@ export function parsePinyin(pinyin: string): ParsedPinyin {
       normalized += char
     }
   }
+
+  // Input "v" (lv, nv) stands for ü
+  normalized = normalized.replace(/v/g, 'ü')
 
   // Common initials in descending order of length to match "zh", "ch", "sh" first
   const initialCandidates = [
@@ -872,14 +950,11 @@ export function parsePinyin(pinyin: string): ParsedPinyin {
     }
   }
 
-  // Handle special case: "yu" -> initial y, final ü
-  if (normalized.startsWith('yu')) {
-    initial = 'y'
-    final = normalized.slice(1).replace('u', 'ü')
-  }
+  // "final" keeps the written spelling (e.g. "u" in "yu"); phoneticFinal is the real sound (e.g. "ü")
+  const phoneticFinal = toPhoneticFinal(initial, final)
 
   const initialInfo = initial ? INITIALS_DATA[initial] : undefined
-  const finalInfo = FINALS_DATA[final] || FINALS_DATA[final.replace('v', 'ü')]
+  const finalInfo = lookupFinalInfo(phoneticFinal)
 
   const toneInfo = TONES_DATA[tone] || TONES_DATA[0]
   const toneVariants = generateToneVariants(initial, final)
@@ -889,6 +964,7 @@ export function parsePinyin(pinyin: string): ParsedPinyin {
     normalized,
     initial,
     final,
+    phoneticFinal,
     tone,
     toneVariants,
     initialInfo,
@@ -943,7 +1019,7 @@ export const VALID_SYLLABLES: Set<string> = new Set([
   'za', 'ze', 'zi', 'zai', 'zei', 'zao', 'zou', 'zan', 'zen', 'zang', 'zeng', 'zu', 'zuo', 'zui', 'zuan', 'zun', 'zong',
   'ca', 'ce', 'ci', 'cai', 'cao', 'cou', 'can', 'cen', 'cang', 'ceng', 'cu', 'cuo', 'cui', 'cuan', 'cun', 'cong',
   'sa', 'se', 'si', 'sai', 'sao', 'sou', 'san', 'sen', 'sang', 'seng', 'su', 'suo', 'sui', 'suan', 'sun', 'song',
-  'ya', 'yo', 'ye', 'yi', 'yai', 'yao', 'you', 'yan', 'yin', 'yang', 'ying', 'yong', 'yu', 'yue', 'yuan', 'yun',
+  'ya', 'yo', 'ye', 'yi', 'yao', 'you', 'yan', 'yin', 'yang', 'ying', 'yong', 'yu', 'yue', 'yuan', 'yun',
   'wa', 'wo', 'wu', 'wai', 'wei', 'wan', 'wen', 'wang', 'weng',
   'a', 'o', 'e', 'ai', 'ei', 'ao', 'ou', 'an', 'en', 'ang', 'eng', 'er',
 ])

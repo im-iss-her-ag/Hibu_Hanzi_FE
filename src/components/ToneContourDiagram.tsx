@@ -3,6 +3,13 @@ import type { ToneData } from '../utils/pinyinData'
 import { TONES_DATA } from '../utils/pinyinData'
 import { speakChinese } from '../utils/speech'
 
+// Neutral tone only occurs inside words, so it is demonstrated with whole words (TTS)
+const NEUTRAL_TONE_SAMPLES = [
+  { hanzi: '妈妈', pinyin: 'māma' },
+  { hanzi: '朋友', pinyin: 'péngyou' },
+  { hanzi: '谢谢', pinyin: 'xièxie' },
+]
+
 interface ToneContourDiagramProps {
   activeTone: 1 | 2 | 3 | 4 | 0
   toneVariants: {
@@ -223,6 +230,26 @@ export function ToneContourDiagram({
               <span className="meta-label">So sánh với tiếng Việt:</span>
               <p className="meta-value">{currentToneInfo.vietnameseToneCompare}</p>
             </div>
+
+            {activeTone === 0 && (
+              <div className="tone-meta-item">
+                <span className="meta-label">Nghe trong từ (thanh nhẹ không đọc tách riêng):</span>
+                <div className="neutral-sample-row">
+                  {NEUTRAL_TONE_SAMPLES.map((s) => (
+                    <button
+                      key={s.hanzi}
+                      type="button"
+                      className="neutral-sample-btn"
+                      onClick={() => speakChinese(s.hanzi)}
+                    >
+                      <Play size={12} />
+                      <span className="neutral-sample-hanzi">{s.hanzi}</span>
+                      <span className="neutral-sample-pinyin">{s.pinyin}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

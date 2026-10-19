@@ -8,9 +8,10 @@ import {
   INITIALS_DATA,
   FINALS_DATA,
   VALID_SYLLABLES,
-  generateToneVariants,
+  parsePinyin,
+  getFinalSampleSyllable,
 } from '../utils/pinyinData'
-import { speakChinese } from '../utils/speech'
+import { speakChinese, getInitialSamplePinyin } from '../utils/speech'
 
 interface PinyinChartModalProps {
   onClose: () => void
@@ -25,7 +26,7 @@ const INITIAL_GROUPS = [
   },
   {
     title: 'Âm đầu lưỡi giữa',
-    sub: 'Đầu lưỡi chạm nướu trên rồi bật ra (d, t, n, l)',
+    sub: 'Đầu lưỡi chạm nướu trên: d, t bật ra; n thoát hơi qua mũi; l thoát hơi hai bên lưỡi',
     initials: ['d', 't', 'n', 'l'],
   },
   {
@@ -54,6 +55,21 @@ const INITIAL_GROUPS = [
     initials: ['y', 'w'],
   },
 ]
+
+const SIMPLE_FINALS = ['a', 'o', 'e', 'i', 'u', 'ü']
+const COMPOUND_FINALS = [
+  'ai', 'ei', 'ao', 'ou',
+  'ia', 'ie', 'ua', 'uo', 'üe',
+  'iao', 'iu', 'uai', 'ui',
+]
+const NASAL_FINALS = [
+  'an', 'en', 'in', 'un', 'ün',
+  'ang', 'eng', 'ing', 'ong',
+  'ian', 'iang', 'iong',
+  'uan', 'uang', 'ueng',
+]
+const NASAL_AND_ER_FINALS = [...NASAL_FINALS, 'er']
+const TOTAL_FINALS = SIMPLE_FINALS.length + COMPOUND_FINALS.length + NASAL_AND_ER_FINALS.length
 
 export function PinyinChartModal({ onClose, onInspectPinyin }: PinyinChartModalProps) {
   const [activeTab, setActiveTab] = useState<'matrix' | 'initials' | 'finals' | 'rules'>('matrix')
@@ -85,14 +101,12 @@ export function PinyinChartModal({ onClose, onInspectPinyin }: PinyinChartModalP
       if (q && !syl.includes(q)) return false
 
       if (selectedInitialGroup !== 'all') {
-        const initData = Object.values(INITIALS_DATA).find((item) => item.group === selectedInitialGroup)
-        if (initData) {
-          // Check if syllable starts with any initial in this group
-          const matches = Object.entries(INITIALS_DATA)
-            .filter(([, v]) => v.group === selectedInitialGroup)
-            .some(([k]) => syl.startsWith(k))
-          if (!matches) return false
-        }
+        // Match by the parsed initial exactly (so z/c/s does not include zh/ch/sh)
+        const group = INITIALS_DATA[parsePinyin(syl).initial]?.group
+        const matches =
+          group === selectedInitialGroup ||
+          (selectedInitialGroup === 'bilabial' && group === 'labiodental')
+        if (!matches) return false
       }
       return true
     })
@@ -100,7 +114,7 @@ export function PinyinChartModal({ onClose, onInspectPinyin }: PinyinChartModalP
 
   // Tone variants for the currently selected syllable
   const activeSyllableVariants = useMemo(() => {
-    return generateToneVariants(selectedSyllable, '')
+    return parsePinyin(selectedSyllable).toneVariants
   }, [selectedSyllable])
 
   return (
@@ -116,7 +130,7 @@ export function PinyinChartModal({ onClose, onInspectPinyin }: PinyinChartModalP
             <div>
               <h2 className="chart-title">Bảng Pinyin Toàn Diện (Hanyu Pinyin Master)</h2>
               <span className="chart-sub">
-                Tra cứu ma trận ghép âm, 21 Thanh mẫu, 36 Vận mẫu & Quy tắc biến điệu phát âm
+                Tra cứu ma trận ghép âm, 21 Thanh mẫu, {TOTAL_FINALS} Vận mẫu & Quy tắc biến điệu phát âm
               </span>
             </div>
           </div>
@@ -154,7 +168,7 @@ export function PinyinChartModal({ onClose, onInspectPinyin }: PinyinChartModalP
             className={`chart-tab-btn ${activeTab === 'finals' ? 'active' : ''}`}
             onClick={() => setActiveTab('finals')}
           >
-            36 Vận Mẫu
+            {TOTAL_FINALS} Vận Mẫu
           </button>
           <button
             type="button"
@@ -325,7 +339,7 @@ export function PinyinChartModal({ onClose, onInspectPinyin }: PinyinChartModalP
                                 <button
                                   type="button"
                                   className="clean-audio-btn"
-                                  onClick={() => handleSpeak(`${data.initial}a`)}
+                                  onClick={() => handleSpeak(data.initial)}
                                   title={`Nghe phụ âm ${data.initial}`}
                                   aria-label={`Nghe phụ âm ${data.initial}`}
                                 >
@@ -334,7 +348,7 @@ export function PinyinChartModal({ onClose, onInspectPinyin }: PinyinChartModalP
                                 <button
                                   type="button"
                                   className="clean-detail-btn"
-                                  onClick={() => onInspectPinyin(`${data.initial}a`)}
+                                  onClick={() => onInspectPinyin(getInitialSamplePinyin(data.initial))}
                                   title="Xem hướng dẫn phát âm chi tiết"
                                 >
                                   Hướng dẫn
@@ -357,13 +371,14 @@ export function PinyinChartModal({ onClose, onInspectPinyin }: PinyinChartModalP
             </div>
           )}
 
-          {/* TAB 3: 36 VẬN MẪU (FINALS TABLE) */}
+          {/* TAB 3: VẬN MẪU (FINALS TABLE) */}
           {activeTab === 'finals' && (
             <div className="finals-cards-list">
               <div className="chart-info-note">
                 <span>
-                  Gồm <strong>6 vận mẫu đơn</strong>, <strong>13 vận mẫu kép</strong>,{' '}
-                  <strong>16 vận mẫu mũi</strong> (mũi trước tận cùng bằng <code>-n</code>, mũi sau
+                  Gồm <strong>{SIMPLE_FINALS.length} vận mẫu đơn</strong>,{' '}
+                  <strong>{COMPOUND_FINALS.length} vận mẫu kép</strong>,{' '}
+                  <strong>{NASAL_FINALS.length} vận mẫu mũi</strong> (mũi trước tận cùng bằng <code>-n</code>, mũi sau
                   tận cùng bằng <code>-ng</code>) và âm uốn lưỡi <code>er</code>.
                 </span>
               </div>
@@ -372,10 +387,10 @@ export function PinyinChartModal({ onClose, onInspectPinyin }: PinyinChartModalP
                 {/* Section 1: Vận mẫu đơn */}
                 <div className="final-group-block">
                   <h3 className="final-group-title">
-                    <span>6 Vận Mẫu Đơn (Monophthongs)</span>
+                    <span>{SIMPLE_FINALS.length} Vận Mẫu Đơn (Monophthongs)</span>
                   </h3>
                   <div className="finals-mini-grid">
-                    {['a', 'o', 'e', 'i', 'u', 'ü'].map((fin) => {
+                    {SIMPLE_FINALS.map((fin) => {
                       const data = FINALS_DATA[fin]
                       if (!data) return null
                       return (
@@ -385,7 +400,7 @@ export function PinyinChartModal({ onClose, onInspectPinyin }: PinyinChartModalP
                             <button
                               type="button"
                               className="final-speak-btn"
-                              onClick={() => handleSpeak(data.final)}
+                              onClick={() => handleSpeak(getFinalSampleSyllable(data.final))}
                               title={`Nghe vần ${data.final}`}
                               aria-label={`Nghe vần ${data.final}`}
                             >
@@ -413,14 +428,10 @@ export function PinyinChartModal({ onClose, onInspectPinyin }: PinyinChartModalP
                 {/* Section 2: Vận mẫu kép */}
                 <div className="final-group-block">
                   <h3 className="final-group-title">
-                    <span>13 Vận Mẫu Kép (Compound Finals)</span>
+                    <span>{COMPOUND_FINALS.length} Vận Mẫu Kép (Compound Finals)</span>
                   </h3>
                   <div className="finals-mini-grid">
-                    {[
-                      'ai', 'ei', 'ao', 'ou',
-                      'ia', 'ie', 'ua', 'uo', 'üe',
-                      'iao', 'iu', 'uai', 'ui',
-                    ].map((fin) => {
+                    {COMPOUND_FINALS.map((fin) => {
                       const data = FINALS_DATA[fin]
                       if (!data) return null
                       return (
@@ -430,7 +441,7 @@ export function PinyinChartModal({ onClose, onInspectPinyin }: PinyinChartModalP
                             <button
                               type="button"
                               className="final-speak-btn"
-                              onClick={() => handleSpeak(data.final)}
+                              onClick={() => handleSpeak(getFinalSampleSyllable(data.final))}
                               title={`Nghe vần ${data.final}`}
                               aria-label={`Nghe vần ${data.final}`}
                             >
@@ -458,15 +469,10 @@ export function PinyinChartModal({ onClose, onInspectPinyin }: PinyinChartModalP
                 {/* Section 3: Vận mẫu mũi */}
                 <div className="final-group-block">
                   <h3 className="final-group-title">
-                    <span>16 Vận Mẫu Mũi & Âm Uốn Lưỡi (Nasal Finals)</span>
+                    <span>{NASAL_FINALS.length} Vận Mẫu Mũi & Âm Uốn Lưỡi (Nasal Finals)</span>
                   </h3>
                   <div className="finals-mini-grid">
-                    {[
-                      'an', 'en', 'in', 'un', 'ün',
-                      'ang', 'eng', 'ing', 'ong',
-                      'ian', 'iang', 'iong',
-                      'uan', 'uang', 'ueng', 'er',
-                    ].map((fin) => {
+                    {NASAL_AND_ER_FINALS.map((fin) => {
                       const data = FINALS_DATA[fin]
                       if (!data) return null
                       return (
@@ -476,7 +482,7 @@ export function PinyinChartModal({ onClose, onInspectPinyin }: PinyinChartModalP
                             <button
                               type="button"
                               className="final-speak-btn"
-                              onClick={() => handleSpeak(data.final)}
+                              onClick={() => handleSpeak(getFinalSampleSyllable(data.final))}
                               title={`Nghe vần ${data.final}`}
                               aria-label={`Nghe vần ${data.final}`}
                             >
@@ -643,18 +649,18 @@ export function PinyinChartModal({ onClose, onInspectPinyin }: PinyinChartModalP
                 <div className="rule-badge">Quy tắc 5</div>
                 <h3 className="rule-title">Cách đọc nguyên âm "i" sau 7 phụ âm răng và cuộn lưỡi</h3>
                 <p className="rule-explanation">
-                  Sau 7 phụ âm: <code>zh, ch, sh, r</code> và <code>z, c, s</code>, chữ cái <code>i</code> không đọc là "i" dẹt môi mà đọc thành âm <strong>"ư" ngạc</strong> (giữ nguyên vị trí lưỡi của phụ âm đó và phát âm thoát hơi).
+                  Sau 7 phụ âm: <code>zh, ch, sh, r</code> và <code>z, c, s</code>, chữ cái <code>i</code> không đọc là "i" dẹt môi mà đọc thành <strong>nguyên âm đầu lưỡi</strong> (舌尖元音 [ɿ] sau z, c, s và [ʅ] sau zh, ch, sh, r; nghe gần như "ư", giữ nguyên vị trí lưỡi của phụ âm đó và phát âm thoát hơi).
                 </p>
                 <div className="rule-example-box">
                   <div className="example-item">
                     <span className="ex-pinyin">zhī, chī, shī, rì</span>
                     <span className="arrow-sym">→</span>
-                    <span>đọc tựa như "trư", "chư", "sư", "rư"</span>
+                    <span>đọc tựa như "trư", "trư" bật hơi mạnh, "sư" (uốn lưỡi), "rư"</span>
                   </div>
                   <div className="example-item">
                     <span className="ex-pinyin">zī, cī, sī</span>
                     <span className="arrow-sym">→</span>
-                    <span>đọc tựa như "tư", "thư", "xư" (đầu lưỡi sát răng)</span>
+                    <span>đọc tựa như "chư" nhẹ (ts), "ts" + bật hơi mạnh, "xư" (đầu lưỡi sát răng)</span>
                   </div>
                 </div>
               </div>

@@ -19,18 +19,36 @@ export function MouthShapeDiagram({ initialInfo, finalInfo }: MouthShapeDiagramP
         return 'Mặt lưỡi nâng phẳng áp sát ngạc cứng, đầu lưỡi chúc xuống chân răng dưới.'
       }
       if (initialInfo.group === 'velar') {
+        if (initialInfo.initial === 'h') {
+          return 'Cuống lưỡi nâng lại gần ngạc mềm nhưng không chạm hẳn, để lại khe hẹp cho luồng hơi xát qua (không chặn hơi).'
+        }
         return 'Cuống lưỡi nâng cao chạm vào ngạc mềm (vòm họng mềm) để chặn hơi.'
       }
       if (initialInfo.group === 'dental') {
         return 'Đầu lưỡi duỗi thẳng áp sát mặt sau răng cửa trên, tạo khe xát hẹp.'
       }
       if (initialInfo.group === 'alveolar') {
+        if (initialInfo.initial === 'n') {
+          return 'Đầu lưỡi áp vào nướu răng trên chặn khoang miệng, luồng hơi thoát ra qua mũi.'
+        }
+        if (initialInfo.initial === 'l') {
+          return 'Đầu lưỡi chạm nướu răng trên, luồng hơi lách qua hai bên mép lưỡi.'
+        }
         return 'Đầu lưỡi chạm chặt vào nướu răng trên rồi bật dứt khoát ra.'
       }
       return initialInfo.tonguePosition || 'Lưỡi thả lỏng tự nhiên ở đáy miệng.'
     }
 
     if (finalInfo) {
+      if (finalInfo.final.startsWith('ü')) {
+        return 'Lưỡi đặt giống hệt âm "i": mặt lưỡi nâng cao về phía ngạc cứng, đầu lưỡi tì chân răng dưới.'
+      }
+      if (finalInfo.mouthShape === 'unrounded') {
+        return 'Cuống lưỡi nâng lên về phía ngạc mềm, lưỡi hơi lùi về sau (vị trí gần như âm "ơ/ư").'
+      }
+      if (finalInfo.mouthShape === 'curled') {
+        return 'Đầu lưỡi uốn cong về phía sau trong khoang miệng, không chạm vào vòm miệng.'
+      }
       if (finalInfo.mouthShape === 'round') {
         return 'Cuống lưỡi nâng nhẹ, đầu lưỡi lùi về sau để hỗ trợ khoang miệng tròn.'
       }
@@ -68,6 +86,9 @@ export function MouthShapeDiagram({ initialInfo, finalInfo }: MouthShapeDiagramP
       if (finalInfo.mouthShape === 'spread') {
         return 'Khóe môi kéo dẹt sang hai bên như đang cười tươi.'
       }
+      if (finalInfo.mouthShape === 'unrounded') {
+        return 'Môi không tròn, khóe môi hơi kéo ngang tự nhiên, miệng hé vừa (không chu môi).'
+      }
       if (finalInfo.mouthShape === 'semi_round') {
         return 'Môi chúm tròn vừa phải, không mở to như âm a.'
       }
@@ -82,6 +103,12 @@ export function MouthShapeDiagram({ initialInfo, finalInfo }: MouthShapeDiagramP
     if (initialInfo) {
       if (initialInfo.isAspirated) {
         return 'Bật hơi mạnh: Nén khí trong khoang miệng rồi bung mạnh hơi ra ngoài (đặt tờ giấy trước miệng sẽ bay phần phật).'
+      }
+      const soundType = initialInfo.soundType.toLowerCase()
+      if (soundType.includes('xát') && !soundType.includes('tắc')) {
+        return soundType.includes('hữu thanh')
+          ? 'Âm xát hữu thanh: Luồng hơi cọ xát liên tục qua khe hẹp, đồng thời dây thanh rung.'
+          : 'Âm xát: Luồng hơi cọ xát liên tục qua khe hẹp, dây thanh không rung.'
       }
       if (initialInfo.soundType.includes('vô thanh')) {
         return 'Không bật hơi: Luồng khí thoát nhẹ, dây thanh không rung (khác với âm rung cổ họng trong tiếng Việt).'

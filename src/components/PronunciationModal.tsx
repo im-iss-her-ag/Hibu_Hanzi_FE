@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react'
 import { X, Volume2 } from 'lucide-react'
-import { parsePinyin } from '../utils/pinyinData'
+import { parsePinyin, getFinalSampleSyllable } from '../utils/pinyinData'
 import { MouthShapeDiagram } from './MouthShapeDiagram'
 import { ToneContourDiagram } from './ToneContourDiagram'
 import { speakChinese } from '../utils/speech'
@@ -23,10 +23,10 @@ export function PronunciationModal({
   const [activeTab, setActiveTab] = useState<'initial' | 'final' | 'tone'>('initial')
 
   const parsed = useMemo(() => parsePinyin(pinyin), [pinyin])
-  const [selectedTone, setSelectedTone] = useState<1 | 2 | 3 | 4 | 0>(parsed.tone || 1)
+  const [selectedTone, setSelectedTone] = useState<1 | 2 | 3 | 4 | 0>(parsed.tone)
 
   useEffect(() => {
-    setSelectedTone(parsed.tone || 1)
+    setSelectedTone(parsed.tone)
   }, [parsed])
 
   // ESC to close
@@ -44,7 +44,7 @@ export function PronunciationModal({
     speakChinese(text)
   }
 
-  const { initial, final, initialInfo, finalInfo, toneInfo, toneVariants } = parsed
+  const { initial, final, phoneticFinal, initialInfo, finalInfo, toneInfo, toneVariants } = parsed
 
   return (
     <div className="modal-backdrop" onClick={onClose} role="dialog" aria-modal="true">
@@ -113,7 +113,9 @@ export function PronunciationModal({
           >
             <div className="tab-btn-text">
               <span className="tab-main-label">Vận Mẫu</span>
-              <span className="tab-sub-slug">Nguyên âm [ {final} ]</span>
+              <span className="tab-sub-slug">
+                Nguyên âm [ {final}{phoneticFinal !== final ? ` → ${phoneticFinal}` : ''} ]
+              </span>
             </div>
           </button>
 
@@ -154,7 +156,7 @@ export function PronunciationModal({
                       <button
                         type="button"
                         className="btn-hear-phoneme"
-                        onClick={() => handleSpeak(`${initial}a`)}
+                        onClick={() => handleSpeak(initial)}
                         title="Nghe mẫu phụ âm này"
                       >
                         <Volume2 size={16} />
@@ -192,7 +194,7 @@ export function PronunciationModal({
                 <>
                   <div className="linguistic-summary-card">
                     <div className="summary-card-left">
-                      <span className="big-phoneme-badge final-badge">{final}</span>
+                      <span className="big-phoneme-badge final-badge">{phoneticFinal}</span>
                       <div className="phoneme-titles">
                         <h3 className="phoneme-name">{finalInfo.name}</h3>
                         <span className="phoneme-group-tag">
@@ -201,7 +203,13 @@ export function PronunciationModal({
                             ? 'Tròn môi'
                             : finalInfo.mouthShape === 'spread'
                               ? 'Dẹt môi'
-                              : 'Mở rộng'}
+                              : finalInfo.mouthShape === 'unrounded'
+                                ? 'Môi dẹt, không tròn'
+                                : finalInfo.mouthShape === 'curled'
+                                  ? 'Uốn lưỡi'
+                                  : finalInfo.mouthShape === 'semi_round'
+                                    ? 'Hơi tròn môi'
+                                    : 'Mở rộng'}
                         </span>
                       </div>
                     </div>
@@ -210,7 +218,7 @@ export function PronunciationModal({
                       <button
                         type="button"
                         className="btn-hear-phoneme"
-                        onClick={() => handleSpeak(final)}
+                        onClick={() => handleSpeak(getFinalSampleSyllable(phoneticFinal, parsed.tone || 1))}
                         title="Nghe mẫu vần này"
                       >
                         <Volume2 size={16} />
@@ -224,7 +232,7 @@ export function PronunciationModal({
                 </>
               ) : (
                 <div className="zero-initial-notice">
-                  <p>Vận mẫu <strong>{final}</strong> hiện đang dùng hướng dẫn tổng quát.</p>
+                  <p>Vận mẫu <strong>{phoneticFinal}</strong> hiện đang dùng hướng dẫn tổng quát.</p>
                 </div>
               )}
             </div>

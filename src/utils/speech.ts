@@ -2,6 +2,8 @@
 // Uses native speaker studio MP3 audio recordings for standard Hanyu Pinyin syllables & tones (1, 2, 3, 4)
 // with Cloudflare Edge caching (<30ms response) and instant local SpeechSynthesis fallback.
 
+import { parsePinyin } from './pinyinData'
+
 const JSDELIVR_PINYIN_BASE = 'https://cdn.jsdelivr.net/gh/davinfifield/mp3-chinese-pinyin-sound@master/mp3/'
 const ALLSET_PINYIN_BASE = 'https://resources.allsetlearning.com/pronwiki/resources/pinyin-audio/'
 
@@ -30,6 +32,13 @@ const INITIAL_CONSONANT_MAP: Record<string, { pinyin: string; tone: number }> = 
   s: { pinyin: 'si', tone: 1 },
   y: { pinyin: 'yi', tone: 1 },
   w: { pinyin: 'wu', tone: 1 },
+}
+
+// Conventional reading syllable for an initial, with tone mark (e.g. "b" -> "bō", "r" -> "rì")
+export function getInitialSamplePinyin(initial: string): string {
+  const entry = INITIAL_CONSONANT_MAP[initial]
+  if (!entry) return initial
+  return parsePinyin(entry.pinyin).toneVariants[entry.tone - 1]?.pinyin || entry.pinyin
 }
 
 // Map tone vowels to base character and tone number

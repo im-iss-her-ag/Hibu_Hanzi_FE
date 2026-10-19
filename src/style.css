@@ -1009,7 +1009,7 @@ kbd {
 
 .char-badge {
   font-size: 3.5rem;
-  font-family: 'Noto Serif SC', serif;
+  font-family: 'Noto Serif SC', 'Songti SC', 'SimSun', serif;
   font-weight: 900;
   line-height: 1;
   color: var(--accent-seal);
@@ -1127,7 +1127,7 @@ kbd {
 
 .radical-glyph {
   font-size: 2.2rem;
-  font-family: 'Noto Serif SC', serif;
+  font-family: 'Noto Serif SC', 'Songti SC', 'SimSun', serif;
   font-weight: 700;
   color: var(--accent-blue);
   line-height: 1;
@@ -1168,7 +1168,7 @@ kbd {
 
 .part-glyph {
   font-size: 1.65rem;
-  font-family: 'Noto Serif SC', serif;
+  font-family: 'Noto Serif SC', 'Songti SC', 'SimSun', serif;
   font-weight: 700;
   color: var(--accent-seal);
 }
@@ -1213,7 +1213,7 @@ kbd {
 
 .word-glyph {
   font-size: 1.25rem;
-  font-family: 'Noto Serif SC', serif;
+  font-family: 'Noto Serif SC', 'Songti SC', 'SimSun', serif;
   font-weight: 800;
   color: var(--fg-main);
   cursor: pointer;
@@ -1360,7 +1360,7 @@ kbd {
 
 .char-badge-small {
   font-size: 2.2rem;
-  font-family: 'Noto Serif SC', serif;
+  font-family: 'Noto Serif SC', 'Songti SC', 'SimSun', serif;
   font-weight: 800;
   line-height: 1;
   color: var(--accent-seal);
@@ -1434,7 +1434,7 @@ kbd {
 
 .word-text {
   font-size: 1.15rem;
-  font-family: 'Noto Serif SC', serif;
+  font-family: 'Noto Serif SC', 'Songti SC', 'SimSun', serif;
   font-weight: 800;
 }
 
@@ -1531,7 +1531,7 @@ kbd {
 
 .fav-glyph {
   font-size: 2.2rem;
-  font-family: 'Noto Serif SC', serif;
+  font-family: 'Noto Serif SC', 'Songti SC', 'SimSun', serif;
   font-weight: 800;
   color: var(--accent-seal);
   line-height: 1;
@@ -2603,7 +2603,7 @@ html.dark .mige-canvas-frame {
   font-weight: 900;
   letter-spacing: 0.08em;
   line-height: 1.1;
-  font-family: 'Noto Serif SC', serif;
+  font-family: 'Noto Serif SC', 'Songti SC', 'SimSun', serif;
   color: #fffdf2;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.45);
 }
@@ -2627,7 +2627,7 @@ html.dark .mige-canvas-frame {
 }
 
 .quote-mark-symbol {
-  font-family: 'Noto Serif SC', serif;
+  font-family: 'Noto Serif SC', 'Songti SC', 'SimSun', serif;
   font-size: 1.6rem;
   font-weight: 900;
   color: var(--accent-seal);
@@ -2785,7 +2785,7 @@ html.dark .mige-canvas-frame {
   font-size: 0.82rem;
   font-weight: 800;
   color: var(--accent-seal);
-  font-family: 'Noto Serif SC', serif;
+  font-family: 'Noto Serif SC', 'Songti SC', 'SimSun', serif;
 }
 
 .primary-pill-tag {
@@ -3084,7 +3084,7 @@ html.dark .radical-box-glyph {
   font-size: 0.98rem;
   font-weight: 700;
   color: var(--fg-main);
-  font-family: 'Noto Serif SC', serif;
+  font-family: 'Noto Serif SC', 'Songti SC', 'SimSun', serif;
 }
 
 .radical-sino-badge {
@@ -3229,7 +3229,7 @@ html.dark .radical-box-glyph {
 .word-chinese-text {
   font-size: 1.22rem;
   font-weight: 700;
-  font-family: 'Noto Serif SC', serif;
+  font-family: 'Noto Serif SC', 'Songti SC', 'SimSun', serif;
   color: var(--fg-main);
   cursor: pointer;
   transition: color 0.18s ease;
@@ -4897,4 +4897,98 @@ html.dark .pronounce-guide-pill-btn {
   font-size: 0.75rem;
   color: var(--fg-muted);
   font-style: italic;
+}
+
+/* Neutral-tone sample words (ToneContourDiagram) */
+.neutral-sample-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.4rem;
+}
+
+.neutral-sample-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.7rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border-line);
+  border-radius: var(--radius-md);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+
+.neutral-sample-btn:hover,
+.neutral-sample-btn:focus-visible {
+  border-color: var(--accent-seal);
+}
+
+.neutral-sample-hanzi {
+  font-family: 'Noto Serif SC', 'Songti SC', 'SimSun', serif;
+  font-size: 1.05rem;
+}
+
+.neutral-sample-pinyin {
+  font-size: 0.85rem;
+  opacity: 0.75;
+}
+
+/* Text-only header buttons: never wrap, stay labelled on mobile (no icons) */
+.pinyin-chart-trigger-btn,
+.search-trigger-btn,
+.poly-indicator-badge {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.tool-btn.pinyin-chart-trigger-btn,
+.tool-btn.search-trigger-btn {
+  width: auto;
+  min-width: 0;
+}
+
+@media (max-width: 640px) {
+  .pinyin-chart-label,
+  .search-shortcut {
+    display: inline;
+  }
+  .pinyin-chart-trigger-btn,
+  .search-trigger-btn {
+    width: auto;
+    padding: 0.35rem 0.65rem;
+    font-size: 0.76rem;
+  }
+}
+
+/* Pronunciation modal: keep short labels on one line on narrow screens */
+.btn-hear-phoneme {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+@media (max-width: 640px) {
+  .pronounce-tab-btn {
+    padding-left: 0.35rem;
+    padding-right: 0.35rem;
+  }
+  .tab-sub-slug {
+    font-size: 0.68rem;
+  }
+}
+
+/* Pinyin chart tab bar: wrap on mobile instead of clipping */
+@media (max-width: 640px) {
+  .pinyin-chart-tabbar {
+    flex-wrap: wrap;
+    overflow-x: visible;
+    gap: 0.35rem;
+    padding: 0.5rem 0.75rem;
+  }
+  .chart-tab-btn {
+    padding: 0.4rem 0.75rem;
+    font-size: 0.78rem;
+  }
 }
