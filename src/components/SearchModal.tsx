@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Search, X, Volume2 } from 'lucide-react'
 import type { BundleCharacter, Word } from '../core'
 import { speakChinese } from '../utils/speech'
@@ -17,16 +17,12 @@ export function SearchModal({
   onClose,
 }: SearchModalProps) {
   const [query, setQuery] = useState('')
-  const [filterLevel, setFilterLevel] = useState<number | null>(null)
   const [tab, setTab] = useState<'chars' | 'words'>('chars')
 
   const filteredChars = useMemo(() => {
     const q = query.trim().toLowerCase()
+    if (!q) return []
     return characters.filter((c) => {
-      if (filterLevel !== null && c.hsk2Level !== filterLevel && c.hsk3Level !== filterLevel) {
-        return false
-      }
-      if (!q) return true
       return (
         c.hanzi.includes(q) ||
         (c.traditional && c.traditional.includes(q)) ||
@@ -38,15 +34,12 @@ export function SearchModal({
         )
       )
     })
-  }, [characters, query, filterLevel])
+  }, [characters, query])
 
   const filteredWords = useMemo(() => {
     const q = query.trim().toLowerCase()
+    if (!q) return []
     return words.filter((w) => {
-      if (filterLevel !== null && w.hsk2Level !== filterLevel && w.hsk3Level !== filterLevel) {
-        return false
-      }
-      if (!q) return true
       return (
         w.word.includes(q) ||
         (w.traditional && w.traditional.includes(q)) ||
@@ -55,11 +48,33 @@ export function SearchModal({
         w.meaningVi.toLowerCase().includes(q)
       )
     })
-  }, [words, query, filterLevel])
+  }, [words, query])
+
+  // Tự động chuyển sang tab có kết quả khi tìm kiếm (ví dụ gõ từ ghép "你好" sẽ tự chuyển sang tab Từ ghép)
+  useEffect(() => {
+    if (filteredChars.length === 0 && filteredWords.length > 0 && tab === 'chars') {
+      setTab('words')
+    } else if (filteredWords.length === 0 && filteredChars.length > 0 && tab === 'words') {
+      setTab('chars')
+    }
+  }, [filteredChars.length, filteredWords.length, tab])
 
   return (
-    <div className="modal-backdrop" onClick={onClose} role="dialog" aria-modal="true">
-      <div className="modal-content search-modal-content" onClick={(e) => e.stopPropagation()}>
+    <div
+      className="modal-backdrop"
+      onClick={onClose}
+      onTouchStart={(e) => e.stopPropagation()}
+      onTouchEnd={(e) => e.stopPropagation()}
+      role="dialog"
+      aria-modal="true"
+    >
+      <div
+        className="modal-content search-modal-content"
+        onClick={(e) => e.stopPropagation()}
+        onTouchStart={(e) => e.stopPropagation()}
+        onTouchEnd={(e) => e.stopPropagation()}
+      >
+
         {/* Search Input Bar */}
         <div className="search-bar-wrap">
           <Search size={18} className="search-icon-inside" />
@@ -86,7 +101,7 @@ export function SearchModal({
           </button>
         </div>
 
-        {/* Level Filters & Tabs */}
+        {/* Tabs: Chữ đơn & Từ ghép */}
         <div className="search-filter-row">
           <div className="tab-pill-group">
             <button
@@ -94,47 +109,52 @@ export function SearchModal({
               className={`filter-pill ${tab === 'chars' ? 'active' : ''}`}
               onClick={() => setTab('chars')}
             >
-              Chữ đơn ({filteredChars.length})
+              Chữ đơn {query.trim() ? `(${filteredChars.length})` : ''}
             </button>
             <button
               type="button"
               className={`filter-pill ${tab === 'words' ? 'active' : ''}`}
               onClick={() => setTab('words')}
             >
-              Từ ghép ({filteredWords.length})
+              Từ ghép {query.trim() ? `(${filteredWords.length})` : ''}
             </button>
-          </div>
-
-          <div className="level-pill-group">
-            <button
-              type="button"
-              className={`level-pill ${filterLevel === null ? 'active' : ''}`}
-              onClick={() => setFilterLevel(null)}
-            >
-              Tất cả
-            </button>
-            {[1, 2, 3].map((lvl) => (
-              <button
-                key={lvl}
-                type="button"
-                className={`level-pill ${filterLevel === lvl ? 'active' : ''}`}
-                onClick={() => setFilterLevel(filterLevel === lvl ? null : lvl)}
-              >
-                HSK {lvl}
-              </button>
-            ))}
           </div>
         </div>
 
+
         {/* Results List */}
         <div className="search-results-box">
-          {tab === 'chars' ? (
+          {!query.trim() ? (
+            <div className="search-empty-prompt">
+              <div className="prompt-icon-circle">
+                <Search size={28} />
+              </div>
+              <h4 className="prompt-title">Nhập từ khóa để bắt đầu tra cứu</h4>
+              <p className="prompt-desc">
+                Nhập <strong>chữ Hán</strong> (你, 好...), <strong>Pinyin</strong> (ni, hao...), <strong>âm Hán Việt</strong> (nhĩ, hảo...) hoặc <strong>nghĩa tiếng Việt</strong> (chào, ăn, đi...) để tìm kiếm.
+              </p>
+              <div className="search-quick-tags">
+                <span className="quick-tags-label">Gợi ý nhanh:</span>
+                {['你好', '爱', '学习', 'hǎo', 'nhân', 'tâm'].map((tag) => (
+                  <button
+                    key={tag}
+                    type="button"
+                    className="quick-tag-chip"
+                    onClick={() => setQuery(tag)}
+                  >
+                    {tag}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : tab === 'chars' ? (
             filteredChars.length === 0 ? (
               <div className="empty-search-state">
                 Không tìm thấy chữ Hán nào phù hợp với từ khóa &quot;{query}&quot;.
               </div>
             ) : (
               <div className="char-results-grid">
+
                 {filteredChars.map((c) => {
                   const primary = c.readings.find((r) => r.isPrimary) ?? c.readings[0]
                   return (
@@ -152,7 +172,7 @@ export function SearchModal({
                       <div className="char-result-info">
                         <div className="pinyin-line">
                           <span className="pinyin">{primary?.pinyin}</span>
-                          {c.hsk2Level && <span className="hsk-tag">HSK {c.hsk2Level}</span>}
+                          {c.hsk3Level && <span className="hsk-tag">HSK {c.hsk3Level}</span>}
                         </div>
                         <div className="hanviet-line">
                           {primary?.hanViet ? primary.hanViet.toUpperCase() : '—'}

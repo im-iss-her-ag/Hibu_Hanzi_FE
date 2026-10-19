@@ -1,15 +1,9 @@
 import { useState, useRef, useEffect } from 'react'
-import { Star, Moon, Sun, Keyboard } from 'lucide-react'
-
-// Hanzi typefaces the learner can switch between
-const FONT_LABELS = {
-  calligraphy: { label: 'Thư pháp', className: 'font-calligraphy' },
-  sans: { label: 'Hiện đại', className: 'font-sans-sc' },
-} as const
+import { Star, Moon, Sun, Keyboard, Search } from 'lucide-react'
 
 interface NavbarProps {
-  fontStyle: 'calligraphy' | 'sans'
-  onToggleFont: () => void
+  displayMode: 'modern' | 'components'
+  onToggleDisplayMode: () => void
   isDarkMode: boolean
   onToggleDarkMode: () => void
   favoritesCount: number
@@ -19,8 +13,8 @@ interface NavbarProps {
 }
 
 export function Navbar({
-  fontStyle,
-  onToggleFont,
+  displayMode,
+  onToggleDisplayMode,
   isDarkMode,
   onToggleDarkMode,
   favoritesCount,
@@ -62,7 +56,9 @@ export function Navbar({
             className="tool-btn pinyin-chart-trigger-btn"
             onClick={onOpenPinyinChart}
             title="Mở Bảng Pinyin Toàn Diện & Quy tắc biến điệu (P)"
+            aria-label="Bảng Pinyin"
           >
+            <span className="pinyin-badge-glyph" aria-hidden="true">拼</span>
             <span className="pinyin-chart-label">Bảng Pinyin</span>
           </button>
 
@@ -71,7 +67,9 @@ export function Navbar({
             className="tool-btn search-trigger-btn"
             onClick={onOpenSearch}
             title="Tìm kiếm chữ Hán, Pinyin, Hán Việt (Ctrl+K)"
+            aria-label="Tìm kiếm"
           >
+            <Search size={16} />
             <span className="search-shortcut">Tìm kiếm</span>
           </button>
 
@@ -85,20 +83,27 @@ export function Navbar({
             {favoritesCount > 0 && <span className="fav-badge">{favoritesCount}</span>}
           </button>
 
+          {/* Toggle Chế độ hiển thị: Hiện đại ↔ Thành phần */}
           <button
             type="button"
-            className="tool-btn pinyin-chart-trigger-btn font-toggle-btn"
-            onClick={onToggleFont}
-            title="Đổi kiểu chữ Hán: Thư pháp ↔ Hiện đại"
+            className={`tool-btn display-mode-toggle-btn ${displayMode === 'components' ? 'mode-components' : 'mode-modern'}`}
+            onClick={onToggleDisplayMode}
+            title={displayMode === 'modern' ? 'Chế độ: Hiện đại (Chạm để xem tách Thành phần)' : 'Chế độ: Thành phần (Chạm để xem Hiện đại)'}
+            aria-label="Đổi chế độ hiển thị chữ"
           >
-            <span
-              className={`font-toggle-sample ${FONT_LABELS[fontStyle].className}`}
-              lang="zh"
-              aria-hidden="true"
-            >
-              字
+            {displayMode === 'components' ? (
+              <span className="comp-dots-badge" aria-hidden="true">
+                <span className="dot dot-blue" />
+                <span className="dot dot-red" />
+              </span>
+            ) : (
+              <span className="font-toggle-sample font-sans-sc" lang="zh" aria-hidden="true">
+                字
+              </span>
+            )}
+            <span className="pinyin-chart-label">
+              {displayMode === 'components' ? 'Thành phần' : 'Hiện đại'}
             </span>
-            <span className="pinyin-chart-label">{FONT_LABELS[fontStyle].label}</span>
           </button>
 
           {/* Keyboard Shortcuts Helper */}

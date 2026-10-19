@@ -1327,12 +1327,84 @@ kbd {
   overflow-y: auto;
 }
 
+.search-empty-prompt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 3rem 1.5rem;
+  gap: 0.75rem;
+}
+
+.prompt-icon-circle {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: rgba(194, 65, 12, 0.08);
+  border: 1px solid rgba(194, 65, 12, 0.2);
+  color: var(--accent-seal, #c2410c);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.25rem;
+}
+
+.prompt-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--fg-main);
+  margin: 0;
+}
+
+.prompt-desc {
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--fg-muted);
+  max-width: 440px;
+  margin: 0;
+}
+
+.search-quick-tags {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  margin-top: 0.75rem;
+}
+
+.quick-tags-label {
+  font-size: 0.75rem;
+  color: var(--fg-subtle);
+  font-weight: 600;
+}
+
+.quick-tag-chip {
+  padding: 0.2rem 0.55rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 12px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-line);
+  color: var(--fg-main);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.quick-tag-chip:hover {
+  background: var(--accent-seal);
+  color: #ffffff;
+  border-color: var(--accent-seal);
+}
+
 .empty-search-state {
   text-align: center;
   padding: 2.5rem 1rem;
   color: var(--fg-muted);
   font-size: 0.95rem;
 }
+
 
 .char-results-grid {
   display: grid;
@@ -1867,16 +1939,11 @@ html.dark .studio-app-root {
   background: rgba(194, 65, 12, 0.08);
   border: 1px solid rgba(194, 65, 12, 0.2);
   border-radius: 6px;
-  cursor: pointer;
+  cursor: default;
   color: var(--accent-seal);
   user-select: none;
-  transition: all 0.18s ease;
   flex-shrink: 0;
   line-height: 1.2;
-}
-
-.hsk-standard-badge:hover {
-  background: rgba(194, 65, 12, 0.15);
 }
 
 .hsk-level-pills {
@@ -1912,6 +1979,14 @@ html.dark .studio-app-root {
   border-color: var(--accent-seal);
   box-shadow: 0 1px 4px rgba(194, 65, 12, 0.25);
 }
+
+.lvl-pill.radical-tab-pill {
+  flex: 1.4;
+  padding: 0.32rem 0.25rem;
+  font-size: 0.72rem;
+  white-space: nowrap;
+}
+
 
 /* Character list items */
 .sidebar-item-list {
@@ -3050,28 +3125,47 @@ html.dark .mige-canvas-frame {
 .radical-box-glyph {
   width: 3.4rem;
   height: 3.4rem;
-  background: #fbf9f5;
-  border: 2px solid var(--accent-seal);
+  background: var(--bg-elevated);
+  border: 1.5px solid var(--border-line);
   border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 1.9rem;
-  font-family: 'Ma Shan Zheng', serif;
-  color: var(--accent-seal);
+  font-family: var(--font-sans-sc, 'Noto Sans SC', system-ui, sans-serif);
+  font-weight: 700;
+  color: var(--fg-main);
   cursor: pointer;
   flex-shrink: 0;
-  box-shadow: 0 2px 8px rgba(194, 65, 12, 0.15);
-  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
 
-html.dark .radical-box-glyph {
-  background: #171b23;
+.radical-box-glyph.mode-components {
+  font-family: var(--font-calligraphy, 'Ma Shan Zheng', 'Noto Serif SC', serif) !important;
+  border: 2px solid #0284c7;
+  background: rgba(2, 132, 199, 0.08);
+  color: #0284c7;
+  box-shadow: 0 2px 10px rgba(2, 132, 199, 0.2);
+}
+
+html.dark .radical-box-glyph.mode-components {
+  border-color: #38bdf8;
+  background: rgba(56, 189, 248, 0.12);
+  color: #38bdf8;
+  box-shadow: 0 2px 10px rgba(56, 189, 248, 0.25);
+}
+
+.radical-box-glyph.mode-modern {
+  font-family: var(--font-sans-sc, 'Noto Sans SC', system-ui, sans-serif) !important;
+  border: 1.5px solid var(--border-line);
+  background: var(--bg-elevated);
+  color: var(--fg-main);
 }
 
 .radical-box-glyph:hover {
-  transform: scale(1.08);
-  box-shadow: 0 4px 14px rgba(194, 65, 12, 0.25);
+  transform: scale(1.06);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
 }
 
 .radical-meta-group {
@@ -3084,7 +3178,7 @@ html.dark .radical-box-glyph {
   font-size: 0.98rem;
   font-weight: 700;
   color: var(--fg-main);
-  font-family: 'Noto Serif SC', 'Songti SC', 'SimSun', serif;
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
 }
 
 .radical-sino-badge {
@@ -3126,17 +3220,70 @@ html.dark .radical-box-glyph {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
 }
 
+.lego-part-chip.part-radical {
+  border-color: rgba(2, 132, 199, 0.4);
+  background: rgba(2, 132, 199, 0.06);
+}
+
+html.dark .lego-part-chip.part-radical {
+  border-color: rgba(56, 189, 248, 0.45);
+  background: rgba(56, 189, 248, 0.1);
+}
+
+.lego-part-chip.part-stroke {
+  border-color: rgba(220, 38, 38, 0.4);
+  background: rgba(220, 38, 38, 0.06);
+}
+
+html.dark .lego-part-chip.part-stroke {
+  border-color: rgba(248, 113, 113, 0.45);
+  background: rgba(248, 113, 113, 0.1);
+}
+
+.lego-part-chip.mode-modern {
+  border-color: var(--border-line);
+  background: var(--bg-elevated);
+}
+
 .lego-part-chip:hover {
-  border-color: var(--accent-seal);
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(194, 65, 12, 0.15);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
 }
 
 .lego-glyph {
   font-size: 1.35rem;
-  font-family: 'Ma Shan Zheng', serif;
-  color: var(--accent-seal);
   line-height: 1;
+  transition: color 0.18s ease;
+}
+
+.lego-glyph.font-calligraphy {
+  font-family: var(--font-calligraphy, 'Ma Shan Zheng', 'Noto Serif SC', serif) !important;
+  font-weight: 500;
+}
+
+.lego-glyph.font-sans-sc {
+  font-family: var(--font-sans-sc, 'Noto Sans SC', system-ui, sans-serif) !important;
+  font-weight: 700;
+}
+
+.lego-glyph.color-radical {
+  color: #0284c7;
+}
+
+html.dark .lego-glyph.color-radical {
+  color: #38bdf8;
+}
+
+.lego-glyph.color-stroke {
+  color: #dc2626;
+}
+
+html.dark .lego-glyph.color-stroke {
+  color: #f87171;
+}
+
+.lego-glyph.color-modern {
+  color: var(--fg-main);
 }
 
 .lego-info {
@@ -3162,32 +3309,71 @@ html.dark .radical-box-glyph {
 }
 
 .lego-arrow-symbol {
-  color: var(--accent-seal);
   flex-shrink: 0;
+  transition: color 0.2s ease;
+}
+
+.lego-arrow-symbol.color-accent {
+  color: #0284c7;
+}
+
+html.dark .lego-arrow-symbol.color-accent {
+  color: #38bdf8;
+}
+
+.lego-arrow-symbol.color-neutral {
+  color: var(--fg-subtle);
 }
 
 .lego-result-chip {
-  background: linear-gradient(135deg, var(--accent-seal), #b91c1c);
-  padding: 0.4rem 0.8rem;
+  padding: 0.4rem 0.65rem;
+  min-width: 44px;
+  min-height: 44px;
   border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(194, 65, 12, 0.3);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.lego-result-chip:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent-seal);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.lego-result-writer-box {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.lego-result-writer-box svg {
+  display: block;
 }
 
 .lego-glyph.main-result {
-  color: #ffffff;
-  font-size: 1.45rem;
+  font-size: 1.35rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--fg-main);
 }
 
 /* 3. Mnemonics / Etymology Scroll card */
 .mnemonic-narrative-text {
-  font-size: 0.94rem;
+  font-size: 0.92rem;
   line-height: 1.65;
   color: var(--fg-main);
-  background: var(--bg-elevated);
-  padding: 0.85rem 1rem;
-  border-radius: 8px;
-  border-left: 3.5px solid var(--accent-gold);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  background: transparent;
+  padding: 0.2rem 0.15rem;
+  border-left: none;
+  border-radius: 0;
+  box-shadow: none;
 }
 
 /* 4. Compound Words Bridge (Sức mạnh Hán Việt) */
@@ -3229,7 +3415,7 @@ html.dark .radical-box-glyph {
 .word-chinese-text {
   font-size: 1.22rem;
   font-weight: 700;
-  font-family: 'Noto Serif SC', 'Songti SC', 'SimSun', serif;
+  font-family: var(--font-sans-sc, 'Noto Sans SC', system-ui, sans-serif);
   color: var(--fg-main);
   cursor: pointer;
   transition: color 0.18s ease;
@@ -3282,134 +3468,709 @@ html.dark .radical-box-glyph {
 }
 
 /* --------------------------------------------------------------------------
-   Mobile Zen Floating Widget & Responsive Breakpoints
-   -------------------------------------------------------------------------- */
+/* Mobile Bottom Navigation (Hidden on desktop, active on mobile) */
+.mobile-bottom-nav {
+  display: none;
+}
+
 .mobile-zen-tabbar {
   display: none;
 }
 
 @media (max-width: 1024px) {
+  body, html, #root, .app-main-layout {
+    overflow-x: hidden !important;
+  }
+
   .studio-shortcuts-bar {
     display: none;
   }
 
   .mobile-drawer-toggle-btn {
-    display: inline-flex;
+    display: none !important;
   }
 
-  /* Mobile Tab Bar */
-  .mobile-zen-tabbar {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0.5rem;
-    padding: 0.65rem 1rem;
-    background: var(--bg-elevated);
-    border-bottom: 1px solid var(--border-line);
-    position: sticky;
-    top: 65px;
-    z-index: 20;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+  /* Mobile Header (Sleek Single-Row Sticky Header) */
+  .app-header {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 40 !important;
+    background: var(--bg-glass) !important;
+    backdrop-filter: blur(18px) !important;
+    -webkit-backdrop-filter: blur(18px) !important;
+    border-bottom: 1px solid var(--border-line) !important;
+    padding: 0.65rem 0.85rem !important;
   }
 
-  .zen-tab-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.45rem;
-    padding: 0.55rem;
-    border-radius: var(--radius-full);
-    font-size: 0.85rem;
-    font-weight: 700;
-    color: var(--fg-muted);
-    background: var(--bg-main);
-    border: 1px solid var(--border-light);
-    transition: all 0.2s ease;
+  .app-header .header-container {
+    padding: 0 !important;
+    gap: 0.5rem !important;
   }
 
-  .zen-tab-btn.active {
-    background: linear-gradient(135deg, var(--accent-seal), #b91c1c);
-    color: #ffffff;
-    border-color: var(--accent-seal);
-    box-shadow: 0 2px 8px rgba(194, 65, 12, 0.3);
+  .brand-group {
+    gap: 0.5rem !important;
   }
 
-  /* Switchable Mobile Views */
-  .studio-split-layout {
-    display: block;
-    height: auto;
-    overflow: visible;
+  .seal-logo {
+    width: 32px !important;
+    height: 32px !important;
+    font-size: 1.25rem !important;
   }
 
-  /* Left Sidebar converts to Slide-in Drawer */
+  .brand-name {
+    font-size: 1.05rem !important;
+  }
+
+  .brand-sub {
+    font-size: 0.68rem !important;
+  }
+
+  .tool-btn {
+    padding: 0.35rem 0.5rem !important;
+  }
+
+  /* Desktop Left Sidebar hidden on mobile (replaced by Bottom Bar) */
   .studio-sidebar-left {
-    position: fixed;
-    top: 0;
-    left: 0;
-    bottom: 0;
-    width: 320px;
-    max-width: 85vw;
-    z-index: 100;
-    box-shadow: 8px 0 32px rgba(0, 0, 0, 0.3);
-    transform: translateX(-100%);
-    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    display: none !important;
   }
 
-  .studio-sidebar-left.mobile-open {
-    transform: translateX(0);
+  /* Mobile Unified Single-View Layout (Cuộn dọc tự nhiên, Vuốt ngang chuyển chữ) */
+  .studio-split-layout {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    min-height: auto !important;
+    height: auto !important;
+    overflow-x: hidden !important;
+    transform: none !important;
+    touch-action: pan-y;
   }
 
-  .mobile-close-btn {
-    display: block;
+  /* Single Column Stack on Mobile */
+  .studio-col-center {
+    width: 100% !important;
+    max-width: 100% !important;
+    flex: none !important;
+    height: auto !important;
+    min-height: 0 !important;
+    display: flex !important;
+    flex-direction: column;
+    box-sizing: border-box;
+    padding-bottom: 0 !important;
+    overflow: visible !important;
   }
 
-  /* Show / Hide based on Mobile Tabs */
-  .studio-split-layout.mobile-view-canvas .studio-col-center {
-    display: flex;
-  }
-
-  .studio-split-layout.mobile-view-canvas .studio-col-right {
-    display: none;
-  }
-
-  .studio-split-layout.mobile-view-breakdown .studio-col-center {
-    display: none;
-  }
-
-  .studio-split-layout.mobile-view-breakdown .studio-col-right {
-    display: flex;
-    border-left: none;
+  .studio-col-right {
+    width: 100% !important;
+    max-width: 100% !important;
+    flex: none !important;
+    height: auto !important;
+    min-height: 0 !important;
+    display: flex !important;
+    flex-direction: column;
+    box-sizing: border-box;
+    border-left: none !important;
+    padding: 0 0.85rem 125px 0.85rem !important; /* Space for bottom bar */
+    overflow: visible !important;
   }
 
   .studio-canvas-pane {
-    padding: 1.25rem 1rem 3.5rem;
-    height: auto;
+    padding: 0.5rem 0.75rem 0.25rem !important;
+    height: auto !important;
+    min-height: 0 !important;
+    flex: none !important;
+    justify-content: flex-start !important;
   }
 
   .canvas-hero-body {
     flex-direction: column;
-    gap: 1.5rem;
+    gap: 0.75rem !important;
   }
 
   .linguistic-identity-block {
     align-items: center;
     text-align: center;
+    gap: 0.65rem !important;
+  }
+
+  .pinyin-voice-cluster {
+    justify-content: center;
+    gap: 0.45rem !important;
   }
 
   .hanviet-seal-wrapper {
     justify-content: center;
   }
 
-  .definition-card-inner {
+  /* Mobile 2-Column Hero Card: Left Square Box + Right Info & Actions */
+  .mobile-hero-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    width: 100%;
+  }
+
+  .mobile-hero-card {
+    position: relative;
+    display: grid;
+    grid-template-columns: 130px minmax(0, 1fr);
+    gap: 0.85rem;
+    align-items: stretch;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-light);
+    border-radius: 16px;
+    padding: 0.75rem;
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.04);
+  }
+
+  /* Star button directly inside the card (top right) */
+  .mobile-hero-star-btn {
+    position: absolute;
+    top: 0.65rem;
+    right: 0.65rem;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--fg-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 5;
+    transition: all 0.15s ease;
+  }
+
+  .mobile-hero-star-btn:active {
+    transform: scale(0.9);
+  }
+
+  .mobile-hero-star-btn.starred {
+    color: #f59e0b;
+    border-color: rgba(245, 158, 11, 0.4);
+    background: rgba(245, 158, 11, 0.12);
+  }
+
+  .mobile-hero-left {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     justify-content: center;
   }
 
-  .mige-canvas-frame {
-    width: 240px !important;
-    height: 240px !important;
+  .mobile-mige-frame {
+    width: 125px;
+    height: 125px;
+    border-radius: 12px;
+    position: relative;
+    background: var(--bg-canvas-card, #fffef9);
+    border: 1px solid var(--border-light);
+    box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.03);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    overflow: hidden;
+    user-select: none;
+    touch-action: none;
   }
 
-  .hanzi-static-glyph {
-    font-size: 6.6rem;
+  .dark .mobile-mige-frame {
+    background: #151a23;
+    border-color: #2a3443;
+  }
+
+  .mobile-hanzi-glyph {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 4.6rem;
+    line-height: 1;
+    color: var(--fg-main);
+    z-index: 2;
+    transition: opacity 0.2s ease, transform 0.15s ease;
+    pointer-events: none;
+    user-select: none;
+  }
+
+  .mobile-mige-frame:active .mobile-hanzi-glyph {
+    transform: translate(-50%, -50%) scale(0.95);
+  }
+
+  .mobile-writer-surface {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 120px;
+    height: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 3;
+    transition: opacity 0.2s ease;
+  }
+
+  .mobile-hero-right {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 0.38rem;
+    min-width: 0;
+  }
+
+  /* Row 1: Pinyin, Loa & Chậm capsule, Hán Việt (cùng 1 hàng, to rõ, hài hòa) */
+  .mobile-identity-row {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    flex-wrap: wrap;
+    padding-right: 2.2rem;
+    min-width: 0;
+  }
+
+  /* 1. PINYIN: To hơn, đậm nét, xanh dương hiện đại */
+  .mobile-pinyin-text {
+    font-size: 1.55rem;
+    font-weight: 800;
+    color: var(--accent-blue, #0284c7);
+    letter-spacing: -0.01em;
+    line-height: 1;
+  }
+
+  .dark .mobile-pinyin-text {
+    color: #38bdf8;
+  }
+
+  /* Capsule gọn gàng chứa cả 2 nút âm thanh */
+  .mobile-audio-capsule {
+    display: inline-flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    padding: 1px;
+    gap: 1px;
+    flex-shrink: 0;
+  }
+
+  .dark .mobile-audio-capsule {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(255, 255, 255, 0.09);
+  }
+
+  .mobile-sound-btn {
+    width: 24px;
+    height: 24px;
+    border-radius: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    background: transparent;
+    color: var(--fg-muted);
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .mobile-sound-btn:active {
+    transform: scale(0.9);
+  }
+
+  .mobile-sound-btn:hover {
+    color: var(--fg-main);
+  }
+
+  .mobile-sound-btn.slow {
+    color: #10b981;
+  }
+
+  /* 2. HÁN VIỆT: Chữ to thật nổi bật, không hộp cam, màu cam ấm sang trọng */
+  .mobile-hanviet-text {
+    font-size: 1.45rem;
+    font-weight: 900;
+    color: var(--accent-seal, #ea580c);
+    letter-spacing: 0.03em;
+    line-height: 1;
+    text-transform: uppercase;
+    display: inline-block;
+  }
+
+  .dark .mobile-hanviet-text {
+    color: #fb923c;
+  }
+
+  /* 3. NGHĨA: Thẻ định nghĩa mềm mại, không viền cứng, không sọc cam dọc kiểu con trỏ */
+  .mobile-def-box {
+    padding: 0.42rem 0.6rem;
+    background: rgba(255, 255, 255, 0.035);
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+  }
+
+  .dark .mobile-def-box {
+    background: rgba(255, 255, 255, 0.03);
+    border-color: rgba(255, 255, 255, 0.07);
+  }
+
+  .mobile-def-text {
+    font-size: 0.88rem;
+    line-height: 1.38;
+    color: var(--fg-main);
+    font-weight: 500;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    margin: 0;
+  }
+
+  .mobile-actions-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
+    margin-top: 0.15rem;
+  }
+
+  .mobile-action-pill {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    padding: 0.44rem 0.25rem;
+    border-radius: 8px;
+    font-size: 0.73rem;
+    font-weight: 700;
+    border: 1px solid var(--border-light);
+    background: var(--bg-main);
+    color: var(--fg-main);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+  }
+
+  .mobile-action-pill:active {
+    transform: scale(0.95);
+  }
+
+  .comp-dots-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 2.5px;
+    margin-right: 1px;
+  }
+
+  .comp-dots-badge .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    display: inline-block;
+  }
+
+  .comp-dots-badge .dot-blue {
+    background: #0284c7;
+  }
+
+  .dark .comp-dots-badge .dot-blue {
+    background: #38bdf8;
+  }
+
+  .comp-dots-badge .dot-red {
+    background: #dc2626;
+  }
+
+  .dark .comp-dots-badge .dot-red {
+    background: #f87171;
+  }
+
+  .mobile-action-pill.comp-toggle.active {
+    background: rgba(2, 132, 199, 0.1);
+    border-color: rgba(2, 132, 199, 0.35);
+    color: #0284c7;
+  }
+
+  .dark .mobile-action-pill.comp-toggle.active {
+    background: rgba(56, 189, 248, 0.12);
+    border-color: rgba(56, 189, 248, 0.4);
+    color: #38bdf8;
+  }
+
+  .mobile-action-pill.primary {
+    background: linear-gradient(135deg, var(--accent-seal, #c2410c), #b91c1c);
+    color: #ffffff;
+    border-color: var(--accent-seal, #c2410c);
+    box-shadow: 0 2px 6px rgba(194, 65, 12, 0.25);
+  }
+
+  .mobile-action-pill.playing {
+    background: rgba(194, 65, 12, 0.12);
+    color: var(--accent-seal);
+    border-color: var(--accent-seal);
+  }
+
+
+  /* Polyphonic card on mobile */
+  .mobile-poly-card {
+    margin-top: 0.25rem;
+    padding: 0.6rem 0.75rem !important;
+  }
+
+  /* Unified Mobile Breakdown (4 sections in 1 view) */
+  .mobile-unified-breakdown {
+    display: flex;
+    flex-direction: column;
+    gap: 1.1rem;
+    padding-top: 0.35rem;
+  }
+
+  .mobile-bd-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+  }
+
+  .mobile-bd-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0 0.2rem;
+  }
+
+  .mobile-bd-badge {
+    font-size: 0.74rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    border-radius: 4px;
+    padding: 0.15rem 0.45rem;
+    transition: all 0.2s ease;
+  }
+
+  .mobile-bd-badge.badge-radical {
+    color: #0284c7;
+    background: rgba(2, 132, 199, 0.08);
+    border: 1px solid rgba(2, 132, 199, 0.3);
+  }
+
+  html.dark .mobile-bd-badge.badge-radical {
+    color: #38bdf8;
+    background: rgba(56, 189, 248, 0.12);
+    border-color: rgba(56, 189, 248, 0.35);
+  }
+
+  .mobile-bd-badge.badge-decomposition {
+    color: var(--accent-seal, #c2410c);
+    background: rgba(194, 65, 12, 0.08);
+    border: 1px solid rgba(194, 65, 12, 0.25);
+  }
+
+  .mobile-bd-badge.badge-modern {
+    color: var(--fg-main);
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-line);
+  }
+
+  .mobile-bd-sub {
+    font-size: 0.72rem;
+    color: var(--fg-subtle);
+    font-weight: 500;
+  }
+
+  .mobile-words-flow {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+  }
+
+  /* Hide redundant single-reading status card to eliminate boxed clutter */
+  .single-reading-status-card {
+    display: none !important;
+  }
+
+  /* Hide duplicate canvas footer nav buttons on mobile */
+  .canvas-footer-bar {
+    display: none !important;
+  }
+
+  /* Chiết tự & Hán Việt section divider on mobile */
+  .breakdown-panel-header {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0.2rem !important;
+    padding: 0.5rem 0.25rem 0.25rem !important;
+    margin-top: 0.25rem !important;
+    border-top: 1px dashed var(--border-line) !important;
+    border-bottom: none !important;
+  }
+
+  .studio-sidebar-right {
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  .right-panel-scroll {
+    overflow: visible !important;
+    height: auto !important;
+    padding: 0 !important;
+    gap: 0.65rem !important;
+  }
+
+  /* Mobile Horizontal Bottom Bar */
+  .mobile-bottom-nav {
+    display: flex !important;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--bg-glass);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid var(--border-line);
+    z-index: 50;
+    padding: 0.45rem 0.6rem calc(0.45rem + env(safe-area-inset-bottom, 0px)) !important;
+    flex-direction: column;
+    gap: 0.35rem;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.12);
+  }
+
+  .mobile-bottom-controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.45rem;
+    padding: 0.15rem 0.2rem;
+  }
+
+  .mobile-level-pills {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .mobile-lvl-pill {
+    flex: 1;
+    min-width: 32px;
+    height: 33px;
+    padding: 0 0.15rem;
+    font-size: 0.82rem;
+    font-weight: 700;
+    border-radius: 7px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-light);
+    color: var(--fg-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .mobile-lvl-pill:active {
+    transform: scale(0.93);
+  }
+
+  .mobile-lvl-pill.active {
+    background: var(--accent-seal);
+    color: #ffffff;
+    border-color: var(--accent-seal);
+    box-shadow: 0 2px 6px rgba(194, 65, 12, 0.35);
+  }
+
+  .mobile-lvl-pill.radical-pill {
+    flex: 1.5;
+    padding: 0 0.4rem;
+    font-size: 0.76rem;
+    white-space: nowrap;
+  }
+
+  .mobile-char-count {
+    font-size: 0.72rem;
+    color: var(--fg-subtle);
+    font-weight: 700;
+    white-space: nowrap;
+    padding-left: 0.15rem;
+    flex-shrink: 0;
+  }
+
+
+  .mobile-tile-track {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 0.2rem 0.2rem 0.25rem;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .mobile-tile-track::-webkit-scrollbar {
+    display: none;
+  }
+
+  .mobile-char-tile {
+    flex-shrink: 0;
+    width: 48px;
+    height: 52px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-light);
+    color: var(--fg-main);
+    position: relative;
+    transition: all 0.18s ease;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .mobile-char-tile.active {
+    background: rgba(194, 65, 12, 0.1);
+    border: 1.5px solid var(--accent-seal);
+    box-shadow: 0 0 0 2px rgba(194, 65, 12, 0.2), 0 2px 8px rgba(0, 0, 0, 0.15);
+    transform: translateY(-2px);
+  }
+
+  .mobile-tile-glyph {
+    font-size: 1.15rem;
+    font-weight: 700;
+    line-height: 1.1;
+    font-family: 'Noto Serif SC', 'PingFang SC', serif;
+  }
+
+  .mobile-char-tile.active .mobile-tile-glyph {
+    color: var(--accent-seal);
+  }
+
+  .mobile-tile-hv {
+    font-size: 0.58rem;
+    font-weight: 600;
+    color: var(--fg-muted);
+    line-height: 1;
+    margin-top: 0.15rem;
+    max-width: 44px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .mobile-char-tile.active .mobile-tile-hv {
+    color: var(--accent-seal);
+    font-weight: 700;
+  }
+
+  .mobile-tile-star {
+    position: absolute;
+    top: 3px;
+    right: 3px;
+    color: #f59e0b;
   }
 }
 
@@ -3441,9 +4202,31 @@ html.dark .radical-box-glyph {
   display: inline;
 }
 
+.pinyin-badge-glyph {
+  font-family: 'Noto Serif SC', 'PingFang SC', serif;
+  font-weight: 800;
+  font-size: 0.95rem;
+  color: var(--accent-seal);
+  display: inline-block;
+  line-height: 1;
+}
+
 @media (max-width: 640px) {
-  .pinyin-chart-label {
-    display: none;
+  .pinyin-chart-label,
+  .search-shortcut {
+    display: none !important;
+  }
+  .shortcuts-trigger-wrapper {
+    display: none !important;
+  }
+  .pinyin-chart-trigger-btn,
+  .search-trigger-btn,
+  .font-toggle-btn,
+  .display-mode-toggle-btn {
+    padding: 0 0.4rem !important;
+    min-width: 34px !important;
+    height: 34px !important;
+    justify-content: center !important;
   }
 }
 
@@ -5235,16 +6018,28 @@ html.dark .pronounce-guide-pill-btn {
     overflow: hidden;
   }
 
+  .mobile-bottom-nav,
+  .mobile-zen-tabbar {
+    display: none !important;
+  }
+
   .studio-main-viewport {
     flex: 1;
     min-height: 0;
   }
 
   .studio-split-layout {
+    display: grid !important;
+    width: auto !important;
+    transform: none !important;
     flex: 1;
     min-height: 0;
     height: auto;
     grid-template-columns: clamp(248px, 20vw, 310px) minmax(0, 1fr) clamp(320px, 25vw, 390px);
+  }
+
+  .studio-sidebar-left {
+    display: flex !important;
   }
 
   .studio-sidebar-left,
@@ -5339,17 +6134,67 @@ html.dark .pronounce-guide-pill-btn {
   }
 }
 
-/* Font toggle: shows the current Hanzi typeface by name and sample */
-.font-toggle-btn {
+/* Display mode toggle in Navbar: Hiện đại ↔ Thành phần */
+.display-mode-toggle-btn {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  width: auto;
+  min-width: 0;
+  padding: 0.35rem 0.75rem;
+  font-weight: 600;
+  font-size: 0.82rem;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  border-radius: var(--radius-full);
+}
+
+.display-mode-toggle-btn.mode-components {
+  border-color: rgba(2, 132, 199, 0.45);
+  background: rgba(2, 132, 199, 0.08);
+  color: #0284c7;
+}
+
+html.dark .display-mode-toggle-btn.mode-components {
+  border-color: rgba(56, 189, 248, 0.45);
+  background: rgba(56, 189, 248, 0.12);
+  color: #38bdf8;
+}
+
+.comp-dots-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-right: 1px;
+}
+
+.comp-dots-badge .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.comp-dots-badge .dot-blue {
+  background: #0284c7;
+}
+
+html.dark .comp-dots-badge .dot-blue {
+  background: #38bdf8;
+}
+
+.comp-dots-badge .dot-red {
+  background: #dc2626;
+}
+
+html.dark .comp-dots-badge .dot-red {
+  background: #f87171;
 }
 
 .font-toggle-sample {
-  font-size: 1.1rem;
+  font-size: 1.05rem;
   line-height: 1;
   color: var(--accent-seal);
+  font-weight: 700;
 }
 
 /* Shown when the API is unreachable and the built-in sample data is used */

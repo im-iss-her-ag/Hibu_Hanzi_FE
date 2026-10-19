@@ -4,6 +4,8 @@ export type HskLevel = 1 | 2 | 3 | 4 | 5 | 6
 // HSK 3.0 groups its advanced levels 7–9 into one band, stored as 7.
 export type Hsk3Level = HskLevel | 7
 export type HskStandard = '2.0' | '3.0'
+export type LevelFilter = HskLevel | 'radicals'
+
 
 // 'mnemonic' = folk memory aid, 'etymology' = real origin. The UI labels them differently.
 export type ChietTuType = 'mnemonic' | 'etymology'

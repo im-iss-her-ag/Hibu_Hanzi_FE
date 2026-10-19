@@ -1,8 +1,7 @@
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { PenTool, Layers } from 'lucide-react'
-import type { HskLevel, HskStandard } from './core'
-import { pickRandom } from './core'
+import type { HskLevel, LevelFilter } from './core'
+import { pickRandom, RADICAL_CHARACTERS } from './core'
 import { api } from './api'
 import { Navbar } from './components/Navbar'
 import { LeftSidebar } from './components/LeftSidebar'
@@ -12,6 +11,7 @@ import { SearchModal } from './components/SearchModal'
 import { FavoritesModal } from './components/FavoritesModal'
 import { PronunciationModal } from './components/PronunciationModal'
 import { PinyinChartModal } from './components/PinyinChartModal'
+import { MobileBottomBar } from './components/MobileBottomBar'
 
 export function App() {
   // Query full bundle (server or local offline dataset)
@@ -23,14 +23,20 @@ export function App() {
   const allCharacters = useMemo(() => bundle.data?.characters ?? [], [bundle.data?.characters])
   const allWords = useMemo(() => bundle.data?.words ?? [], [bundle.data?.words])
 
-  // Filters & State
-  const [standard, setStandard] = useState<HskStandard>('2.0')
-  const [selectedLevel, setSelectedLevel] = useState<HskLevel | null>(null)
+  // Filters & State (HSK 1-6 hoặc Tab 'radicals' Bộ thủ)
+  const [selectedLevel, setSelectedLevel] = useState<LevelFilter>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('hibu_hsk_level')
+      if (saved === 'radicals') return 'radicals'
+      if (saved !== null) {
+        const parsed = parseInt(saved, 10)
+        if (parsed >= 1 && parsed <= 6) return parsed as HskLevel
+      }
+    }
+    return 1 // Mặc định luôn là Cấp 1
+  })
   const [currentHanzi, setCurrentHanzi] = useState<string | null>(null)
 
-  // Mobile state
-  const [mobileTab, setMobileTab] = useState<'canvas' | 'breakdown'>('canvas')
-  const [isMobileListOpen, setIsMobileListOpen] = useState(false)
 
   // Modals
   const [showSearch, setShowSearch] = useState<boolean>(false)
@@ -43,8 +49,14 @@ export function App() {
     meaningVi?: string | null
   } | null>(null)
 
-  // Appearance
-  const [fontStyle, setFontStyle] = useState<'calligraphy' | 'sans'>('calligraphy')
+  // Appearance: Chế độ hiển thị chữ ('modern' - Mặc định hoặc 'components' - Thành phần)
+  const [displayMode, setDisplayMode] = useState<'modern' | 'components'>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('hibu_display_mode')
+      if (saved === 'components' || saved === 'modern') return saved
+    }
+    return 'modern'
+  })
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('hibu_theme')
@@ -87,14 +99,22 @@ export function App() {
     }
   }, [favorites])
 
-  // Filter pool based on standard & level
+  // Save selected HSK level
+  useEffect(() => {
+    try {
+      localStorage.setItem('hibu_hsk_level', String(selectedLevel))
+    } catch {
+      // ignore
+    }
+  }, [selectedLevel])
+
+  // Filter pool based on HSK 3.0 level (1-6) or Radicals
   const filteredCharacters = useMemo(() => {
-    if (selectedLevel === null) return allCharacters
-    return allCharacters.filter((c) => {
-      const lvl = standard === '2.0' ? c.hsk2Level : c.hsk3Level
-      return lvl === selectedLevel
-    })
-  }, [allCharacters, standard, selectedLevel])
+    if (selectedLevel === 'radicals') {
+      return RADICAL_CHARACTERS
+    }
+    return allCharacters.filter((c) => c.hsk3Level === selectedLevel)
+  }, [allCharacters, selectedLevel])
 
   // Active character
   const activeChar = useMemo(() => {
@@ -111,6 +131,40 @@ export function App() {
     const idx = filteredCharacters.findIndex((c) => c.hanzi === activeChar.hanzi)
     return idx >= 0 ? idx : 0
   }, [filteredCharacters, activeChar])
+
+  // Smart character navigation: automatically switch level if the character or radical belongs to another level
+  const handleSelectHanzi = useCallback(
+    (h: string) => {
+      // 1. Check if it's already in the current filtered list
+      const inCurrent = filteredCharacters.find((c) => c.hanzi === h || c.traditional === h)
+      if (inCurrent) {
+        setCurrentHanzi(inCurrent.hanzi)
+        return
+      }
+
+      // 2. Check if it's in allCharacters (HSK 1-6)
+      const foundInHsk = allCharacters.find((c) => c.hanzi === h || c.traditional === h)
+      if (foundInHsk) {
+        if (foundInHsk.hsk3Level && foundInHsk.hsk3Level >= 1 && foundInHsk.hsk3Level <= 6) {
+          setSelectedLevel(foundInHsk.hsk3Level as HskLevel)
+        }
+        setCurrentHanzi(foundInHsk.hanzi)
+        return
+      }
+
+      // 3. Check if it's a radical / component
+      const foundInRadicals = RADICAL_CHARACTERS.find((r) => r.hanzi === h)
+      if (foundInRadicals) {
+        setSelectedLevel('radicals')
+        setCurrentHanzi(foundInRadicals.hanzi)
+        return
+      }
+
+      // 4. Fallback
+      setCurrentHanzi(h)
+    },
+    [filteredCharacters, allCharacters],
+  )
 
   // Pick random other character
   const pickNextRandom = useCallback(() => {
@@ -134,6 +188,7 @@ export function App() {
     const prevIdx = (currentIndex - 1 + filteredCharacters.length) % filteredCharacters.length
     setCurrentHanzi(filteredCharacters[prevIdx].hanzi)
   }, [filteredCharacters, currentIndex])
+
 
 
 
@@ -196,7 +251,6 @@ export function App() {
           setShowFavorites(false)
           setShowPinyinChart(false)
           setPronounceTarget(null)
-          setIsMobileListOpen(false)
           break
       }
     }
@@ -205,18 +259,103 @@ export function App() {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [handleNext, handlePrev, pickNextRandom, handleToggleFavorite])
 
-  const toggleFont = () => {
-    setFontStyle((prev) =>
-      prev === 'calligraphy' ? 'sans' : 'calligraphy',
-    )
+  const toggleDisplayMode = () => {
+    setDisplayMode((prev) => {
+      const next = prev === 'modern' ? 'components' : 'modern'
+      try {
+        localStorage.setItem('hibu_display_mode', next)
+      } catch {
+        // ignore
+      }
+      return next
+    })
   }
+
+  // Check if any modal or overlay is currently active
+  const isModalActive = Boolean(
+    showSearch ||
+    showFavorites ||
+    showPinyinChart ||
+    pronounceTarget ||
+    (typeof document !== 'undefined' && document.querySelector('.modal-backdrop'))
+  )
+
+  // Prevent background scrolling while any modal is open
+  useEffect(() => {
+    if (isModalActive) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+    return () => {
+      document.body.style.overflow = ''
+    }
+  }, [isModalActive])
+
+  // Mobile horizontal swipe gestures: Swipe left -> Next character, Swipe right -> Prev character
+  const touchStartXRef = useRef<number | null>(null)
+  const touchStartYRef = useRef<number | null>(null)
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    // If any modal/dialog is open or touch is inside a modal or canvas, do NOT trigger swipe
+    if (
+      isModalActive ||
+      Boolean(document.querySelector('.modal-backdrop')) ||
+      (e.target as HTMLElement)?.closest('.modal-backdrop') ||
+      (e.target as HTMLElement)?.closest('.modal-content') ||
+      (e.target as HTMLElement)?.closest('.hanzi-writer-modal') ||
+      (e.target as HTMLElement)?.closest('.mige-canvas-frame') ||
+      (e.target as HTMLElement)?.closest('.mobile-tile-track')
+    ) {
+      touchStartXRef.current = null
+      touchStartYRef.current = null
+      return
+    }
+    if (e.touches.length === 1) {
+      touchStartXRef.current = e.touches[0].clientX
+      touchStartYRef.current = e.touches[0].clientY
+    }
+  }
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (
+      isModalActive ||
+      Boolean(document.querySelector('.modal-backdrop')) ||
+      (e.target as HTMLElement)?.closest('.modal-backdrop') ||
+      (e.target as HTMLElement)?.closest('.modal-content') ||
+      (e.target as HTMLElement)?.closest('.hanzi-writer-modal')
+    ) {
+      touchStartXRef.current = null
+      touchStartYRef.current = null
+      return
+    }
+    if (touchStartXRef.current === null || touchStartYRef.current === null) return
+    const touchEndX = e.changedTouches[0].clientX
+    const touchEndY = e.changedTouches[0].clientY
+    const deltaX = touchEndX - touchStartXRef.current
+    const deltaY = touchEndY - touchStartYRef.current
+
+    // Trigger swipe if horizontal displacement > 50px and predominantly horizontal
+    if (Math.abs(deltaX) > 50 && Math.abs(deltaX) > Math.abs(deltaY) * 1.4) {
+      if (deltaX < 0) {
+        // Swiped left -> Chữ tiếp theo
+        handleNext()
+      } else {
+        // Swiped right -> Chữ trước đó
+        handlePrev()
+      }
+    }
+    touchStartXRef.current = null
+    touchStartYRef.current = null
+  }
+
 
   return (
     <div className="studio-app-root">
       {/* Top Header / Navigation */}
       <Navbar
-        fontStyle={fontStyle}
-        onToggleFont={toggleFont}
+        displayMode={displayMode}
+        onToggleDisplayMode={toggleDisplayMode}
         isDarkMode={isDarkMode}
         onToggleDarkMode={() => setIsDarkMode(!isDarkMode)}
         favoritesCount={favorites.length}
@@ -254,47 +393,24 @@ export function App() {
                 </button>
               </div>
             )}
-            {/* Mobile Tab Switcher: "Zen Floating Widget" Tabs */}
-            <div className="mobile-zen-tabbar" role="tablist">
-              <button
-                type="button"
-                role="tab"
-                aria-selected={mobileTab === 'canvas'}
-                className={`zen-tab-btn ${mobileTab === 'canvas' ? 'active' : ''}`}
-                onClick={() => setMobileTab('canvas')}
-              >
-                <PenTool size={15} />
-                <span>Chữ & Nét viết</span>
-              </button>
-              <button
-                type="button"
-                role="tab"
-                aria-selected={mobileTab === 'breakdown'}
-                className={`zen-tab-btn ${mobileTab === 'breakdown' ? 'active' : ''}`}
-                onClick={() => setMobileTab('breakdown')}
-              >
-                <Layers size={15} />
-                <span>Chiết tự & Hán Việt</span>
-              </button>
-            </div>
 
-            {/* Studio 3-Column Split Workspace: Always preserved */}
-            <div className={`studio-split-layout mobile-view-${mobileTab}`}>
-              {/* Left Column: Character Library & Filters */}
+            {/* Studio Workspace: Desktop 3-Column / Mobile Single Unified Scroll with Left-Right Swipe */}
+            <div
+              className="studio-split-layout"
+              onTouchStart={handleTouchStart}
+              onTouchEnd={handleTouchEnd}
+            >
+              {/* Left Column: Character Library (Desktop Only) */}
               <LeftSidebar
                 characters={allCharacters}
                 activeHanzi={activeChar?.hanzi ?? null}
-                onSelectHanzi={(h) => setCurrentHanzi(h)}
-                standard={standard}
-                onStandardChange={setStandard}
+                onSelectHanzi={handleSelectHanzi}
                 selectedLevel={selectedLevel}
                 onLevelChange={setSelectedLevel}
                 favorites={favorites}
-                isOpenMobile={isMobileListOpen}
-                onCloseMobile={() => setIsMobileListOpen(false)}
               />
 
-              {/* Center Column: Hero Canvas OR In-Place Empty State */}
+              {/* Center Column: Slide 1 (Writing Canvas & Pronunciation) */}
               <div className="studio-col-center">
                 {activeChar ? (
                   <StudioCenter
@@ -303,13 +419,11 @@ export function App() {
                     currentIndex={currentIndex}
                     totalCount={filteredCharacters.length}
                     isFavorite={favorites.includes(activeChar.hanzi)}
-                    fontStyle={fontStyle}
-                    onToggleFont={toggleFont}
+                    displayMode={displayMode}
                     onToggleFavorite={handleToggleFavorite}
                     onNext={handleNext}
                     onPrev={handlePrev}
                     onRandom={pickNextRandom}
-                    onOpenMobileList={() => setIsMobileListOpen(true)}
                   />
                 ) : (
                   <div className="center-empty-workspace">
@@ -317,29 +431,42 @@ export function App() {
                     <div className="empty-workspace-content">
                       <h3 className="empty-workspace-title">Chưa có chữ Hán ở bộ lọc này</h3>
                       <p className="empty-workspace-desc">
-                        Cấp độ {standard === '2.0' ? 'HSK 2.0' : 'HSK 3.0'} {selectedLevel ? `Cấp ${selectedLevel}` : ''} hiện chưa có từ trong gói dữ liệu hiện tại.
+                        {selectedLevel === 'radicals'
+                          ? 'Chưa có bộ thủ nào trong kho dữ liệu hiện tại.'
+                          : `Cấp độ HSK 3.0 Cấp ${selectedLevel} hiện chưa có từ trong gói dữ liệu hiện tại.`}
                       </p>
                       <button
                         type="button"
                         className="empty-reset-pill-btn"
-                        onClick={() => setSelectedLevel(null)}
+                        onClick={() => setSelectedLevel(1)}
                       >
-                        Xem tất cả cấp độ
+                        Quay về Cấp 1
                       </button>
                     </div>
                   </div>
                 )}
               </div>
 
-              {/* Right Column: Deep Hán Việt & Chiết Tự Breakdown */}
+              {/* Right Column: Slide 2 (Deep Decomposition & Vocabulary) */}
               <div className="studio-col-right">
                 <RightBreakdown
                   detail={detailQuery.data ?? null}
                   isLoading={detailQuery.isPending}
-                  onSelectHanzi={(h) => setCurrentHanzi(h)}
+                  onSelectHanzi={handleSelectHanzi}
+                  displayMode={displayMode}
                 />
               </div>
             </div>
+
+            {/* Mobile Horizontal Bottom Bar: Fixed Swipeable Character Strip */}
+            <MobileBottomBar
+              characters={filteredCharacters}
+              activeHanzi={activeChar?.hanzi ?? null}
+              onSelectHanzi={handleSelectHanzi}
+              selectedLevel={selectedLevel}
+              onLevelChange={setSelectedLevel}
+              favorites={favorites}
+            />
           </>
         )}
       </main>
@@ -350,7 +477,7 @@ export function App() {
           characters={allCharacters}
           words={allWords}
           onSelectHanzi={(h) => {
-            setCurrentHanzi(h)
+            handleSelectHanzi(h)
             setShowSearch(false)
           }}
           onClose={() => setShowSearch(false)}
@@ -363,13 +490,14 @@ export function App() {
           favorites={favorites}
           characters={allCharacters}
           onSelectHanzi={(h) => {
-            setCurrentHanzi(h)
+            handleSelectHanzi(h)
             setShowFavorites(false)
           }}
           onRemoveFavorite={(h) => setFavorites((prev) => prev.filter((fav) => fav !== h))}
           onClearAll={() => setFavorites([])}
           onClose={() => setShowFavorites(false)}
         />
+
       )}
 
       {/* Comprehensive Pinyin Chart Modal */}

@@ -5,7 +5,7 @@ import { Play, RotateCcw, PenTool, CheckCircle, Eye, Gauge } from 'lucide-react'
 interface HanziWriterCanvasProps {
   hanzi: string
   size?: number
-  fontStyle?: 'calligraphy' | 'sans'
+  displayMode?: 'modern' | 'components'
   defaultMode?: 'display' | 'animate' | 'quiz'
   onCompleteQuiz?: (mistakes: number) => void
 }
@@ -13,7 +13,7 @@ interface HanziWriterCanvasProps {
 export function HanziWriterCanvas({
   hanzi,
   size = 220,
-  fontStyle = 'calligraphy',
+  displayMode = 'modern',
   defaultMode = 'display',
   onCompleteQuiz,
 }: HanziWriterCanvasProps) {
@@ -30,8 +30,8 @@ export function HanziWriterCanvas({
   useEffect(() => {
     if (!containerRef.current) return
 
-    // In display mode, show static font glyph instead of HanziWriter canvas
-    if (mode === 'display') {
+    // In display mode without components, show static modern font glyph instead of HanziWriter canvas
+    if (mode === 'display' && displayMode !== 'components') {
       if (writerRef.current) {
         writerRef.current = null
       }
@@ -54,7 +54,7 @@ export function HanziWriterCanvas({
       outlineColor: isDark ? '#262c38' : '#e7e3da',
       drawingColor: isDark ? '#38bdf8' : '#1d4ed8',
       highlightColor: '#10b981',
-      showCharacter: mode === 'animate',
+      showCharacter: mode === 'animate' || displayMode === 'components',
     })
 
     writerRef.current = writer
@@ -117,8 +117,7 @@ export function HanziWriterCanvas({
     setSpeed(nextSpeed)
   }
 
-  const fontClass =
-    fontStyle === 'calligraphy' ? 'font-calligraphy' : 'font-sans-sc'
+  const fontClass = 'font-sans-sc'
 
   return (
     <div className="hanzi-writer-canvas-wrapper">
@@ -209,7 +208,7 @@ export function HanziWriterCanvas({
         </svg>
 
         {/* Display mode: Large typographic glyph */}
-        {mode === 'display' ? (
+        {mode === 'display' && displayMode !== 'components' ? (
           <div
             className={`hanzi-static-glyph ${fontClass}`}
             lang="zh"

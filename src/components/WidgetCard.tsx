@@ -7,7 +7,7 @@ interface WidgetCardProps {
   currentIndex: number
   totalCount: number
   isFavorite: boolean
-  fontStyle: 'calligraphy' | 'sans'
+  displayMode?: 'modern' | 'components'
   onToggleFavorite: () => void
   onOpenWriter: () => void
   onOpenDetail: () => void
@@ -21,7 +21,6 @@ export function WidgetCard({
   currentIndex,
   totalCount,
   isFavorite,
-  fontStyle,
   onToggleFavorite,
   onOpenWriter,
   onOpenDetail,
@@ -35,8 +34,7 @@ export function WidgetCard({
     speakChinese(primary?.pinyin || character.hanzi)
   }
 
-  const fontClass =
-    fontStyle === 'calligraphy' ? 'font-calligraphy' : 'font-sans-sc'
+  const fontClass = 'font-sans-sc'
 
   return (
     <article className="widget-card-container">

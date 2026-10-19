@@ -1,16 +1,15 @@
 import { useState, useMemo, useEffect } from 'react'
 import { Search, Star, BookOpen, Layers, X, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useFitCount } from '../utils/useFitCount'
-import type { BundleCharacter, HskLevel, HskStandard } from '../core'
+import type { BundleCharacter, LevelFilter } from '../core'
+import { RADICAL_CHARACTERS } from '../core'
 
 interface LeftSidebarProps {
   characters: BundleCharacter[]
   activeHanzi: string | null
   onSelectHanzi: (hanzi: string) => void
-  standard: HskStandard
-  onStandardChange: (std: HskStandard) => void
-  selectedLevel: HskLevel | null
-  onLevelChange: (lvl: HskLevel | null) => void
+  selectedLevel: LevelFilter
+  onLevelChange: (lvl: LevelFilter) => void
   favorites: string[]
   isOpenMobile?: boolean
   onCloseMobile?: () => void
@@ -24,8 +23,6 @@ export function LeftSidebar({
   characters,
   activeHanzi,
   onSelectHanzi,
-  standard,
-  onStandardChange,
   selectedLevel,
   onLevelChange,
   favorites,
@@ -37,19 +34,16 @@ export function LeftSidebar({
 
   // Filter list
   const filteredList = useMemo(() => {
-    let list = characters
+    let list = selectedLevel === 'radicals' ? RADICAL_CHARACTERS : characters
 
     // Filter by favorites tab
     if (filterMode === 'favorites') {
       list = list.filter((c) => favorites.includes(c.hanzi))
     }
 
-    // Filter by HSK Level
-    if (selectedLevel !== null) {
-      list = list.filter((c) => {
-        const lvl = standard === '2.0' ? c.hsk2Level : c.hsk3Level
-        return lvl === selectedLevel
-      })
+    // Filter by HSK Level (if not radicals)
+    if (selectedLevel !== 'radicals') {
+      list = list.filter((c) => c.hsk3Level === selectedLevel)
     }
 
     // Filter by search query
@@ -70,7 +64,8 @@ export function LeftSidebar({
     }
 
     return list
-  }, [characters, filterMode, favorites, selectedLevel, standard, searchQuery])
+  }, [characters, filterMode, favorites, selectedLevel, searchQuery])
+
 
   // Fit as many fixed-size tiles as the available area allows, then paginate
   const [gridRef, fit] = useFitCount<HTMLDivElement>(TILE_W, TILE_H, TILE_GAP)
@@ -153,27 +148,31 @@ export function LeftSidebar({
 
         {/* HSK Level Filter Row */}
         <div className="sidebar-filter-cluster">
-          <button
-            type="button"
-            className="hsk-standard-badge"
-            onClick={() => onStandardChange(standard === '2.0' ? '3.0' : '2.0')}
-            title="Đổi giữa HSK 2.0 và HSK 3.0"
-          >
-            HSK {standard}
-          </button>
+          <span className="hsk-standard-badge" title="Chuẩn HSK 3.0 (2021)">
+            HSK 3.0
+          </span>
           <div className="hsk-level-pills">
             {[1, 2, 3, 4, 5, 6].map((lvl) => (
               <button
                 key={lvl}
                 type="button"
                 className={`lvl-pill ${selectedLevel === lvl ? 'active' : ''}`}
-                onClick={() => onLevelChange(selectedLevel === lvl ? null : (lvl as HskLevel))}
-                title={`HSK Cấp ${lvl} (Bấm lại để xem tất cả)`}
+                onClick={() => onLevelChange(lvl as LevelFilter)}
+                title={`HSK 3.0 Cấp ${lvl}`}
               >
                 {lvl}
               </button>
             ))}
+            <button
+              type="button"
+              className={`lvl-pill radical-tab-pill ${selectedLevel === 'radicals' ? 'active' : ''}`}
+              onClick={() => onLevelChange('radicals')}
+              title="214 Bộ thủ & Thành phần chữ Hán"
+            >
+              Bộ thủ
+            </button>
           </div>
+
         </div>
       </div>
 

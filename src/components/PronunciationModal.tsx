@@ -47,11 +47,21 @@ export function PronunciationModal({
   const { initial, final, phoneticFinal, initialInfo, finalInfo, toneInfo, toneVariants } = parsed
 
   return (
-    <div className="modal-backdrop" onClick={onClose} role="dialog" aria-modal="true">
+    <div
+      className="modal-backdrop"
+      onClick={onClose}
+      onTouchStart={(e) => e.stopPropagation()}
+      onTouchEnd={(e) => e.stopPropagation()}
+      role="dialog"
+      aria-modal="true"
+    >
       <div
         className="modal-content pronunciation-modal-content"
         onClick={(e) => e.stopPropagation()}
+        onTouchStart={(e) => e.stopPropagation()}
+        onTouchEnd={(e) => e.stopPropagation()}
       >
+
         {/* Header with Hero Character info */}
         <div className="pronounce-modal-header">
           <div className="pronounce-hero-profile">

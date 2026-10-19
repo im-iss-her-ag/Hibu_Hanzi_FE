@@ -23,8 +23,21 @@ export function FavoritesModal({
     .filter((c): c is BundleCharacter => Boolean(c))
 
   return (
-    <div className="modal-backdrop" onClick={onClose} role="dialog" aria-modal="true">
-      <div className="modal-content fav-modal-content" onClick={(e) => e.stopPropagation()}>
+    <div
+      className="modal-backdrop"
+      onClick={onClose}
+      onTouchStart={(e) => e.stopPropagation()}
+      onTouchEnd={(e) => e.stopPropagation()}
+      role="dialog"
+      aria-modal="true"
+    >
+      <div
+        className="modal-content fav-modal-content"
+        onClick={(e) => e.stopPropagation()}
+        onTouchStart={(e) => e.stopPropagation()}
+        onTouchEnd={(e) => e.stopPropagation()}
+      >
+
         <div className="modal-header">
           <div className="header-info">
             <h3 className="modal-title">Sổ tay chữ đã lưu</h3>

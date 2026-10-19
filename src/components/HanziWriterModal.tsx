@@ -95,8 +95,21 @@ export function HanziWriterModal({
   }
 
   return (
-    <div className="modal-backdrop" onClick={onClose} role="dialog" aria-modal="true">
-      <div className="modal-content writer-modal" onClick={(e) => e.stopPropagation()}>
+    <div
+      className="modal-backdrop"
+      onClick={onClose}
+      onTouchStart={(e) => e.stopPropagation()}
+      onTouchEnd={(e) => e.stopPropagation()}
+      role="dialog"
+      aria-modal="true"
+    >
+      <div
+        className="modal-content writer-modal"
+        onClick={(e) => e.stopPropagation()}
+        onTouchStart={(e) => e.stopPropagation()}
+        onTouchEnd={(e) => e.stopPropagation()}
+      >
+
         <div className="modal-header">
           <div className="header-info">
             <h3 className="modal-title">Tập viết & Nét bút</h3>

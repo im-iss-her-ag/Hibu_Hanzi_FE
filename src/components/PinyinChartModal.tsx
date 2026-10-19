@@ -118,11 +118,21 @@ export function PinyinChartModal({ onClose, onInspectPinyin }: PinyinChartModalP
   }, [selectedSyllable])
 
   return (
-    <div className="modal-backdrop" onClick={onClose} role="dialog" aria-modal="true">
+    <div
+      className="modal-backdrop"
+      onClick={onClose}
+      onTouchStart={(e) => e.stopPropagation()}
+      onTouchEnd={(e) => e.stopPropagation()}
+      role="dialog"
+      aria-modal="true"
+    >
       <div
         className="modal-content pinyin-chart-modal-content"
         onClick={(e) => e.stopPropagation()}
+        onTouchStart={(e) => e.stopPropagation()}
+        onTouchEnd={(e) => e.stopPropagation()}
       >
+
         {/* Modal Top Header */}
         <div className="pinyin-chart-header">
           <div className="pinyin-chart-title-group">
