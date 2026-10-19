@@ -5,7 +5,7 @@ import { Play, RotateCcw, PenTool, CheckCircle, Eye, Gauge } from 'lucide-react'
 interface HanziWriterCanvasProps {
   hanzi: string
   size?: number
-  fontStyle?: 'calligraphy' | 'serif' | 'sans'
+  fontStyle?: 'calligraphy' | 'sans'
   defaultMode?: 'display' | 'animate' | 'quiz'
   onCompleteQuiz?: (mistakes: number) => void
 }
@@ -118,11 +118,7 @@ export function HanziWriterCanvas({
   }
 
   const fontClass =
-    fontStyle === 'calligraphy'
-      ? 'font-calligraphy'
-      : fontStyle === 'serif'
-        ? 'font-serif-sc'
-        : 'font-sans-sc'
+    fontStyle === 'calligraphy' ? 'font-calligraphy' : 'font-sans-sc'
 
   return (
     <div className="hanzi-writer-canvas-wrapper">

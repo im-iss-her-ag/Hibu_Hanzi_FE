@@ -1,8 +1,14 @@
 import { useState, useRef, useEffect } from 'react'
-import { Star, Moon, Sun, Type, Keyboard } from 'lucide-react'
+import { Star, Moon, Sun, Keyboard } from 'lucide-react'
+
+// Hanzi typefaces the learner can switch between
+const FONT_LABELS = {
+  calligraphy: { label: 'Thư pháp', className: 'font-calligraphy' },
+  sans: { label: 'Hiện đại', className: 'font-sans-sc' },
+} as const
 
 interface NavbarProps {
-  fontStyle: 'calligraphy' | 'serif' | 'sans'
+  fontStyle: 'calligraphy' | 'sans'
   onToggleFont: () => void
   isDarkMode: boolean
   onToggleDarkMode: () => void
@@ -81,11 +87,18 @@ export function Navbar({
 
           <button
             type="button"
-            className="tool-btn font-toggle-btn"
+            className="tool-btn pinyin-chart-trigger-btn font-toggle-btn"
             onClick={onToggleFont}
-            title={`Kiểu chữ: ${fontStyle === 'calligraphy' ? 'Thư pháp' : fontStyle === 'serif' ? 'Khải thư' : 'Không chân'}`}
+            title="Đổi kiểu chữ Hán: Thư pháp ↔ Hiện đại"
           >
-            <Type size={18} />
+            <span
+              className={`font-toggle-sample ${FONT_LABELS[fontStyle].className}`}
+              lang="zh"
+              aria-hidden="true"
+            >
+              字
+            </span>
+            <span className="pinyin-chart-label">{FONT_LABELS[fontStyle].label}</span>
           </button>
 
           {/* Keyboard Shortcuts Helper */}

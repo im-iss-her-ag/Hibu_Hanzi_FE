@@ -44,7 +44,7 @@ export function App() {
   } | null>(null)
 
   // Appearance
-  const [fontStyle, setFontStyle] = useState<'calligraphy' | 'serif' | 'sans'>('calligraphy')
+  const [fontStyle, setFontStyle] = useState<'calligraphy' | 'sans'>('calligraphy')
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('hibu_theme')
@@ -207,7 +207,7 @@ export function App() {
 
   const toggleFont = () => {
     setFontStyle((prev) =>
-      prev === 'calligraphy' ? 'serif' : prev === 'serif' ? 'sans' : 'calligraphy',
+      prev === 'calligraphy' ? 'sans' : 'calligraphy',
     )
   }
 

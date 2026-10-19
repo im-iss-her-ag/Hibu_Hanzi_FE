@@ -1,5 +1,6 @@
-import { useState, useMemo } from 'react'
-import { Search, Star, BookOpen, Layers, X } from 'lucide-react'
+import { useState, useMemo, useEffect } from 'react'
+import { Search, Star, BookOpen, Layers, X, ChevronLeft, ChevronRight } from 'lucide-react'
+import { useFitCount } from '../utils/useFitCount'
 import type { BundleCharacter, HskLevel, HskStandard } from '../core'
 
 interface LeftSidebarProps {
@@ -14,6 +15,10 @@ interface LeftSidebarProps {
   isOpenMobile?: boolean
   onCloseMobile?: () => void
 }
+
+const TILE_W = 52
+const TILE_H = 58
+const TILE_GAP = 6
 
 export function LeftSidebar({
   characters,
@@ -66,6 +71,21 @@ export function LeftSidebar({
 
     return list
   }, [characters, filterMode, favorites, selectedLevel, standard, searchQuery])
+
+  // Fit as many fixed-size tiles as the available area allows, then paginate
+  const [gridRef, fit] = useFitCount<HTMLDivElement>(TILE_W, TILE_H, TILE_GAP)
+  const perPage = Math.max(1, fit.cols * fit.rows)
+  const pageCount = Math.max(1, Math.ceil(filteredList.length / perPage))
+  const [page, setPage] = useState(0)
+  const safePage = Math.min(page, pageCount - 1)
+
+  // Jump to the page containing the active character when list / size / selection changes
+  useEffect(() => {
+    const idx = activeHanzi ? filteredList.findIndex((c) => c.hanzi === activeHanzi) : -1
+    setPage(idx >= 0 ? Math.floor(idx / perPage) : 0)
+  }, [filteredList, perPage, activeHanzi])
+
+  const pageItems = filteredList.slice(safePage * perPage, safePage * perPage + perPage)
 
   return (
     <aside className={`studio-sidebar-left ${isOpenMobile ? 'mobile-open' : ''}`}>
@@ -157,57 +177,69 @@ export function LeftSidebar({
         </div>
       </div>
 
-      {/* Character List Items */}
-      <div className="sidebar-item-list" role="list">
+      {/* Character Tile Grid (paginated to fit, no scrolling) */}
+      <div className="sidebar-tile-area" ref={gridRef}>
         {filteredList.length === 0 ? (
           <div className="sidebar-empty-state">
             <p>Không có chữ nào phù hợp.</p>
           </div>
         ) : (
-          filteredList.map((item) => {
-            const isSelected = item.hanzi === activeHanzi
-            const isFav = favorites.includes(item.hanzi)
-            const primary = item.readings[0]
-
-            return (
-              <div
-                key={item.hanzi}
-                role="listitem"
-                className={`sidebar-char-card ${isSelected ? 'selected' : ''}`}
-                onClick={() => {
-                  onSelectHanzi(item.hanzi)
-                  if (onCloseMobile) onCloseMobile()
-                }}
-              >
-                {/* Hanzi Glyph Box */}
-                <div className="char-card-glyph" lang="zh">
-                  {item.hanzi}
-                </div>
-
-                {/* Information hierarchy - Structured, NO lazy dots */}
-                <div className="char-card-info">
-                  <div className="char-card-top">
-                    {/* Prestigious Vermilion Seal Tag for Han Viet */}
-                    <span className="seal-mini-tag">
-                      {primary?.hanViet ? primary.hanViet.toUpperCase() : '—'}
-                    </span>
-                    <span className="pinyin-tag">{primary?.pinyin}</span>
-                  </div>
-                  <div className="char-card-mean">{primary?.meaningVi}</div>
-                </div>
-
-                {/* Right badges */}
-                <div className="char-card-badges">
-                  {isFav && <Star size={13} className="fav-star-icon" fill="currentColor" />}
-                  <span className="lvl-mini-badge">
-                    {item.hsk2Level ? `H${item.hsk2Level}` : ''}
-                  </span>
-                </div>
-              </div>
-            )
-          })
+          <div
+            className="sidebar-tile-grid"
+            role="list"
+            style={{ gridTemplateColumns: `repeat(${fit.cols}, 1fr)` }}
+          >
+            {pageItems.map((item) => {
+              const isSelected = item.hanzi === activeHanzi
+              const isFav = favorites.includes(item.hanzi)
+              const primary = item.readings[0]
+              return (
+                <button
+                  type="button"
+                  key={item.hanzi}
+                  role="listitem"
+                  className={`sidebar-char-tile ${isSelected ? 'selected' : ''}`}
+                  title={`${primary?.pinyin ?? ''} · ${primary?.meaningVi ?? ''}`}
+                  onClick={() => {
+                    onSelectHanzi(item.hanzi)
+                    if (onCloseMobile) onCloseMobile()
+                  }}
+                >
+                  {isFav && <Star size={9} className="tile-fav-star" fill="currentColor" />}
+                  <span className="tile-glyph" lang="zh">{item.hanzi}</span>
+                  <span className="tile-hv">{primary?.hanViet ?? '—'}</span>
+                </button>
+              )
+            })}
+          </div>
         )}
       </div>
+
+      {pageCount > 1 && (
+        <div className="sidebar-pager">
+          <button
+            type="button"
+            className="pager-btn"
+            onClick={() => setPage((p) => Math.max(0, p - 1))}
+            disabled={safePage === 0}
+            aria-label="Trang trước"
+          >
+            <ChevronLeft size={16} />
+          </button>
+          <span className="pager-label">
+            {safePage + 1} / {pageCount}
+          </span>
+          <button
+            type="button"
+            className="pager-btn"
+            onClick={() => setPage((p) => Math.min(pageCount - 1, p + 1))}
+            disabled={safePage >= pageCount - 1}
+            aria-label="Trang sau"
+          >
+            <ChevronRight size={16} />
+          </button>
+        </div>
+      )}
     </aside>
   )
 }

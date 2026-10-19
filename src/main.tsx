@@ -2,6 +2,10 @@ import { lazy, StrictMode, Suspense } from 'react'
 import { createRoot } from 'react-dom/client'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { App } from './App'
+// Self-hosted Chinese fonts: Google Fonts may be blocked on some networks
+import '@fontsource/ma-shan-zheng/chinese-simplified-400.css'
+import '@fontsource/noto-serif-sc/chinese-simplified-400.css'
+import '@fontsource/noto-serif-sc/chinese-simplified-700.css'
 import './style.css'
 
 // Dictionary data changes rarely, so cached answers stay fresh for the whole session.

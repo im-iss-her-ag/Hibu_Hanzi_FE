@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useFitCount } from '../utils/useFitCount'
 import {
   Volume2,
   Star,
@@ -40,7 +41,7 @@ interface StudioCenterProps {
   currentIndex: number
   totalCount: number
   isFavorite: boolean
-  fontStyle: 'calligraphy' | 'serif' | 'sans'
+  fontStyle: 'calligraphy' | 'sans'
   onToggleFont?: () => void
   onToggleFavorite: () => void
   onNext: () => void
@@ -70,6 +71,13 @@ export function StudioCenter({
     setSelectedReadingIndex(primaryIdx >= 0 ? primaryIdx : 0)
   }, [character.hanzi])
 
+  // Scale the writing grid to the pane so nothing overflows on desktop
+  const [paneRef, paneFit] = useFitCount<HTMLElement>(1, 1, 0)
+  const isDesktop = typeof window !== 'undefined' && window.innerWidth > 1024
+  const canvasSize = isDesktop
+    ? Math.round(Math.max(150, Math.min(290, paneFit.rows - 250, paneFit.cols * 0.4)))
+    : 290
+
   const activeReading = readings[selectedReadingIndex] ?? readings[0]
   const isPolyphonic = readings.length > 1
 
@@ -78,7 +86,7 @@ export function StudioCenter({
   }
 
   return (
-    <section className="studio-canvas-pane">
+    <section className="studio-canvas-pane" ref={paneRef}>
       {/* Top action row */}
       <div className="canvas-header-bar">
         <div className="canvas-badges-left">
@@ -113,7 +121,7 @@ export function StudioCenter({
         <div className="canvas-glyph-stage">
           <HanziWriterCanvas
             hanzi={character.hanzi}
-            size={290}
+            size={canvasSize}
             fontStyle={fontStyle}
             defaultMode="display"
           />
