@@ -45,7 +45,7 @@ export function createApi(baseUrl?: string) {
       } catch {
         // ignore and fallback
       }
-      return getLocalBundle()
+      return { ...getLocalBundle(), offline: true }
     },
 
     getCharacter: async (hanzi: string): Promise<CharacterDetail> => {

@@ -94,4 +94,6 @@ export interface Bundle {
   words: Word[]
   // Rows removed from the bundle since `since`; the client deletes them from its local copy.
   removed: { characters: string[]; words: string[] }
+  // Set by the client when the API was unreachable and the small built-in sample is shown instead.
+  offline?: boolean
 }

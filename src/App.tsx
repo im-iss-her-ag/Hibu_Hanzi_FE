@@ -246,6 +246,14 @@ export function App() {
 
         {bundle.isSuccess && (
           <>
+            {bundle.data.offline && (
+              <div className="offline-notice" role="status">
+                Đang dùng dữ liệu mẫu (không kết nối được máy chủ).
+                <button type="button" onClick={() => bundle.refetch()}>
+                  Thử lại
+                </button>
+              </div>
+            )}
             {/* Mobile Tab Switcher: "Zen Floating Widget" Tabs */}
             <div className="mobile-zen-tabbar" role="tablist">
               <button
