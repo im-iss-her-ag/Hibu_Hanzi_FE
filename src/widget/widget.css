@@ -145,3 +145,46 @@ html.dark .dw-stroke-radical {
   border-color: var(--accent-seal);
   color: #fff;
 }
+
+/* Pin / hide / close: only visible while the pointer is over the widget. */
+.dw-window-btns {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 1;
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.dw-card:hover .dw-window-btns {
+  opacity: 1;
+}
+
+.dw-window-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--border-line);
+  border-radius: var(--radius-full);
+  background: var(--bg-elevated);
+  color: var(--fg-muted);
+  cursor: pointer;
+}
+
+.dw-window-btn:hover {
+  color: var(--fg-main);
+}
+
+.dw-window-btn.active {
+  color: var(--accent-seal);
+}
+
+.dw-window-btn.dw-close:hover {
+  background: var(--accent-seal);
+  border-color: var(--accent-seal);
+  color: #fff;
+}

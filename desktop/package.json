@@ -22,10 +22,6 @@
     "linux": {
       "target": "AppImage",
       "category": "Education",
-      "executableArgs": [
-        "--ozone-platform=x11",
-        "--no-sandbox"
-      ],
       "artifactName": "Hibu-Hanzi-Widget.AppImage"
     },
     "win": {
@@ -46,7 +42,8 @@
       "owner": "im-iss-her-ag",
       "repo": "Hibu_Hanzi_FE",
       "releaseType": "release"
-    }
+    },
+    "afterPack": "./after-pack.cjs"
   },
   "devDependencies": {
     "electron": "^41.7.1",

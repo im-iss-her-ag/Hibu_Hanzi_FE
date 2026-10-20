@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import HanziWriter from 'hanzi-writer'
 import type { BundleCharacter, HskLevel } from '../core'
 import { pickRandom } from '../core'
+import { Pin, PinOff, Minus, X } from 'lucide-react'
 import { api } from '../api'
 
 // Frameless, always-on-top widget page for the Electron shell in desktop/.
@@ -14,6 +15,8 @@ interface WidgetBridge {
   moveTo(x: number, y: number): void
   setSize(width: number, height: number): void
   close(): void
+  minimize(): void
+  setPinned(pinned: boolean): void
 }
 declare global {
   interface Window {
@@ -31,6 +34,7 @@ interface WidgetSettings {
   intervalSec: number
   size: Size
   theme: Theme
+  pinned: boolean
 }
 
 const SETTINGS_KEY = 'hibu_widget_settings'
@@ -45,7 +49,7 @@ const SIZES: Record<Size, { label: string; width: number; height: number }> = {
 const THEMES: Record<Theme, string> = { auto: 'Theo máy', light: 'Sáng', dark: 'Tối' }
 
 function loadSettings(): WidgetSettings {
-  const fallback: WidgetSettings = { source: 'hsk', levels: [1], intervalSec: 30, size: 'm', theme: 'auto' }
+  const fallback: WidgetSettings = { source: 'hsk', levels: [1], intervalSec: 30, size: 'm', theme: 'auto', pinned: true }
   try {
     const saved = localStorage.getItem(SETTINGS_KEY)
     return saved ? { ...fallback, ...JSON.parse(saved) } : fallback
@@ -87,6 +91,10 @@ export function DesktopWidget() {
     const { width, height } = SIZES[settings.size]
     window.hibuWidget?.setSize(width, height)
   }, [settings.size])
+
+  useEffect(() => {
+    window.hibuWidget?.setPinned(settings.pinned)
+  }, [settings.pinned])
 
   // Fixed light/dark, or follow the system theme.
   useEffect(() => {
@@ -259,6 +267,22 @@ export function DesktopWidget() {
         </div>
       ) : (
         <>
+          <div className="dw-window-btns" onPointerDown={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              className={`dw-window-btn ${settings.pinned ? 'active' : ''}`}
+              onClick={() => setSettings((s) => ({ ...s, pinned: !s.pinned }))}
+              title={settings.pinned ? 'Bỏ ghim (không luôn nổi trên cùng)' : 'Ghim luôn nổi trên cùng'}
+            >
+              {settings.pinned ? <Pin size={13} /> : <PinOff size={13} />}
+            </button>
+            <button type="button" className="dw-window-btn" onClick={() => window.hibuWidget?.minimize()} title="Ẩn xuống thanh tác vụ">
+              <Minus size={13} />
+            </button>
+            <button type="button" className="dw-window-btn dw-close" onClick={() => window.hibuWidget?.close()} title="Tắt app">
+              <X size={13} />
+            </button>
+          </div>
           <div className="dw-progress" style={{ width: `${(elapsed / settings.intervalSec) * 100}%` }} />
           {current ? (
             <div className="dw-content">

@@ -3,8 +3,9 @@ const { app, BrowserWindow, ipcMain, screen } = require('electron')
 const fs = require('node:fs')
 const path = require('node:path')
 
-// On Linux the scripts pass --ozone-platform=x11: Wayland ignores always-on-top and app-driven window
-// moves, and the flag must be on the command line because the platform is picked before this file runs.
+// On Linux the app must start with --ozone-platform=x11 (Wayland ignores always-on-top and app-driven
+// window moves) and --no-sandbox (recent Ubuntu blocks Chromium's sandbox). The flags have to be on the
+// command line: the npm scripts pass them, and packaged builds start through the wrapper from after-pack.cjs.
 
 // The widget is a tiny static card; the GPU process crashes under XWayland on some drivers and it isn't needed.
 app.disableHardwareAcceleration()
@@ -31,7 +32,8 @@ function createWindow() {
     backgroundColor: '#f7f5f0',
     resizable: false,
     alwaysOnTop: true,
-    skipTaskbar: true,
+    // Stays in the taskbar so a minimized (hidden) widget can be brought back.
+    skipTaskbar: false,
     hasShadow: false,
     webPreferences: { preload: path.join(__dirname, 'preload.cjs') },
   })
@@ -55,6 +57,8 @@ app.whenReady().then(() => {
   ipcMain.on('widget:move', (_e, x, y) => win.setPosition(Math.round(x), Math.round(y)))
   ipcMain.on('widget:size', (_e, w, h) => win.setSize(Math.round(w), Math.round(h)))
   ipcMain.on('widget:close', () => app.quit())
+  ipcMain.on('widget:minimize', () => win.minimize())
+  ipcMain.on('widget:pin', (_e, pinned) => win.setAlwaysOnTop(Boolean(pinned), 'screen-saver'))
 })
 
 app.on('window-all-closed', () => app.quit())
