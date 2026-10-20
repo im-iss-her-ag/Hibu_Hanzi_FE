@@ -11,6 +11,7 @@ import { SearchModal } from './components/SearchModal'
 import { FavoritesModal } from './components/FavoritesModal'
 import { PronunciationModal } from './components/PronunciationModal'
 import { PinyinChartModal } from './components/PinyinChartModal'
+import { PipWidget } from './components/PipWidget'
 import { MobileBottomBar } from './components/MobileBottomBar'
 
 export function App() {
@@ -470,6 +471,14 @@ export function App() {
           </>
         )}
       </main>
+
+      {bundle.isSuccess && (
+        <PipWidget
+          characters={allCharacters}
+          favorites={favorites}
+          onCharacterChange={handleSelectHanzi}
+        />
+      )}
 
       {/* Search Modal */}
       {showSearch && (

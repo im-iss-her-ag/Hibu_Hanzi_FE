@@ -6224,3 +6224,129 @@ html.dark .comp-dots-badge .dot-red {
   font-weight: 600;
   cursor: pointer;
 }
+
+/* ==========================================================================
+   Picture-in-Picture Widget
+   ========================================================================== */
+
+.pip-dock {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+/* The canvas and video feed the PiP window; they must stay rendered, just not visible. */
+.pip-offscreen {
+  position: fixed;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.pip-launch-group {
+  display: flex;
+  gap: 6px;
+}
+
+.pip-launch-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px;
+  border: 1px solid var(--border-line);
+  border-radius: var(--radius-full);
+  background: var(--bg-elevated);
+  color: var(--fg-main);
+  font: 600 13px var(--font-ui);
+  box-shadow: var(--shadow-md);
+}
+
+.pip-launch-btn:hover:not(:disabled) {
+  color: var(--accent-seal);
+  border-color: var(--accent-seal);
+}
+
+.pip-download-btn {
+  text-decoration: none;
+}
+
+/* The desktop app is for computers only. */
+@media (max-width: 768px) {
+  .pip-download-btn {
+    display: none;
+  }
+}
+
+.pip-launch-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pip-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 260px;
+  padding: 14px;
+  border: 1px solid var(--border-line);
+  border-radius: var(--radius-md);
+  background: var(--bg-elevated);
+  box-shadow: var(--shadow-lg);
+}
+
+.pip-settings-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: 700;
+}
+
+.pip-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-full);
+  color: var(--fg-muted);
+}
+
+.pip-icon-btn:hover {
+  color: var(--accent-seal);
+}
+
+.pip-field-label {
+  margin-top: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--fg-subtle);
+}
+
+.pip-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.pip-chip {
+  padding: 5px 11px;
+  border: 1px solid var(--border-line);
+  border-radius: var(--radius-full);
+  background: var(--bg-elevated);
+  color: var(--fg-main);
+  font: 600 12px var(--font-ui);
+}
+
+.pip-chip.active {
+  background: var(--accent-seal);
+  border-color: var(--accent-seal);
+  color: #fff;
+}

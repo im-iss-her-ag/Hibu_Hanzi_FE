@@ -76,7 +76,7 @@ export function HanziWriterCanvas({
     return () => {
       writerRef.current = null
     }
-  }, [hanzi, mode, speed, size, isDark, onCompleteQuiz])
+  }, [hanzi, mode, speed, size, isDark, onCompleteQuiz, displayMode])
 
   const handleStartAnimate = useCallback(() => {
     setMode('animate')
@@ -208,18 +208,20 @@ export function HanziWriterCanvas({
         </svg>
 
         {/* Display mode: Large typographic glyph */}
-        {mode === 'display' && displayMode !== 'components' ? (
-          <div
-            className={`hanzi-static-glyph ${fontClass}`}
-            lang="zh"
-            onClick={handleStartAnimate}
-            title="Bấm vào chữ để xem hoạt họa nét viết"
-          >
-            {hanzi}
-          </div>
-        ) : (
-          <div ref={containerRef} className="hanzi-writer-surface" />
-        )}
+        <div
+          className={`hanzi-static-glyph ${fontClass}`}
+          lang="zh"
+          onClick={handleStartAnimate}
+          title="Bấm vào chữ để xem hoạt họa nét viết"
+          style={{ display: mode === 'display' && displayMode !== 'components' ? undefined : 'none' }}
+        >
+          {hanzi}
+        </div>
+        <div
+          ref={containerRef}
+          className="hanzi-writer-surface"
+          style={{ display: mode === 'display' && displayMode !== 'components' ? 'none' : undefined }}
+        />
 
         {/* Quiz result celebration banner */}
         {quizResult !== null && (

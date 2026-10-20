@@ -1,0 +1,36 @@
+# Builds the desktop widget installers and attaches them to a GitHub Release.
+# Trigger: push a tag like v0.2.0 (it must match desktop/package.json's version).
+name: Desktop widget release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            desktop/package-lock.json
+      - run: npm ci
+      - run: npm ci
+        working-directory: desktop
+      - run: npm run release
+        working-directory: desktop
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Unsigned builds: don't look for a signing certificate on the macOS runner.
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'

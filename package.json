@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "build:desktop": "tsc --noEmit && vite build --base=./ --outDir desktop/renderer --emptyOutDir"
   },
   "dependencies": {
     "@fontsource/ma-shan-zheng": "^5.3.1",

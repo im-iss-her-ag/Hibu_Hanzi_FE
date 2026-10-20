@@ -1,0 +1,55 @@
+{
+  "name": "hibu-hanzi-widget",
+  "productName": "Hibu Hanzi Widget",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Always-on-top Hán tự widget",
+  "main": "main.cjs",
+  "scripts": {
+    "dev": "env -u ELECTRON_RUN_AS_NODE HIBU_WIDGET_URL=http://localhost:5173/widget.html electron --ozone-platform=x11 --no-sandbox .",
+    "build:renderer": "npm --prefix .. run build:desktop",
+    "start": "npm run build:renderer && env -u ELECTRON_RUN_AS_NODE electron --ozone-platform=x11 --no-sandbox .",
+    "dist": "npm run build:renderer && electron-builder --publish never",
+    "release": "npm run build:renderer && electron-builder --publish always"
+  },
+  "build": {
+    "appId": "vn.hibu.hanzi.widget",
+    "files": [
+      "main.cjs",
+      "preload.cjs",
+      "renderer/**"
+    ],
+    "linux": {
+      "target": "AppImage",
+      "category": "Education",
+      "executableArgs": [
+        "--ozone-platform=x11",
+        "--no-sandbox"
+      ],
+      "artifactName": "Hibu-Hanzi-Widget.AppImage"
+    },
+    "win": {
+      "target": "nsis",
+      "artifactName": "Hibu-Hanzi-Widget-Setup.exe"
+    },
+    "mac": {
+      "target": {
+        "target": "dmg",
+        "arch": [
+          "universal"
+        ]
+      },
+      "artifactName": "Hibu-Hanzi-Widget.dmg"
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "im-iss-her-ag",
+      "repo": "Hibu_Hanzi_FE",
+      "releaseType": "release"
+    }
+  },
+  "devDependencies": {
+    "electron": "^41.7.1",
+    "electron-builder": "^26.15.3"
+  }
+}

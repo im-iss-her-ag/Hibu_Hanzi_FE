@@ -9,8 +9,14 @@ function LegoResultHanzi({ hanzi, isComponents }: { hanzi: string; isComponents:
   const containerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    if (!isComponents || !containerRef.current) return
+    if (!containerRef.current) return
     containerRef.current.innerHTML = ''
+
+    if (!isComponents) {
+      containerRef.current.innerHTML = `<span class="lego-glyph main-result font-sans-sc" lang="zh">${hanzi}</span>`
+      return
+    }
+
     const isDark = document.documentElement.classList.contains('dark')
     let isSubscribed = true
 
@@ -36,14 +42,6 @@ function LegoResultHanzi({ hanzi, isComponents }: { hanzi: string; isComponents:
       }
     }
   }, [hanzi, isComponents])
-
-  if (!isComponents) {
-    return (
-      <span className="lego-glyph main-result font-sans-sc" lang="zh">
-        {hanzi}
-      </span>
-    )
-  }
 
   return (
     <div
