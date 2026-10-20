@@ -13,7 +13,7 @@ Frameless, always-on-top widget that cycles through Hán tự. The page itself i
 npm install
 npm start          # builds ../widget.html into ./renderer, then opens the widget
 npm run dev        # loads http://localhost:5173/widget.html; run `npm run dev` in FE first
-npm run dist       # packages an installer into ./dist (AppImage on Linux)
+npm run dist       # packages installers into ./dist (.deb and AppImage on Linux)
 ```
 
 On Linux the app runs through XWayland (`--ozone-platform=x11`, passed on the command line): Wayland does not let apps keep a

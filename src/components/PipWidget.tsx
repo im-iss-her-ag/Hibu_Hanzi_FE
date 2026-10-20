@@ -22,7 +22,7 @@ function desktopDownloadUrl() {
   const ua = navigator.userAgent
   if (/Windows/i.test(ua)) return `${RELEASES}/latest/download/Hibu-Hanzi-Widget-Setup.exe`
   if (/Mac OS X/i.test(ua)) return `${RELEASES}/latest/download/Hibu-Hanzi-Widget.dmg`
-  if (/Linux/i.test(ua) && !/Android/i.test(ua)) return `${RELEASES}/latest/download/Hibu-Hanzi-Widget.AppImage`
+  if (/Linux/i.test(ua) && !/Android/i.test(ua)) return `${RELEASES}/latest/download/Hibu-Hanzi-Widget.deb`
   return `${RELEASES}/latest`
 }
 
