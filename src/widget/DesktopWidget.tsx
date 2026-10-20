@@ -3,12 +3,13 @@ import { useQuery } from '@tanstack/react-query'
 import HanziWriter from 'hanzi-writer'
 import type { BundleCharacter, HskLevel } from '../core'
 import { pickRandom } from '../core'
-import { Pin, PinOff, Minus, X } from 'lucide-react'
+import { Pin, PinOff, Minus, X, Volume2 } from 'lucide-react'
 import { api } from '../api'
+import { speakChinese } from '../utils/speech'
 
 // Frameless, always-on-top widget page for the Electron shell in desktop/.
 // There is no visible chrome: drag the card to move it, double-click for the next character,
-// right-click for settings.
+// right-click for settings. Keys: → next, ← previous, Space random.
 
 // Exposed by desktop/preload.cjs. Missing when the page is opened in a normal browser.
 interface WidgetBridge {
@@ -35,6 +36,8 @@ interface WidgetSettings {
   size: Size
   theme: Theme
   pinned: boolean
+  // Animate the strokes: show the glyph still, write it, hold, then move on (ignores intervalSec).
+  write: boolean
 }
 
 const SETTINGS_KEY = 'hibu_widget_settings'
@@ -47,9 +50,11 @@ const SIZES: Record<Size, { label: string; width: number; height: number }> = {
   l: { label: 'Lớn', width: 340, height: 410 },
 }
 const THEMES: Record<Theme, string> = { auto: 'Theo máy', light: 'Sáng', dark: 'Tối' }
+// Writing mode: still glyph before the strokes are drawn, and after they finish.
+const WRITE_HOLD_MS = 5000
 
 function loadSettings(): WidgetSettings {
-  const fallback: WidgetSettings = { source: 'hsk', levels: [1], intervalSec: 30, size: 'm', theme: 'auto', pinned: true }
+  const fallback: WidgetSettings = { source: 'hsk', levels: [1], intervalSec: 30, size: 'm', theme: 'auto', pinned: true, write: false }
   try {
     const saved = localStorage.getItem(SETTINGS_KEY)
     return saved ? { ...fallback, ...JSON.parse(saved) } : fallback
@@ -113,26 +118,54 @@ export function DesktopWidget() {
     return characters.filter((c) => c.hsk3Level !== null && settings.levels.includes(c.hsk3Level as HskLevel))
   }, [characters, favorites, settings.source, settings.levels])
 
-  const next = useCallback(() => {
-    const others = pool.filter((c) => c.hanzi !== currentRef.current?.hanzi)
-    setCurrent(pickRandom(others.length > 0 ? others : pool) ?? null)
+  const show = useCallback((c: BundleCharacter | null) => {
+    setCurrent(c)
     setElapsed(0)
-  }, [pool])
+  }, [])
+
+  const random = useCallback(() => {
+    const others = pool.filter((c) => c.hanzi !== currentRef.current?.hanzi)
+    show(pickRandom(others.length > 0 ? others : pool) ?? null)
+  }, [pool, show])
+
+  // Step through the pool in order, wrapping around.
+  const step = useCallback(
+    (delta: number) => {
+      if (pool.length === 0) return
+      const idx = pool.findIndex((c) => c.hanzi === currentRef.current?.hanzi)
+      show(pool[(idx + delta + pool.length) % pool.length])
+    },
+    [pool, show],
+  )
 
   // Re-pick whenever the pool changes.
   useEffect(() => {
-    next()
-  }, [next])
+    random()
+  }, [random])
 
+  // Timed mode only: writing mode moves on when the animation cycle ends.
   useEffect(() => {
-    if (showSettings) return
+    if (showSettings || settings.write) return
     const id = setInterval(() => setElapsed((e) => e + 1), 1000)
     return () => clearInterval(id)
-  }, [showSettings])
+  }, [showSettings, settings.write])
 
   useEffect(() => {
-    if (elapsed >= settings.intervalSec) next()
-  }, [elapsed, settings.intervalSec, next])
+    if (elapsed >= settings.intervalSec) random()
+  }, [elapsed, settings.intervalSec, random])
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (showSettings) return
+      if (e.key === 'ArrowRight') step(1)
+      else if (e.key === 'ArrowLeft') step(-1)
+      else if (e.key === ' ') random()
+      else return
+      e.preventDefault()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [showSettings, step, random])
 
   // Move the window by hand rather than with -webkit-app-region: drag regions swallow clicks and right-clicks.
   const drag = useRef<{ startX: number; startY: number; winX: number; winY: number } | null>(null)
@@ -170,7 +203,7 @@ export function DesktopWidget() {
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
-      onDoubleClick={() => !showSettings && next()}
+      onDoubleClick={() => !showSettings && random()}
       onContextMenu={(e) => {
         e.preventDefault()
         setShowSettings((v) => !v)
@@ -228,6 +261,24 @@ export function DesktopWidget() {
             ))}
           </div>
 
+          <span className="dw-label">Viết chữ</span>
+          <div className="dw-row">
+            <button
+              type="button"
+              className={`dw-chip ${!settings.write ? 'active' : ''}`}
+              onClick={() => setSettings((s) => ({ ...s, write: false }))}
+            >
+              Không viết
+            </button>
+            <button
+              type="button"
+              className={`dw-chip ${settings.write ? 'active' : ''}`}
+              onClick={() => setSettings((s) => ({ ...s, write: true }))}
+            >
+              Có viết
+            </button>
+          </div>
+
           <span className="dw-label">Kích thước</span>
           <div className="dw-row">
             {(Object.keys(SIZES) as Size[]).map((size) => (
@@ -270,6 +321,14 @@ export function DesktopWidget() {
           <div className="dw-window-btns" onPointerDown={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()}>
             <button
               type="button"
+              className="dw-window-btn"
+              onClick={() => current && speakChinese(primary?.pinyin || current.hanzi)}
+              title="Phát âm"
+            >
+              <Volume2 size={13} />
+            </button>
+            <button
+              type="button"
               className={`dw-window-btn ${settings.pinned ? 'active' : ''}`}
               onClick={() => setSettings((s) => ({ ...s, pinned: !s.pinned }))}
               title={settings.pinned ? 'Bỏ ghim (không luôn nổi trên cùng)' : 'Ghim luôn nổi trên cùng'}
@@ -283,10 +342,22 @@ export function DesktopWidget() {
               <X size={13} />
             </button>
           </div>
-          <div className="dw-progress" style={{ width: `${(elapsed / settings.intervalSec) * 100}%` }} />
+          {!settings.write && (
+            <div className="dw-progress" style={{ width: `${(elapsed / settings.intervalSec) * 100}%` }} />
+          )}
           {current ? (
             <div className="dw-content">
-              <PartsGlyph hanzi={current.hanzi} size={glyphSize} />
+              {settings.write ? (
+                <WritingGlyph
+                  key={current.hanzi}
+                  hanzi={current.hanzi}
+                  size={glyphSize}
+                  paused={showSettings}
+                  onDone={random}
+                />
+              ) : (
+                <PartsGlyph hanzi={current.hanzi} size={glyphSize} />
+              )}
               <div className="dw-pinyin">{primary?.pinyin}</div>
               {primary?.hanViet && <div className="dw-hanviet">{primary.hanViet}</div>}
               <div className="dw-meaning">{primary?.meaningVi}</div>
@@ -344,4 +415,58 @@ function PartsGlyph({ hanzi, size }: { hanzi: string; size: number }) {
       </g>
     </svg>
   )
+}
+
+// Writing mode: hold the still glyph, animate its strokes, hold again, then call onDone.
+// HanziWriter's own renderer is fine here (the clip-path issue was only in PiP documents).
+function WritingGlyph({
+  hanzi,
+  size,
+  paused,
+  onDone,
+}: {
+  hanzi: string
+  size: number
+  paused: boolean
+  onDone: () => void
+}) {
+  const ref = useRef<HTMLDivElement>(null)
+  const onDoneRef = useRef(onDone)
+  onDoneRef.current = onDone
+
+  useEffect(() => {
+    const el = ref.current
+    if (!el || paused) return
+    el.innerHTML = ''
+    const dark = document.documentElement.classList.contains('dark')
+    let timer = 0
+    let cancelled = false
+    const writer = HanziWriter.create(el, hanzi, {
+      width: size,
+      height: size,
+      padding: 4,
+      showOutline: true,
+      outlineColor: dark ? '#262c38' : '#e7e3da',
+      strokeColor: dark ? '#f87171' : '#b91c1c',
+      radicalColor: dark ? '#38bdf8' : '#0284c7',
+      delayBetweenStrokes: 200,
+      onLoadCharDataError: () => {
+        if (!cancelled) timer = window.setTimeout(() => onDoneRef.current(), WRITE_HOLD_MS)
+      },
+    })
+    timer = window.setTimeout(() => {
+      writer.animateCharacter({
+        onComplete: () => {
+          if (!cancelled) timer = window.setTimeout(() => onDoneRef.current(), WRITE_HOLD_MS)
+        },
+      })
+    }, WRITE_HOLD_MS)
+    return () => {
+      cancelled = true
+      window.clearTimeout(timer)
+      el.innerHTML = ''
+    }
+  }, [hanzi, size, paused])
+
+  return <div ref={ref} className="dw-glyph" style={{ width: size, height: size }} />
 }
