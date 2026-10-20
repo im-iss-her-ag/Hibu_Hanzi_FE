@@ -231,13 +231,17 @@ export function PipWidget({ characters, favorites, onCharacterChange }: PipWidge
     if (elapsed >= settings.intervalSec) next()
   }, [elapsed, settings.intervalSec, next])
 
-  // Redraw on every tick too: captureStream only emits frames when the canvas changes.
-  useEffect(() => {
+  const draw = useCallback(() => {
     const ctx = canvasRef.current?.getContext('2d')
     if (!ctx) return
     const emptyText = settings.source === 'favorites' ? 'Chưa có chữ yêu thích' : 'Không có chữ ở cấp này'
     drawCard(ctx, current, glyph, Math.min(1, elapsed / settings.intervalSec), emptyText)
   }, [current, glyph, elapsed, settings.intervalSec, settings.source])
+  const drawRef = useRef(draw)
+  drawRef.current = draw
+
+  // Redraw on every tick too: captureStream only emits frames when the canvas changes.
+  useEffect(draw, [draw])
 
   // Play/pause and next/previous buttons in the PiP window.
   useEffect(() => {
@@ -271,6 +275,8 @@ export function PipWidget({ characters, favorites, onCharacterChange }: PipWidge
       return
     }
     if (!video.srcObject) video.srcObject = canvas.captureStream()
+    // A fresh stream has no frame until the canvas is painted again, and play() waits for one.
+    drawRef.current()
     await video.play()
     await video.requestPictureInPicture()
     setPaused(false)

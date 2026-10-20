@@ -9,6 +9,8 @@ interface DetailModalProps {
   onClose: () => void
 }
 
+
+
 export function DetailModal({
   detail,
   onSelectHanzi,
