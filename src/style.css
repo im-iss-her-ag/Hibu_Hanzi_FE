@@ -6276,9 +6276,10 @@ html.dark .comp-dots-badge .dot-red {
   text-decoration: none;
 }
 
-/* The desktop app is for computers only. */
+/* Phones: video PiP is unreliable (iOS lacks it, Android pauses the page in the background),
+   the desktop app doesn't apply, and the dock would cover the bottom bar. */
 @media (max-width: 768px) {
-  .pip-download-btn {
+  .pip-dock {
     display: none;
   }
 }
