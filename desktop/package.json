@@ -1,7 +1,7 @@
 {
   "name": "hibu-hanzi-widget",
   "productName": "Hibu Hanzi Widget",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "description": "Always-on-top Hán tự widget",
   "main": "main.cjs",
