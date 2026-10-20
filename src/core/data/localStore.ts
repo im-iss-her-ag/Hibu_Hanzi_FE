@@ -69,6 +69,16 @@ const RADICAL_PINYIN_MAP: Record<string, string> = {
   '五': 'wǔ', '辶': 'chuò',
 }
 
+// Pinyin for a chiet tu part: its reading as a character if it is one, else the radical table.
+export function partPinyin(
+  part: string,
+  characters: readonly Pick<Character, 'hanzi' | 'readings'>[] = CHARACTERS_DATA,
+): string | null {
+  const char = characters.find((c) => c.hanzi === part)
+  const reading = char?.readings.find((r) => r.isPrimary) ?? char?.readings[0]
+  return reading?.pinyin || RADICAL_PINYIN_MAP[part] || null
+}
+
 export const RADICAL_CHARACTERS: BundleCharacter[] = COMPONENTS_DATA.map((c) => {
   const charInChars = CHARACTERS_DATA.find((ch) => ch.hanzi === c.form)
   const pinyin = charInChars?.readings[0]?.pinyin || RADICAL_PINYIN_MAP[c.form] || ''

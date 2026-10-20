@@ -3297,6 +3297,16 @@ html.dark .lego-glyph.color-stroke {
   color: var(--fg-main);
 }
 
+.lego-py {
+  margin-left: 0.3rem;
+  font-weight: 700;
+  color: var(--accent-blue);
+}
+
+.radical-pinyin {
+  color: var(--accent-blue);
+}
+
 .lego-mean {
   font-size: 0.68rem;
   color: var(--fg-muted);

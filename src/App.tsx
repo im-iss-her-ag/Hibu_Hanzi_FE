@@ -455,6 +455,7 @@ export function App() {
                   isLoading={detailQuery.isPending}
                   onSelectHanzi={handleSelectHanzi}
                   displayMode={displayMode}
+                  characters={allCharacters}
                 />
               </div>
             </div>

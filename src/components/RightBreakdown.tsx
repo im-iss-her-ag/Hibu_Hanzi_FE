@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { Volume2, ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react'
 import HanziWriter from 'hanzi-writer'
-import type { CharacterDetail } from '../core'
+import type { BundleCharacter, CharacterDetail } from '../core'
+import { partPinyin } from '../core'
 import { speakChinese } from '../utils/speech'
 import { useFitCount } from '../utils/useFitCount'
 
@@ -61,6 +62,8 @@ interface RightBreakdownProps {
   isLoading: boolean
   onSelectHanzi: (hanzi: string) => void
   displayMode?: 'modern' | 'components'
+  // Used to look up the pinyin of each part; defaults to the built-in sample.
+  characters?: readonly BundleCharacter[]
 }
 
 export function RightBreakdown({
@@ -68,7 +71,9 @@ export function RightBreakdown({
   isLoading,
   onSelectHanzi,
   displayMode = 'modern',
+  characters,
 }: RightBreakdownProps) {
+  const pinyinOf = (part: string) => partPinyin(part, characters)
   const isComponents = displayMode === 'components'
   // Last chosen tab persists across characters (component stays mounted)
   const [tab, setTab] = useState<BreakdownTab>('radical')
@@ -185,6 +190,9 @@ export function RightBreakdown({
                       </div>
                       <div className="radical-sino-badge">
                         Âm Hán Việt: <strong>{radical.hanViet?.toUpperCase() ?? '—'}</strong>
+                        {pinyinOf(radical.part) && (
+                          <span className="radical-pinyin"> · Pinyin: <strong>{pinyinOf(radical.part)}</strong></span>
+                        )}
                       </div>
                       <div className="radical-meaning-text">
                         Ý nghĩa biểu trưng: {radical.meaningVi ?? 'Thành phần chỉ ý chính của chữ'}
@@ -231,7 +239,10 @@ export function RightBreakdown({
                               {p.part}
                             </span>
                             <div className="lego-info">
-                              <span className="lego-hv">{p.hanViet ? p.hanViet.toUpperCase() : '—'}</span>
+                              <span className="lego-hv">
+                                  {p.hanViet ? p.hanViet.toUpperCase() : '—'}
+                                  {pinyinOf(p.part) && <span className="lego-py">{pinyinOf(p.part)}</span>}
+                                </span>
                               <span className="lego-mean">{p.meaningVi ?? p.label ?? 'thành phần'}</span>
                             </div>
                           </div>
@@ -344,6 +355,9 @@ export function RightBreakdown({
                         </div>
                         <div className="radical-sino-badge">
                           Âm Hán Việt: <strong>{radical.hanViet?.toUpperCase() ?? '—'}</strong>
+                        {pinyinOf(radical.part) && (
+                          <span className="radical-pinyin"> · Pinyin: <strong>{pinyinOf(radical.part)}</strong></span>
+                        )}
                         </div>
                         <div className="radical-meaning-text">
                           Ý nghĩa biểu trưng: {radical.meaningVi ?? 'Thành phần chỉ ý chính của chữ'}
@@ -390,7 +404,10 @@ export function RightBreakdown({
                                 {p.part}
                               </span>
                               <div className="lego-info">
-                                <span className="lego-hv">{p.hanViet ? p.hanViet.toUpperCase() : '—'}</span>
+                                <span className="lego-hv">
+                                  {p.hanViet ? p.hanViet.toUpperCase() : '—'}
+                                  {pinyinOf(p.part) && <span className="lego-py">{pinyinOf(p.part)}</span>}
+                                </span>
                                 <span className="lego-mean">{p.meaningVi ?? p.label ?? 'thành phần'}</span>
                               </div>
                             </div>
