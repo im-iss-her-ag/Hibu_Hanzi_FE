@@ -47,8 +47,6 @@ interface StudioCenterProps {
   isFavorite: boolean
   displayMode: 'modern' | 'components'
   onToggleFavorite: () => void
-  onNext: () => void
-  onPrev: () => void
   onRandom: () => void
   // Mobile drawer trigger
   onOpenMobileList?: () => void
@@ -61,8 +59,6 @@ export function StudioCenter({
   isFavorite,
   displayMode,
   onToggleFavorite,
-  onNext,
-  onPrev,
   onRandom,
   onOpenMobileList,
 }: StudioCenterProps) {
@@ -535,29 +531,11 @@ export function StudioCenter({
           <div className="nav-btn-cluster">
             <button
               type="button"
-              className="nav-step-btn prev-btn"
-              onClick={onPrev}
-              title="Chữ trước đó (← hoặc A)"
-            >
-              Trước
-            </button>
-
-            <button
-              type="button"
               className="nav-random-btn"
               onClick={onRandom}
               title="Đổi chữ ngẫu nhiên (Phím Space)"
             >
               Ngẫu nhiên
-            </button>
-
-            <button
-              type="button"
-              className="nav-step-btn next-btn"
-              onClick={onNext}
-              title="Chữ tiếp theo (→ hoặc D)"
-            >
-              Tiếp
             </button>
           </div>
         </div>

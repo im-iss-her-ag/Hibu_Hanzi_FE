@@ -498,8 +498,6 @@ export function App() {
                     isFavorite={favorites.includes(activeChar.hanzi)}
                     displayMode={displayMode}
                     onToggleFavorite={handleToggleFavorite}
-                    onNext={handleNext}
-                    onPrev={handlePrev}
                     onRandom={pickNextRandom}
                   />
                 ) : (
