@@ -537,7 +537,7 @@ export function StudioCenter({
               type="button"
               className="nav-step-btn prev-btn"
               onClick={onPrev}
-              title="Chữ trước đó (Phím ←)"
+              title="Chữ trước đó (← hoặc A)"
             >
               Trước
             </button>
@@ -555,7 +555,7 @@ export function StudioCenter({
               type="button"
               className="nav-step-btn next-btn"
               onClick={onNext}
-              title="Chữ tiếp theo (Phím →)"
+              title="Chữ tiếp theo (→ hoặc D)"
             >
               Tiếp
             </button>

@@ -18,6 +18,8 @@ interface LeftSidebarProps {
   activeFamily?: RadicalFamily | null
   radicalCharacters?: readonly BundleCharacter[] | null
   onBrowseRadical?: (form: string | null) => void
+  // Lets the keyboard move a whole row (up/down) or page (Ctrl + left/right).
+  onGridChange?: (cols: number, perPage: number) => void
 }
 
 const familyName = (f: RadicalFamily) => f.info.nameVi ?? `Bộ ${f.info.hanViet ?? f.key}`
@@ -39,6 +41,7 @@ export function LeftSidebar({
   activeFamily = null,
   radicalCharacters = null,
   onBrowseRadical,
+  onGridChange,
 }: LeftSidebarProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const [filterMode, setFilterMode] = useState<'all' | 'favorites'>('all')
@@ -71,6 +74,9 @@ export function LeftSidebar({
   // Fit as many fixed-size tiles as the available area allows, then paginate
   const [gridRef, fit] = useFitCount<HTMLDivElement>(TILE_W, TILE_H, TILE_GAP)
   const perPage = Math.max(1, fit.cols * fit.rows)
+  useEffect(() => {
+    if (fit.cols > 0) onGridChange?.(fit.cols, perPage)
+  }, [fit.cols, perPage, onGridChange])
   const pageCount = Math.max(1, Math.ceil(itemCount / perPage))
   const [page, setPage] = useState(0)
   const safePage = Math.min(page, pageCount - 1)

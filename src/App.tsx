@@ -215,6 +215,22 @@ export function App() {
     setCurrentHanzi(filteredCharacters[prevIdx].hanzi)
   }, [filteredCharacters, currentIndex])
 
+  // Up / down move one row in the left grid; the sidebar reports how many columns it shows.
+  const [gridCols, setGridCols] = useState(5)
+  const [gridPerPage, setGridPerPage] = useState(30)
+  const handleGridChange = useCallback((cols: number, perPage: number) => {
+    setGridCols(cols)
+    setGridPerPage(perPage)
+  }, [])
+  const handleRow = useCallback(
+    (dir: 1 | -1) => {
+      const idx = currentIndex + dir * gridCols
+      if (idx < 0 || idx >= filteredCharacters.length) return
+      setCurrentHanzi(filteredCharacters[idx].hanzi)
+    },
+    [filteredCharacters, currentIndex, gridCols],
+  )
+
 
 
 
@@ -235,57 +251,18 @@ export function App() {
     enabled: Boolean(activeChar),
   })
 
-  // Keyboard navigation
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't trigger if user is typing in an input
-      if (['INPUT', 'TEXTAREA', 'SELECT'].includes((e.target as HTMLElement)?.tagName)) {
-        return
-      }
+  // Ctrl + ← / → jump to the previous / next page of the left grid (first character of that page).
+  const handlePage = useCallback(
+    (dir: 1 | -1) => {
+      const page = Math.floor(currentIndex / gridPerPage) + dir
+      const idx = page * gridPerPage
+      if (page < 0 || idx >= filteredCharacters.length) return
+      setCurrentHanzi(filteredCharacters[idx].hanzi)
+    },
+    [filteredCharacters, currentIndex, gridPerPage],
+  )
 
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
-        e.preventDefault()
-        setShowSearch(true)
-        return
-      }
-
-      switch (e.key) {
-        case 'ArrowRight':
-          e.preventDefault()
-          handleNext()
-          break
-        case 'ArrowLeft':
-          e.preventDefault()
-          handlePrev()
-          break
-        case ' ':
-          e.preventDefault()
-          pickNextRandom()
-          break
-        case 'f':
-        case 'F':
-          e.preventDefault()
-          handleToggleFavorite()
-          break
-        case 'p':
-        case 'P':
-          e.preventDefault()
-          setShowPinyinChart((prev) => !prev)
-          break
-        case 'Escape':
-          setShowSearch(false)
-          setShowFavorites(false)
-          setShowPinyinChart(false)
-          setPronounceTarget(null)
-          break
-      }
-    }
-
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [handleNext, handlePrev, pickNextRandom, handleToggleFavorite])
-
-  const toggleDisplayMode = () => {
+  const toggleDisplayMode = useCallback(() => {
     setDisplayMode((prev) => {
       const next = prev === 'modern' ? 'components' : 'modern'
       try {
@@ -295,7 +272,71 @@ export function App() {
       }
       return next
     })
-  }
+  }, [])
+
+  const modalOpen = showSearch || showFavorites || showPinyinChart || pronounceTarget !== null
+
+  // Keyboard shortcuts (listed in Navbar's shortcut popover). WASD mirrors the arrow keys.
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger if user is typing in an input
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes((e.target as HTMLElement)?.tagName)) {
+        return
+      }
+
+      if (e.key === 'Escape') {
+        setShowSearch(false)
+        setShowFavorites(false)
+        setShowPinyinChart(false)
+        setPronounceTarget(null)
+        return
+      }
+
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault()
+        setShowSearch(true)
+        return
+      }
+
+      // Everything else acts on the studio, not on an open dialog.
+      if (modalOpen || e.altKey) return
+
+      if (e.ctrlKey || e.metaKey) {
+        if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+          e.preventDefault()
+          handlePage(e.key === 'ArrowRight' ? 1 : -1)
+        }
+        return
+      }
+
+      const key = e.key.length === 1 ? e.key.toLowerCase() : e.key
+      const actions: Record<string, () => void> = {
+        ArrowRight: handleNext,
+        d: handleNext,
+        ArrowLeft: handlePrev,
+        a: handlePrev,
+        ArrowDown: () => handleRow(1),
+        s: () => handleRow(1),
+        ArrowUp: () => handleRow(-1),
+        w: () => handleRow(-1),
+        ' ': pickNextRandom,
+        Tab: toggleDisplayMode,
+        f: () => setShowSearch(true),
+        g: handleToggleFavorite,
+        b: () => changeLevel('radicals'),
+        p: () => setShowPinyinChart((prev) => !prev),
+      }
+      for (const n of [1, 2, 3, 4, 5, 6] as const) actions[String(n)] = () => changeLevel(n)
+
+      const action = actions[key]
+      if (!action || (key === 'Tab' && e.shiftKey)) return
+      e.preventDefault()
+      action()
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [modalOpen, handleNext, handlePrev, handleRow, handlePage, pickNextRandom, handleToggleFavorite, toggleDisplayMode, changeLevel])
 
   // Check if any modal or overlay is currently active
   const isModalActive = Boolean(
@@ -438,6 +479,7 @@ export function App() {
                 activeFamily={activeFamily}
                 radicalCharacters={activeFamily ? filteredCharacters : null}
                 onBrowseRadical={browseRadical}
+                onGridChange={handleGridChange}
               />
 
               {/* Center Column: Slide 1 (Writing Canvas & Pronunciation) */}
