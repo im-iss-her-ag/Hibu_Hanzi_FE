@@ -6611,3 +6611,198 @@ html.dark .comp-dots-badge .dot-red {
 .bd-more-btn:hover {
   border-color: var(--accent-seal);
 }
+
+/* --------------------------------------------------------------------------
+   Radical browsing (left sidebar), radical chips (search, right panel)
+   -------------------------------------------------------------------------- */
+.radical-intro {
+  margin-top: 0.55rem;
+  padding: 0.5rem 0.7rem;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--fg-muted);
+  background: var(--bg-main);
+  border: 1px dashed var(--accent-blue);
+  border-radius: 8px;
+}
+
+.radical-intro summary {
+  cursor: pointer;
+  font-weight: 700;
+  color: var(--accent-blue);
+}
+
+.radical-intro p {
+  margin: 0.4rem 0 0;
+}
+
+.radical-family-tile {
+  position: relative;
+  border-style: dashed;
+  border-color: color-mix(in srgb, var(--accent-blue) 45%, transparent);
+}
+
+.tile-count {
+  position: absolute;
+  top: 2px;
+  right: 4px;
+  font-size: 0.58rem;
+  font-weight: 700;
+  color: var(--fg-subtle);
+}
+
+.radical-focus-card {
+  margin-top: 0.55rem;
+  padding: 0.6rem 0.7rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  background: color-mix(in srgb, var(--accent-blue) 6%, var(--bg-main));
+  border: 1.5px dashed var(--accent-blue);
+  border-radius: 10px;
+}
+
+.radical-back-btn {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.15rem 0.5rem;
+  font: inherit;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--fg-muted);
+  background: transparent;
+  border: 1px solid var(--border-line);
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.radical-back-btn:hover {
+  color: var(--fg-main);
+  border-color: var(--fg-subtle);
+}
+
+.radical-focus-row {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.radical-focus-glyph {
+  flex-shrink: 0;
+  width: 3rem;
+  height: 3rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-sans-sc, 'Noto Sans SC', system-ui, sans-serif);
+  font-size: 1.9rem;
+  font-weight: 700;
+  color: var(--accent-blue);
+  background: var(--bg-elevated);
+  border: 1.5px dashed var(--accent-blue);
+  border-radius: 9px;
+}
+
+.radical-focus-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.radical-focus-name {
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: var(--fg-main);
+}
+
+.radical-focus-py {
+  margin-left: 0.4rem;
+  font-weight: 700;
+  color: var(--accent-blue);
+}
+
+.radical-focus-mean,
+.radical-focus-forms {
+  font-size: 0.76rem;
+  color: var(--fg-muted);
+}
+
+.radical-focus-hint {
+  margin: 0;
+  font-size: 0.74rem;
+  line-height: 1.45;
+  color: var(--fg-muted);
+}
+
+.radical-match-row {
+  margin-top: 0.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.search-radical-row {
+  margin: 0 1rem 0.5rem;
+}
+
+.radical-match-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--fg-subtle);
+}
+
+.radical-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25rem 0.6rem;
+  font: inherit;
+  font-size: 0.74rem;
+  font-weight: 600;
+  text-align: left;
+  color: var(--accent-blue);
+  background: color-mix(in srgb, var(--accent-blue) 7%, transparent);
+  border: 1px dashed var(--accent-blue);
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.radical-chip:hover {
+  background: color-mix(in srgb, var(--accent-blue) 14%, transparent);
+}
+
+.radical-chip [lang='zh'] {
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.part-browse {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  padding-top: 0.2rem;
+}
+
+.search-example-list {
+  list-style: none;
+  margin: 0.75rem auto 0;
+  padding: 0;
+  max-width: 26rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  text-align: left;
+}
+
+.search-example-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: 0.82rem;
+  color: var(--fg-muted);
+}

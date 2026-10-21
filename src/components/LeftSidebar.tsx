@@ -1,8 +1,8 @@
 import { useState, useMemo, useEffect } from 'react'
-import { Search, Star, BookOpen, Layers, X, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Search, Star, BookOpen, Layers, X, ChevronLeft, ChevronRight, ArrowLeft } from 'lucide-react'
 import { useFitCount } from '../utils/useFitCount'
-import type { BundleCharacter, LevelFilter } from '../core'
-import { RADICAL_CHARACTERS } from '../core'
+import type { BundleCharacter, LevelFilter, RadicalFamily } from '../core'
+import { searchCharacters, searchRadicals } from '../core'
 
 interface LeftSidebarProps {
   characters: BundleCharacter[]
@@ -13,7 +13,14 @@ interface LeftSidebarProps {
   favorites: string[]
   isOpenMobile?: boolean
   onCloseMobile?: () => void
+  families?: readonly RadicalFamily[]
+  // The radical being browsed and its characters; null = the radicals tab lists radicals.
+  activeFamily?: RadicalFamily | null
+  radicalCharacters?: readonly BundleCharacter[] | null
+  onBrowseRadical?: (form: string | null) => void
 }
+
+const familyName = (f: RadicalFamily) => f.info.nameVi ?? `Bộ ${f.info.hanViet ?? f.key}`
 
 const TILE_W = 52
 const TILE_H = 58
@@ -28,49 +35,43 @@ export function LeftSidebar({
   favorites,
   isOpenMobile = false,
   onCloseMobile,
+  families = [],
+  activeFamily = null,
+  radicalCharacters = null,
+  onBrowseRadical,
 }: LeftSidebarProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const [filterMode, setFilterMode] = useState<'all' | 'favorites'>('all')
 
+  // The radicals tab without a chosen radical lists radical families instead of characters.
+  const listingRadicals = selectedLevel === 'radicals' && !activeFamily
+  const matchedFamilies = useMemo(() => searchRadicals(families, searchQuery), [families, searchQuery])
+  const familyList = useMemo(
+    () => (searchQuery.trim() ? matchedFamilies : families),
+    [families, matchedFamilies, searchQuery],
+  )
+
   // Filter list
   const filteredList = useMemo(() => {
-    let list = selectedLevel === 'radicals' ? RADICAL_CHARACTERS : characters
+    let list: readonly BundleCharacter[] =
+      selectedLevel === 'radicals' ? radicalCharacters ?? [] : characters.filter((c) => c.hsk3Level === selectedLevel)
 
-    // Filter by favorites tab
     if (filterMode === 'favorites') {
       list = list.filter((c) => favorites.includes(c.hanzi))
     }
-
-    // Filter by HSK Level (if not radicals)
-    if (selectedLevel !== 'radicals') {
-      list = list.filter((c) => c.hsk3Level === selectedLevel)
-    }
-
-    // Filter by search query
     if (searchQuery.trim()) {
-      const q = searchQuery.trim().toLowerCase()
-      list = list.filter((c) => {
-        return (
-          c.hanzi.includes(q) ||
-          (c.traditional && c.traditional.includes(q)) ||
-          c.readings.some(
-            (r) =>
-              r.pinyin.toLowerCase().includes(q) ||
-              (r.hanViet && r.hanViet.toLowerCase().includes(q)) ||
-              r.meaningVi.toLowerCase().includes(q),
-          )
-        )
-      })
+      list = searchCharacters(list, searchQuery)
     }
-
     return list
-  }, [characters, filterMode, favorites, selectedLevel, searchQuery])
+  }, [characters, radicalCharacters, filterMode, favorites, selectedLevel, searchQuery])
+
+  const itemCount = listingRadicals ? familyList.length : filteredList.length
 
 
   // Fit as many fixed-size tiles as the available area allows, then paginate
   const [gridRef, fit] = useFitCount<HTMLDivElement>(TILE_W, TILE_H, TILE_GAP)
   const perPage = Math.max(1, fit.cols * fit.rows)
-  const pageCount = Math.max(1, Math.ceil(filteredList.length / perPage))
+  const pageCount = Math.max(1, Math.ceil(itemCount / perPage))
   const [page, setPage] = useState(0)
   const safePage = Math.min(page, pageCount - 1)
 
@@ -81,6 +82,8 @@ export function LeftSidebar({
   }, [filteredList, perPage, activeHanzi])
 
   const pageItems = filteredList.slice(safePage * perPage, safePage * perPage + perPage)
+  const pageFamilies = familyList.slice(safePage * perPage, safePage * perPage + perPage)
+  useEffect(() => setPage(0), [listingRadicals, activeFamily, searchQuery])
 
   return (
     <aside className={`studio-sidebar-left ${isOpenMobile ? 'mobile-open' : ''}`}>
@@ -89,8 +92,8 @@ export function LeftSidebar({
         <div className="sidebar-title-row">
           <div className="sidebar-heading">
             <BookOpen size={18} className="sidebar-heading-icon" />
-            <span>Kho Hán Tự</span>
-            <span className="count-badge">{filteredList.length}</span>
+            <span>{listingRadicals ? 'Bộ thủ' : 'Kho Hán Tự'}</span>
+            <span className="count-badge">{itemCount}</span>
           </div>
           {onCloseMobile && (
             <button
@@ -110,7 +113,7 @@ export function LeftSidebar({
           <input
             type="text"
             className="sidebar-search-input"
-            placeholder="Tra Hán tự, Hán Việt, Pinyin..."
+            placeholder={listingRadicals ? 'Tìm bộ: thủy, nước, 氵…' : 'Gõ 好, hảo, hao, tốt, bộ nữ…'}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -174,13 +177,87 @@ export function LeftSidebar({
           </div>
 
         </div>
+
+        {listingRadicals && !searchQuery.trim() && (
+          <details className="radical-intro">
+            <summary>Bộ thủ là gì? Học thế nào?</summary>
+            <p>
+              Chữ Hán được ghép từ những <strong>mảnh nhỏ</strong>. <strong>Bộ thủ</strong> là mảnh mang nghĩa chung:
+              chữ có bộ <span lang="zh">氵</span> (thủy, nước) thường liên quan đến nước —{' '}
+              <span lang="zh">河</span> sông, <span lang="zh">海</span> biển, <span lang="zh">洗</span> rửa.
+            </p>
+            <p>
+              Bấm một bộ để xem <strong>mọi chữ có chứa nó</strong>. Bộ ở trên cùng gặp nhiều nhất: thuộc khoảng
+              20 bộ đầu là đã đoán được nghĩa của rất nhiều chữ.
+            </p>
+          </details>
+        )}
+
+        {activeFamily && selectedLevel === 'radicals' && (
+          <div className="radical-focus-card">
+            <button type="button" className="radical-back-btn" onClick={() => onBrowseRadical?.(null)}>
+              <ArrowLeft size={14} /> Tất cả bộ thủ
+            </button>
+            <div className="radical-focus-row">
+              <span className="radical-focus-glyph" lang="zh">{activeFamily.display}</span>
+              <div className="radical-focus-meta">
+                <div className="radical-focus-name">
+                  {familyName(activeFamily)}
+                  {activeFamily.info.pinyin && <span className="radical-focus-py">{activeFamily.info.pinyin}</span>}
+                </div>
+                <div className="radical-focus-mean">Nghĩa: {activeFamily.info.meaningVi ?? '—'}</div>
+                {activeFamily.forms.length > 1 && (
+                  <div className="radical-focus-forms">
+                    Các dạng: <span lang="zh">{activeFamily.forms.join('  ')}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+            <p className="radical-focus-hint">
+              {activeFamily.count} chữ có chứa bộ này. Chữ có nó thường mang nghĩa liên quan đến
+              "{activeFamily.info.meaningVi ?? activeFamily.info.hanViet}". Bấm từng chữ để xem cách ghép.
+            </p>
+          </div>
+        )}
+
+        {!listingRadicals && searchQuery.trim() && matchedFamilies.length > 0 && (
+          <div className="radical-match-row">
+            <span className="radical-match-label">Bộ thủ:</span>
+            {matchedFamilies.slice(0, 4).map((f) => (
+              <button key={f.key} type="button" className="radical-chip" onClick={() => onBrowseRadical?.(f.key)}>
+                <span lang="zh">{f.display}</span> {familyName(f)} · {f.count} chữ
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Character Tile Grid (paginated to fit, no scrolling) */}
       <div className="sidebar-tile-area" ref={gridRef}>
-        {filteredList.length === 0 ? (
+        {itemCount === 0 ? (
           <div className="sidebar-empty-state">
-            <p>Không có chữ nào phù hợp.</p>
+            <p>{listingRadicals ? 'Không có bộ thủ nào phù hợp.' : 'Không có chữ nào phù hợp.'}</p>
+          </div>
+        ) : listingRadicals ? (
+          <div
+            className="sidebar-tile-grid"
+            role="list"
+            style={{ gridTemplateColumns: `repeat(${fit.cols}, 1fr)` }}
+          >
+            {pageFamilies.map((f) => (
+              <button
+                type="button"
+                key={f.key}
+                role="listitem"
+                className="sidebar-char-tile radical-family-tile"
+                title={`${familyName(f)} · ${f.info.meaningVi ?? ''} · ${f.count} chữ`}
+                onClick={() => onBrowseRadical?.(f.key)}
+              >
+                <span className="tile-count">{f.count}</span>
+                <span className="tile-glyph" lang="zh">{f.display}</span>
+                <span className="tile-hv">{f.info.hanViet ?? '—'}</span>
+              </button>
+            ))}
           </div>
         ) : (
           <div

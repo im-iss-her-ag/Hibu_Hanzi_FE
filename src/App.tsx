@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import type { HskLevel, LevelFilter } from './core'
-import { pickRandom, RADICAL_CHARACTERS } from './core'
+import { charactersWithRadical, containedForms, findFamily, pickRandom, RADICAL_CHARACTERS, radicalFamilies } from './core'
 import { api } from './api'
 import { Navbar } from './components/Navbar'
 import { LeftSidebar } from './components/LeftSidebar'
@@ -23,6 +23,11 @@ export function App() {
 
   const allCharacters = useMemo(() => bundle.data?.characters ?? [], [bundle.data?.characters])
   const allWords = useMemo(() => bundle.data?.words ?? [], [bundle.data?.words])
+  const contained = useMemo(() => containedForms(allCharacters), [allCharacters])
+  const families = useMemo(
+    () => radicalFamilies(allCharacters, bundle.data?.components ?? [], contained),
+    [allCharacters, bundle.data?.components, contained],
+  )
 
   // Filters & State (HSK 1-6 hoặc Tab 'radicals' Bộ thủ)
   const [selectedLevel, setSelectedLevel] = useState<LevelFilter>(() => {
@@ -37,6 +42,24 @@ export function App() {
     return 1 // Mặc định luôn là Cấp 1
   })
   const [currentHanzi, setCurrentHanzi] = useState<string | null>(null)
+  // Inside the radicals tab: the radical family whose characters are listed (null = list radicals).
+  const [radicalKey, setRadicalKey] = useState<string | null>(null)
+  const activeFamily = useMemo(() => families.find((f) => f.key === radicalKey) ?? null, [families, radicalKey])
+
+  const changeLevel = useCallback((lvl: LevelFilter) => {
+    setSelectedLevel(lvl)
+    setRadicalKey(null)
+  }, [])
+
+  const browseRadical = useCallback(
+    (form: string | null) => {
+      const family = form ? findFamily(families, form) : null
+      setSelectedLevel('radicals')
+      setRadicalKey(family?.key ?? null)
+      setCurrentHanzi(null)
+    },
+    [families],
+  )
 
 
   // Modals
@@ -112,10 +135,10 @@ export function App() {
   // Filter pool based on HSK 3.0 level (1-6) or Radicals
   const filteredCharacters = useMemo(() => {
     if (selectedLevel === 'radicals') {
-      return RADICAL_CHARACTERS
+      return activeFamily ? charactersWithRadical(allCharacters, activeFamily, contained) : RADICAL_CHARACTERS
     }
     return allCharacters.filter((c) => c.hsk3Level === selectedLevel)
-  }, [allCharacters, selectedLevel])
+  }, [allCharacters, selectedLevel, activeFamily, contained])
 
   // Active character
   const activeChar = useMemo(() => {
@@ -148,6 +171,7 @@ export function App() {
       if (foundInHsk) {
         if (foundInHsk.hsk3Level && foundInHsk.hsk3Level >= 1 && foundInHsk.hsk3Level <= 6) {
           setSelectedLevel(foundInHsk.hsk3Level as HskLevel)
+          setRadicalKey(null)
         }
         setCurrentHanzi(foundInHsk.hanzi)
         return
@@ -157,6 +181,7 @@ export function App() {
       const foundInRadicals = RADICAL_CHARACTERS.find((r) => r.hanzi === h)
       if (foundInRadicals) {
         setSelectedLevel('radicals')
+        setRadicalKey(null)
         setCurrentHanzi(foundInRadicals.hanzi)
         return
       }
@@ -407,8 +432,12 @@ export function App() {
                 activeHanzi={activeChar?.hanzi ?? null}
                 onSelectHanzi={handleSelectHanzi}
                 selectedLevel={selectedLevel}
-                onLevelChange={setSelectedLevel}
+                onLevelChange={changeLevel}
                 favorites={favorites}
+                families={families}
+                activeFamily={activeFamily}
+                radicalCharacters={activeFamily ? filteredCharacters : null}
+                onBrowseRadical={browseRadical}
               />
 
               {/* Center Column: Slide 1 (Writing Canvas & Pronunciation) */}
@@ -456,6 +485,8 @@ export function App() {
                   onSelectHanzi={handleSelectHanzi}
                   displayMode={displayMode}
                   characters={allCharacters}
+                  families={families}
+                  onBrowseRadical={browseRadical}
                 />
               </div>
             </div>
@@ -466,7 +497,7 @@ export function App() {
               activeHanzi={activeChar?.hanzi ?? null}
               onSelectHanzi={handleSelectHanzi}
               selectedLevel={selectedLevel}
-              onLevelChange={setSelectedLevel}
+              onLevelChange={changeLevel}
               favorites={favorites}
             />
           </>
@@ -486,6 +517,11 @@ export function App() {
         <SearchModal
           characters={allCharacters}
           words={allWords}
+          families={families}
+          onBrowseRadical={(form) => {
+            browseRadical(form)
+            setShowSearch(false)
+          }}
           onSelectHanzi={(h) => {
             handleSelectHanzi(h)
             setShowSearch(false)

@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from 'react'
 import { Search, X, Volume2 } from 'lucide-react'
-import type { BundleCharacter, Word } from '../core'
+import type { BundleCharacter, RadicalFamily, Word } from '../core'
+import { matchesWord, searchCharacters, searchRadicals } from '../core'
 import { speakChinese } from '../utils/speech'
 
 interface SearchModalProps {
@@ -8,46 +9,40 @@ interface SearchModalProps {
   words: readonly Word[]
   onSelectHanzi: (hanzi: string) => void
   onClose: () => void
+  families?: readonly RadicalFamily[]
+  onBrowseRadical?: (form: string) => void
 }
+
+// What a beginner can type, each with a tappable example.
+const SEARCH_EXAMPLES: { label: string; example: string }[] = [
+  { label: 'Chữ Hán', example: '好' },
+  { label: 'Âm Hán Việt (có dấu hay không đều được)', example: 'hao' },
+  { label: 'Pinyin (không cần dấu thanh)', example: 'xiexie' },
+  { label: 'Nghĩa tiếng Việt', example: 'nước' },
+  { label: 'Tên bộ thủ', example: 'bộ nữ' },
+]
 
 export function SearchModal({
   characters,
   words,
   onSelectHanzi,
   onClose,
+  families = [],
+  onBrowseRadical,
 }: SearchModalProps) {
   const [query, setQuery] = useState('')
   const [tab, setTab] = useState<'chars' | 'words'>('chars')
 
   const filteredChars = useMemo(() => {
-    const q = query.trim().toLowerCase()
-    if (!q) return []
-    return characters.filter((c) => {
-      return (
-        c.hanzi.includes(q) ||
-        (c.traditional && c.traditional.includes(q)) ||
-        c.readings.some(
-          (r) =>
-            r.pinyin.toLowerCase().includes(q) ||
-            (r.hanViet && r.hanViet.toLowerCase().includes(q)) ||
-            r.meaningVi.toLowerCase().includes(q),
-        )
-      )
-    })
+    if (!query.trim()) return []
+    return searchCharacters(characters, query)
   }, [characters, query])
 
+  const matchedFamilies = useMemo(() => searchRadicals(families, query), [families, query])
+
   const filteredWords = useMemo(() => {
-    const q = query.trim().toLowerCase()
-    if (!q) return []
-    return words.filter((w) => {
-      return (
-        w.word.includes(q) ||
-        (w.traditional && w.traditional.includes(q)) ||
-        w.pinyin.toLowerCase().includes(q) ||
-        (w.hanViet && w.hanViet.toLowerCase().includes(q)) ||
-        w.meaningVi.toLowerCase().includes(q)
-      )
-    })
+    if (!query.trim()) return []
+    return words.filter((w) => matchesWord(w, query))
   }, [words, query])
 
   // Tự động chuyển sang tab có kết quả khi tìm kiếm (ví dụ gõ từ ghép "你好" sẽ tự chuyển sang tab Từ ghép)
@@ -81,7 +76,7 @@ export function SearchModal({
           <input
             type="text"
             className="search-input-field"
-            placeholder="Tra chữ Hán, Pinyin, Hán Việt hoặc nghĩa tiếng Việt..."
+            placeholder="Gõ chữ Hán, Hán Việt, pinyin, nghĩa hoặc tên bộ — không cần dấu"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             autoFocus
@@ -122,6 +117,17 @@ export function SearchModal({
         </div>
 
 
+        {matchedFamilies.length > 0 && onBrowseRadical && (
+          <div className="radical-match-row search-radical-row">
+            <span className="radical-match-label">Bộ thủ phù hợp:</span>
+            {matchedFamilies.slice(0, 6).map((f) => (
+              <button key={f.key} type="button" className="radical-chip" onClick={() => onBrowseRadical(f.key)}>
+                <span lang="zh">{f.display}</span> {f.info.nameVi ?? f.info.hanViet} · {f.info.meaningVi} · xem {f.count} chữ →
+              </button>
+            ))}
+          </div>
+        )}
+
         {/* Results List */}
         <div className="search-results-box">
           {!query.trim() ? (
@@ -129,23 +135,20 @@ export function SearchModal({
               <div className="prompt-icon-circle">
                 <Search size={28} />
               </div>
-              <h4 className="prompt-title">Nhập từ khóa để bắt đầu tra cứu</h4>
+              <h4 className="prompt-title">Chưa biết gì cũng tra được</h4>
               <p className="prompt-desc">
-                Nhập <strong>chữ Hán</strong> (你, 好...), <strong>Pinyin</strong> (ni, hao...), <strong>âm Hán Việt</strong> (nhĩ, hảo...) hoặc <strong>nghĩa tiếng Việt</strong> (chào, ăn, đi...) để tìm kiếm.
+                Gõ bất cứ thứ gì bạn biết về chữ. Không cần gõ dấu. Bấm vào ví dụ để thử:
               </p>
-              <div className="search-quick-tags">
-                <span className="quick-tags-label">Gợi ý nhanh:</span>
-                {['你好', '爱', '学习', 'hǎo', 'nhân', 'tâm'].map((tag) => (
-                  <button
-                    key={tag}
-                    type="button"
-                    className="quick-tag-chip"
-                    onClick={() => setQuery(tag)}
-                  >
-                    {tag}
-                  </button>
+              <ul className="search-example-list">
+                {SEARCH_EXAMPLES.map(({ label, example }) => (
+                  <li key={example}>
+                    <span>{label}</span>
+                    <button type="button" className="quick-tag-chip" onClick={() => setQuery(example)}>
+                      {example}
+                    </button>
+                  </li>
                 ))}
-              </div>
+              </ul>
             </div>
           ) : tab === 'chars' ? (
             filteredChars.length === 0 ? (

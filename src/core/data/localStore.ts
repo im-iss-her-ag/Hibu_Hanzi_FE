@@ -22,6 +22,8 @@ export function getLocalBundle(): Bundle {
     traditional: c.traditional,
     hsk2Level: c.hsk2Level,
     hsk3Level: c.hsk3Level,
+    radical: c.radical,
+    parts: c.parts.map((p) => p.part),
     readings: c.readings,
   }))
 
@@ -29,6 +31,7 @@ export function getLocalBundle(): Bundle {
     version: '1.0.0',
     characters,
     words: WORDS_DATA,
+    components: COMPONENTS_DATA,
     removed: { characters: [], words: [] },
   }
 }
@@ -88,6 +91,8 @@ export const RADICAL_CHARACTERS: BundleCharacter[] = COMPONENTS_DATA.map((c) => 
     traditional: null,
     hsk2Level: null,
     hsk3Level: null,
+    radical: c.form,
+    parts: [],
     readings: [
       {
         pinyin,

@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { Volume2 } from 'lucide-react'
 import HanziWriter from 'hanzi-writer'
-import type { BundleCharacter, CharacterDetail, PartInfo, PartKind } from '../core'
-import { partPinyin } from '../core'
+import type { BundleCharacter, CharacterDetail, PartInfo, PartKind, RadicalFamily } from '../core'
+import { findFamily, partPinyin } from '../core'
 import { speakChinese } from '../utils/speech'
 
 function LegoResultHanzi({ hanzi, isComponents }: { hanzi: string; isComponents: boolean }) {
@@ -62,6 +62,8 @@ interface RightBreakdownProps {
   displayMode?: 'modern' | 'components'
   // Fallback pinyin lookup for parts the API sent without one (offline sample).
   characters?: readonly BundleCharacter[]
+  families?: readonly RadicalFamily[]
+  onBrowseRadical?: (form: string) => void
 }
 
 function PartRow({ part, pinyin, isComponents, onSelect }: {
@@ -107,6 +109,8 @@ export function RightBreakdown({
   onSelectHanzi,
   displayMode = 'modern',
   characters,
+  families = [],
+  onBrowseRadical,
 }: RightBreakdownProps) {
   const isComponents = displayMode === 'components'
   const [showAllWords, setShowAllWords] = useState(false)
@@ -151,6 +155,11 @@ export function RightBreakdown({
   const shownParts = parts.length > 0 ? parts : radical && radical.part !== character.hanzi ? [radical] : []
   const shownWords = showAllWords ? words : words.slice(0, WORDS_PREVIEW)
   const kinds = new Set(shownParts.map((p) => p.kind))
+  // Radicals in this character that can be browsed, each family once (亻 and 人 are one family).
+  const browsable = shownParts
+    .filter((p) => p.kind === 'radical')
+    .map((p) => findFamily(families, p.part))
+    .filter((f, i, all): f is RadicalFamily => f !== null && f.count > 1 && all.findIndex((g) => g?.key === f.key) === i)
 
   return shell(
     <div className="bd-unified">
@@ -182,6 +191,15 @@ export function RightBreakdown({
               </div>
             )}
           </div>
+          {browsable.length > 0 && onBrowseRadical && (
+            <div className="part-browse">
+              {browsable.map((f) => (
+                <button key={f.key} type="button" className="radical-chip" onClick={() => onBrowseRadical(f.key)}>
+                  Xem {f.count} chữ cùng bộ <span lang="zh">{f.display}</span> ({f.info.hanViet ?? f.key}) →
+                </button>
+              ))}
+            </div>
+          )}
           {kinds.size > 0 && (
             <div className="part-legend">
               {(['radical', 'character', 'component'] as const).filter((k) => kinds.has(k)).map((k) => (
