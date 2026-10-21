@@ -6064,8 +6064,9 @@ html.dark .pronounce-guide-pill-btn {
     padding: 0.85rem 0.85rem 0.75rem;
   }
 
+  /* One long column (Cấu tạo → Nguồn gốc → Mẹo nhớ → Từ ghép), so it scrolls on its own. */
   .right-panel-scroll {
-    overflow: hidden;
+    overflow-y: auto;
     min-height: 0;
   }
 
@@ -6239,15 +6240,11 @@ html.dark .comp-dots-badge .dot-red {
    Picture-in-Picture Widget
    ========================================================================== */
 
+/* Lives in the navbar tool row; the settings panel drops down below it. */
 .pip-dock {
-  position: fixed;
-  right: 20px;
-  bottom: 20px;
-  z-index: 60;
+  position: relative;
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 10px;
+  align-items: center;
 }
 
 /* The canvas and video feed the PiP window; they must stay rendered, just not visible. */
@@ -6268,13 +6265,14 @@ html.dark .comp-dots-badge .dot-red {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 10px 14px;
+  height: 36px;
+  padding: 0 12px;
   border: 1px solid var(--border-line);
   border-radius: var(--radius-full);
   background: var(--bg-elevated);
   color: var(--fg-main);
   font: 600 13px var(--font-ui);
-  box-shadow: var(--shadow-md);
+  cursor: pointer;
 }
 
 .pip-launch-btn:hover:not(:disabled) {
@@ -6300,6 +6298,10 @@ html.dark .comp-dots-badge .dot-red {
 }
 
 .pip-settings {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 80;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -6805,4 +6807,17 @@ html.dark .comp-dots-badge .dot-red {
   gap: 0.75rem;
   font-size: 0.82rem;
   color: var(--fg-muted);
+}
+
+/* Narrower desktops: the widget buttons in the navbar keep only their icons. */
+@media (max-width: 1280px) {
+  .pip-launch-btn span {
+    display: none;
+  }
+
+  .pip-launch-btn {
+    width: 36px;
+    padding: 0;
+    justify-content: center;
+  }
 }

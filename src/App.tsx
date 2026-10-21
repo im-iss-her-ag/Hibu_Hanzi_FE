@@ -429,6 +429,11 @@ export function App() {
         onOpenFavorites={() => setShowFavorites(true)}
         onOpenSearch={() => setShowSearch(true)}
         onOpenPinyinChart={() => setShowPinyinChart(true)}
+        widget={
+          bundle.isSuccess && (
+            <PipWidget characters={allCharacters} favorites={favorites} onCharacterChange={handleSelectHanzi} />
+          )
+        }
       />
 
       {/* Main Study Studio Content */}
@@ -546,13 +551,6 @@ export function App() {
         )}
       </main>
 
-      {bundle.isSuccess && (
-        <PipWidget
-          characters={allCharacters}
-          favorites={favorites}
-          onCharacterChange={handleSelectHanzi}
-        />
-      )}
 
       {/* Search Modal */}
       {showSearch && (

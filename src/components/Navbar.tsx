@@ -10,6 +10,8 @@ interface NavbarProps {
   onOpenFavorites: () => void
   onOpenSearch: () => void
   onOpenPinyinChart: () => void
+  // Widget launcher (PipWidget), shown in the tool row.
+  widget?: React.ReactNode
 }
 
 export function Navbar({
@@ -21,6 +23,7 @@ export function Navbar({
   onOpenFavorites,
   onOpenSearch,
   onOpenPinyinChart,
+  widget,
 }: NavbarProps) {
   const [showShortcutsPopover, setShowShortcutsPopover] = useState(false)
   const shortcutsRef = useRef<HTMLDivElement>(null)
@@ -105,6 +108,8 @@ export function Navbar({
               {displayMode === 'components' ? 'Thành phần' : 'Hiện đại'}
             </span>
           </button>
+
+          {widget}
 
           {/* Keyboard Shortcuts Helper */}
           <div className="shortcuts-trigger-wrapper" ref={shortcutsRef}>
