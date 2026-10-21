@@ -20,6 +20,7 @@ export function CharacterEditor({ item, onCancel, onSave }: Props) {
   const [parts, setParts] = useState(item.parts.map((p) => p.part).join(' '))
   const [chietTu, setChietTu] = useState(item.chietTu ?? '')
   const [type, setType] = useState<ChietTuType>(item.chietTuType ?? 'mnemonic')
+  const [mnemonic, setMnemonic] = useState(item.mnemonicVi ?? '')
 
   const setReading = (i: number, patch: Partial<AdminReading>) =>
     setReadings((rs) => rs.map((r, j) => (j === i ? { ...r, ...patch } : patch.isPrimary ? { ...r, isPrimary: false } : r)))
@@ -30,6 +31,7 @@ export function CharacterEditor({ item, onCancel, onSave }: Props) {
     strokeCount: strokes ? Number(strokes) : null,
     chietTu: chietTu.trim() || null,
     chietTuType: type,
+    mnemonicVi: mnemonic.trim() || null,
     readings: readings.map((r) => ({
       pinyin: r.pinyin.trim(),
       hanViet: r.hanViet?.trim() || null,
@@ -126,6 +128,11 @@ export function CharacterEditor({ item, onCancel, onSave }: Props) {
           </label>
         </div>
         <textarea value={chietTu} onChange={(e) => setChietTu(e.target.value)} rows={2} aria-label="Nội dung chiết tự" />
+      </fieldset>
+
+      <fieldset className="adm-chiettu-edit">
+        <legend>Mẹo nhớ nhanh</legend>
+        <textarea value={mnemonic} onChange={(e) => setMnemonic(e.target.value)} rows={4} aria-label="Mẹo nhớ nhanh" />
       </fieldset>
 
       <EditorFooter onCancel={onCancel} onSave={(andReview) => onSave(input(), andReview)} />

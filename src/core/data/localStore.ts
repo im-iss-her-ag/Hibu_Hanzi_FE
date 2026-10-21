@@ -115,6 +115,7 @@ export function getLocalCharacterDetail(hanzi: string): CharacterDetail | null {
       radical: comp.isRadical ? comp.form : (comp.variantOf || null),
       chietTu: comp.meaningVi ? `${comp.nameVi || comp.form}: ${comp.meaningVi}` : null,
       chietTuType: 'mnemonic',
+      mnemonicVi: null,
       strokeCount: comp.strokeCount,
       hsk2Level: null,
       hsk3Level: null,

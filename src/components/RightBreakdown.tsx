@@ -1,10 +1,9 @@
 import { useState, useEffect, useRef } from 'react'
-import { Volume2, ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Volume2 } from 'lucide-react'
 import HanziWriter from 'hanzi-writer'
-import type { BundleCharacter, CharacterDetail } from '../core'
+import type { BundleCharacter, CharacterDetail, PartInfo, PartKind } from '../core'
 import { partPinyin } from '../core'
 import { speakChinese } from '../utils/speech'
-import { useFitCount } from '../utils/useFitCount'
 
 function LegoResultHanzi({ hanzi, isComponents }: { hanzi: string; isComponents: boolean }) {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -53,17 +52,53 @@ function LegoResultHanzi({ hanzi, isComponents }: { hanzi: string; isComponents:
   )
 }
 
-type BreakdownTab = 'radical' | 'parts' | 'origin' | 'words'
-const WORD_ROW_H = 62
-const WORD_GAP = 8
+const KIND_LABEL: Record<PartKind, string> = { radical: 'Bộ thủ', character: 'Chữ', component: 'Thành phần' }
+const WORDS_PREVIEW = 12
 
 interface RightBreakdownProps {
   detail: CharacterDetail | null
   isLoading: boolean
   onSelectHanzi: (hanzi: string) => void
   displayMode?: 'modern' | 'components'
-  // Used to look up the pinyin of each part; defaults to the built-in sample.
+  // Fallback pinyin lookup for parts the API sent without one (offline sample).
   characters?: readonly BundleCharacter[]
+}
+
+function PartRow({ part, pinyin, isComponents, onSelect }: {
+  part: PartInfo
+  pinyin: string | null
+  isComponents: boolean
+  onSelect: (hanzi: string) => void
+}) {
+  return (
+    <button
+      type="button"
+      className={`part-row kind-${part.kind}`}
+      onClick={() => onSelect(part.part)}
+      title={`Bấm để tra "${part.part}"`}
+    >
+      <span className={`part-glyph ${isComponents ? 'font-calligraphy' : 'font-sans-sc'}`} lang="zh">
+        {part.part}
+      </span>
+      <span className="part-info">
+        <span className="part-head">
+          <span className="part-hv">{part.hanViet ? part.hanViet.toUpperCase() : '—'}</span>
+          {pinyin && <span className="part-py">{pinyin}</span>}
+          <span className={`part-kind-tag kind-${part.kind}`}>{part.label ?? KIND_LABEL[part.kind]}</span>
+        </span>
+        <span className="part-mean">{part.meaningVi ?? '—'}</span>
+      </span>
+    </button>
+  )
+}
+
+function SectionHeader({ title, badge }: { title: string; badge?: string }) {
+  return (
+    <div className="bd-section-header">
+      <h3 className="bd-section-title">{title}</h3>
+      {badge && <span className="bd-section-sub">{badge}</span>}
+    </div>
+  )
 }
 
 export function RightBreakdown({
@@ -73,446 +108,139 @@ export function RightBreakdown({
   displayMode = 'modern',
   characters,
 }: RightBreakdownProps) {
-  const pinyinOf = (part: string) => partPinyin(part, characters)
   const isComponents = displayMode === 'components'
-  // Last chosen tab persists across characters (component stays mounted)
-  const [tab, setTab] = useState<BreakdownTab>('radical')
-  const [wordPage, setWordPage] = useState(0)
-  const [wordsRef, wordFit] = useFitCount<HTMLDivElement>(1, WORD_ROW_H, WORD_GAP)
+  const [showAllWords, setShowAllWords] = useState(false)
   const hanzi = detail?.character.hanzi
-  useEffect(() => setWordPage(0), [hanzi])
+  useEffect(() => setShowAllWords(false), [hanzi])
 
-  const [isMobile, setIsMobile] = useState(() =>
-    typeof window !== 'undefined' ? window.innerWidth <= 1024 : false,
+  const shell = (content: React.ReactNode) => (
+    <aside className="studio-sidebar-right">
+      <div className="right-panel-scroll">
+        <div className="breakdown-panel-header">
+          <h2 className="breakdown-title">Chiết Tự & Hán Việt</h2>
+        </div>
+        {content}
+      </div>
+    </aside>
   )
 
-  const isPartRadical = (partStr: string, label?: string | null, hanViet?: string | null) => {
-    const rad = detail?.radical
-    if (!rad) return false
-    if (partStr === rad.part) return true
-    if (rad.label && label && rad.label === label) return true
-    if (rad.hanViet && hanViet && rad.hanViet.toLowerCase() === hanViet.toLowerCase()) return true
-    return false
-  }
-
-  useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth <= 1024)
-    window.addEventListener('resize', handleResize)
-    return () => window.removeEventListener('resize', handleResize)
-  }, [])
-
   if (isLoading) {
-    return (
-      <aside className="studio-sidebar-right">
-        <div className="right-panel-scroll">
-          <div className="breakdown-panel-header">
-            <h2 className="breakdown-title">Chiết Tự & Hán Việt</h2>
-          </div>
-          <div className="breakdown-loading">
-            <div className="spinner-ring-mini" />
-            <span>Đang tải thông tin…</span>
-          </div>
-        </div>
-      </aside>
+    return shell(
+      <div className="breakdown-loading">
+        <div className="spinner-ring-mini" />
+        <span>Đang tải thông tin…</span>
+      </div>,
     )
   }
 
   if (!detail) {
-    return (
-      <aside className="studio-sidebar-right">
-        <div className="right-panel-scroll">
-          <div className="breakdown-panel-header">
-            <h2 className="breakdown-title">Chiết Tự & Hán Việt</h2>
-          </div>
-
-          <div className="breakdown-empty-placeholder">
-            <div className="placeholder-watermark" aria-hidden="true">字</div>
-            <p className="placeholder-title">Chưa chọn chữ Hán</p>
-            <p className="placeholder-desc">
-              Chọn một chữ từ danh mục bên trái hoặc đổi bộ lọc cấp độ để xem chiết tự và cầu nối Hán Việt.
-            </p>
-          </div>
-        </div>
-      </aside>
+    return shell(
+      <div className="breakdown-empty-placeholder">
+        <div className="placeholder-watermark" aria-hidden="true">字</div>
+        <p className="placeholder-title">Chưa chọn chữ Hán</p>
+        <p className="placeholder-desc">
+          Chọn một chữ từ danh mục bên trái hoặc đổi bộ lọc cấp độ để xem chiết tự và cầu nối Hán Việt.
+        </p>
+      </div>,
     )
   }
 
   const { character, radical, parts = [], words = [] } = detail
+  const pinyinOf = (p: PartInfo) => p.pinyin ?? partPinyin(p.part, characters)
+  // An undecomposed character still shows which radical it is filed under.
+  const shownParts = parts.length > 0 ? parts : radical && radical.part !== character.hanzi ? [radical] : []
+  const shownWords = showAllWords ? words : words.slice(0, WORDS_PREVIEW)
+  const kinds = new Set(shownParts.map((p) => p.kind))
 
-  const handleSpeak = (text: string) => {
-    speakChinese(text)
-  }
-
-  const perPage = Math.max(1, wordFit.rows)
-  const wordPages = Math.max(1, Math.ceil(words.length / perPage))
-  const safeWordPage = Math.min(wordPage, wordPages - 1)
-  const pageWords = words.slice(safeWordPage * perPage, safeWordPage * perPage + perPage)
-  const isEtymology = character.chietTuType === 'etymology'
-
-  const tabs: { id: BreakdownTab; label: string; count?: number }[] = [
-    { id: 'radical', label: 'Bộ thủ' },
-    { id: 'parts', label: 'Cấu tạo' },
-    { id: 'origin', label: 'Nguồn gốc' },
-    { id: 'words', label: 'Từ ghép', count: words.length },
-  ]
-
-  return (
-    <aside className="studio-sidebar-right">
-      <div className="right-panel-scroll">
-        {/* Panel Header */}
-        {/* Panel Header */}
-        <div className="breakdown-panel-header">
-          <h2 className="breakdown-title">Chiết Tự & Hán Việt</h2>
-        </div>
-
-        {isMobile ? (
-          /* Mobile: Clean, focused knowledge sections (only show when content exists) */
-          <div className="mobile-unified-breakdown">
-            {/* 1. BỘ THỦ */}
-            {radical && (
-              <section className="mobile-bd-section">
-                <div className="mobile-bd-section-header">
-                  <span className={`mobile-bd-badge ${isComponents ? 'badge-radical' : 'badge-modern'}`}>BỘ THỦ</span>
-                </div>
-                <div className="breakdown-card radical-highlight-card">
-                  <div className="radical-content-row">
-                    <div
-                      className={`radical-box-glyph ${isComponents ? 'font-calligraphy mode-components' : 'font-sans-sc mode-modern'}`}
-                      lang="zh"
-                      onClick={() => onSelectHanzi(radical.part)}
-                      title={`Bấm để tra bộ thủ "${radical.part}"`}
-                    >
-                      {radical.part}
-                    </div>
-                    <div className="radical-meta-group">
-                      <div className="radical-name-title font-sans-sc">
-                        {radical.label ?? `Bộ ${radical.hanViet ?? radical.part}`}
-                      </div>
-                      <div className="radical-sino-badge">
-                        Âm Hán Việt: <strong>{radical.hanViet?.toUpperCase() ?? '—'}</strong>
-                        {pinyinOf(radical.part) && (
-                          <span className="radical-pinyin"> · Pinyin: <strong>{pinyinOf(radical.part)}</strong></span>
-                        )}
-                      </div>
-                      <div className="radical-meaning-text">
-                        Ý nghĩa biểu trưng: {radical.meaningVi ?? 'Thành phần chỉ ý chính của chữ'}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </section>
-            )}
-
-            {/* 2. CẤU TẠO CHIẾT TỰ (Chỉ hiện khi có thành phần tách ghép) */}
+  return shell(
+    <div className="bd-unified">
+      <section className="bd-section">
+        <SectionHeader
+          title="Cấu tạo"
+          badge={parts.length > 0 ? `${parts.length} thành phần` : 'chữ độc thể'}
+        />
+        <div className="breakdown-card decomposition-card">
+          {parts.length === 0 && (
+            <p className="bd-note">
+              Chữ này là một khối, không tách nhỏ hơn
+              {shownParts.length > 0 ? '; xếp vào bộ:' : '.'}
+            </p>
+          )}
+          <div className="part-stack">
+            {shownParts.map((p, idx) => (
+              <div key={idx} className="part-step">
+                {idx > 0 && <span className="part-plus" aria-hidden="true">+</span>}
+                <PartRow part={p} pinyin={pinyinOf(p)} isComponents={isComponents} onSelect={onSelectHanzi} />
+              </div>
+            ))}
             {parts.length > 0 && (
-              <section className="mobile-bd-section">
-                <div className="mobile-bd-section-header">
-                  <span className={`mobile-bd-badge ${isComponents ? 'badge-decomposition' : 'badge-modern'}`}>CẤU TẠO CHIẾT TỰ</span>
+              <div className="part-result-line">
+                <span className="part-equals" aria-hidden="true">=</span>
+                <div className="lego-result-chip" onClick={() => onSelectHanzi(character.hanzi)} title={`Chữ "${character.hanzi}"`}>
+                  <LegoResultHanzi hanzi={character.hanzi} isComponents={isComponents} />
                 </div>
-                <div className="breakdown-card decomposition-card">
-                  <div className="lego-formula-container">
-                    {parts.map((p, idx) => {
-                      const isRad = isPartRadical(p.part, p.label, p.hanViet)
-                      return (
-                        <div key={idx} className="lego-step-group">
-                          <div
-                            className={`lego-part-chip ${
-                              isComponents
-                                ? isRad
-                                  ? 'part-radical'
-                                  : 'part-stroke'
-                                : 'mode-modern'
-                            }`}
-                            onClick={() => onSelectHanzi(p.part)}
-                            title={`Bấm để tra cứu "${p.part}"`}
-                          >
-                            <span
-                              className={`lego-glyph ${isComponents ? 'font-calligraphy' : 'font-sans-sc'} ${
-                                isComponents
-                                  ? isRad
-                                    ? 'color-radical'
-                                    : 'color-stroke'
-                                  : 'color-modern'
-                              }`}
-                              lang="zh"
-                            >
-                              {p.part}
-                            </span>
-                            <div className="lego-info">
-                              <span className="lego-hv">
-                                  {p.hanViet ? p.hanViet.toUpperCase() : '—'}
-                                  {pinyinOf(p.part) && <span className="lego-py">{pinyinOf(p.part)}</span>}
-                                </span>
-                              <span className="lego-mean">{p.meaningVi ?? p.label ?? 'thành phần'}</span>
-                            </div>
-                          </div>
-                          {idx < parts.length - 1 && <span className="lego-plus-symbol">+</span>}
-                        </div>
-                      )
-                    })}
-                    <ArrowRight size={15} className={`lego-arrow-symbol ${isComponents ? 'color-accent' : 'color-neutral'}`} />
-                    <div
-                      className="lego-result-chip"
-                      onClick={() => onSelectHanzi(character.hanzi)}
-                      title={`Chữ "${character.hanzi}"`}
-                    >
-                      <LegoResultHanzi hanzi={character.hanzi} isComponents={isComponents} />
-                    </div>
-                  </div>
-                </div>
-              </section>
-            )}
-
-            {/* 3. NGUỒN GỐC & CHIẾT TỰ (Chỉ hiện khi có dữ liệu) */}
-            {character.chietTu && (
-              <section className="mobile-bd-section">
-                <div className="mobile-bd-section-header">
-                  <span className="mobile-bd-badge">NGUỒN GỐC & CHIẾT TỰ</span>
-                </div>
-                <div className="breakdown-card mnemonic-card">
-                  <p className="mnemonic-narrative-text">{character.chietTu}</p>
-                </div>
-              </section>
-            )}
-
-            {/* 4. TỪ GHÉP THƯỜNG GẶP (Chỉ hiện khi có từ ghép) */}
-            {words.length > 0 && (
-              <section className="mobile-bd-section">
-                <div className="mobile-bd-section-header">
-                  <span className="mobile-bd-badge">TỪ GHÉP THƯỜNG GẶP</span>
-                </div>
-                <div className="bd-words-pane">
-                  <div className="mobile-words-flow">
-                    {words.map((w) => (
-                      <div key={w.id} className="compound-word-row" title={w.meaningVi}>
-                        <div className="word-glyph-line">
-                          <span
-                            className="word-chinese-text font-sans-sc"
-                            lang="zh"
-                            onClick={() => handleSpeak(w.word)}
-                            title="Nghe phát âm từ"
-                          >
-                            {w.word}
-                          </span>
-                          <button
-                            type="button"
-                            className="word-audio-btn"
-                            onClick={() => handleSpeak(w.word)}
-                            title="Phát âm tiếng Trung"
-                            aria-label="Phát âm"
-                          >
-                            <Volume2 size={14} />
-                          </button>
-                          <span className="word-pinyin-label">{w.pinyin}</span>
-                          <span className="word-seal-hv">
-                            {w.hanViet ? w.hanViet.toUpperCase() : '—'}
-                          </span>
-                        </div>
-                        <div className="word-meaning-line">{w.meaningVi}</div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </section>
+              </div>
             )}
           </div>
-
-        ) : (
-          /* Desktop keeps tabbed breakdown unchanged */
-          <>
-            <div className="bd-tabbar" role="tablist">
-              {tabs.map((t) => (
-                <button
-                  key={t.id}
-                  type="button"
-                  role="tab"
-                  aria-selected={tab === t.id}
-                  className={`bd-tab ${tab === t.id ? 'active' : ''}`}
-                  onClick={() => setTab(t.id)}
-                >
-                  {t.label}
-                  {t.count !== undefined && <span className="bd-tab-count">{t.count}</span>}
-                </button>
+          {kinds.size > 0 && (
+            <div className="part-legend">
+              {(['radical', 'character', 'component'] as const).filter((k) => kinds.has(k)).map((k) => (
+                <span key={k} className={`part-legend-item kind-${k}`}>{KIND_LABEL[k]}</span>
               ))}
             </div>
+          )}
+        </div>
+      </section>
 
-            <div className="bd-tab-body" role="tabpanel">
-              {tab === 'radical' &&
-                (radical ? (
-                  <section className="breakdown-card radical-highlight-card">
-                    <div className="radical-content-row">
-                      <div
-                        className={`radical-box-glyph ${isComponents ? 'font-calligraphy mode-components' : 'font-sans-sc mode-modern'}`}
-                        lang="zh"
-                        onClick={() => onSelectHanzi(radical.part)}
-                        title={`Bấm để tra bộ thủ "${radical.part}"`}
-                      >
-                        {radical.part}
-                      </div>
-                      <div className="radical-meta-group">
-                        <div className="radical-name-title font-sans-sc">
-                          {radical.label ?? `Bộ ${radical.hanViet ?? radical.part}`}
-                        </div>
-                        <div className="radical-sino-badge">
-                          Âm Hán Việt: <strong>{radical.hanViet?.toUpperCase() ?? '—'}</strong>
-                        {pinyinOf(radical.part) && (
-                          <span className="radical-pinyin"> · Pinyin: <strong>{pinyinOf(radical.part)}</strong></span>
-                        )}
-                        </div>
-                        <div className="radical-meaning-text">
-                          Ý nghĩa biểu trưng: {radical.meaningVi ?? 'Thành phần chỉ ý chính của chữ'}
-                        </div>
-                      </div>
-                    </div>
-                  </section>
-                ) : (
-                  <p className="bd-empty">Chưa có dữ liệu bộ thủ cho chữ này.</p>
-                ))}
+      <section className="bd-section">
+        <SectionHeader title="Nguồn gốc chữ Hán" />
+        <div className="breakdown-card origin-card">
+          {character.chietTu ? (
+            <p className="mnemonic-narrative-text">{character.chietTu}</p>
+          ) : (
+            <p className="bd-note">Chưa có nguồn gốc cho chữ này.</p>
+          )}
+        </div>
+      </section>
 
-              {tab === 'parts' &&
-                (parts.length > 0 ? (
-                  <section className="breakdown-card decomposition-card">
-                    <div className="card-micro-label">
-                      <span>CẤU THÀNH CHIẾT TỰ ({parts.length} THÀNH PHẦN)</span>
-                    </div>
-                    <div className="lego-formula-container">
-                      {parts.map((p, idx) => {
-                        const isRad = isPartRadical(p.part, p.label, p.hanViet)
-                        return (
-                          <div key={idx} className="lego-step-group">
-                            <div
-                              className={`lego-part-chip ${
-                                isComponents
-                                  ? isRad
-                                    ? 'part-radical'
-                                    : 'part-stroke'
-                                  : 'mode-modern'
-                              }`}
-                              onClick={() => onSelectHanzi(p.part)}
-                              title={`Bấm để tra cứu "${p.part}"`}
-                            >
-                              <span
-                                className={`lego-glyph ${isComponents ? 'font-calligraphy' : 'font-sans-sc'} ${
-                                  isComponents
-                                    ? isRad
-                                      ? 'color-radical'
-                                      : 'color-stroke'
-                                    : 'color-modern'
-                                }`}
-                                lang="zh"
-                              >
-                                {p.part}
-                              </span>
-                              <div className="lego-info">
-                                <span className="lego-hv">
-                                  {p.hanViet ? p.hanViet.toUpperCase() : '—'}
-                                  {pinyinOf(p.part) && <span className="lego-py">{pinyinOf(p.part)}</span>}
-                                </span>
-                                <span className="lego-mean">{p.meaningVi ?? p.label ?? 'thành phần'}</span>
-                              </div>
-                            </div>
-                            {idx < parts.length - 1 && <span className="lego-plus-symbol">+</span>}
-                          </div>
-                        )
-                      })}
-                      <ArrowRight size={15} className={`lego-arrow-symbol ${isComponents ? 'color-accent' : 'color-neutral'}`} />
-                      <div
-                        className="lego-result-chip"
-                        onClick={() => onSelectHanzi(character.hanzi)}
-                        title={`Chữ "${character.hanzi}"`}
-                      >
-                        <LegoResultHanzi hanzi={character.hanzi} isComponents={isComponents} />
-                      </div>
-                    </div>
-                  </section>
-                ) : (
-                  <p className="bd-empty">Chữ này không tách thêm thành phần.</p>
-                ))}
+      <section className="bd-section">
+        <SectionHeader title="Mẹo nhớ nhanh" />
+        <div className="breakdown-card mnemonic-card">
+          {character.mnemonicVi ? (
+            <p className="mnemonic-narrative-text">{character.mnemonicVi}</p>
+          ) : (
+            <p className="bd-note">Chưa có mẹo nhớ cho chữ này.</p>
+          )}
+        </div>
+      </section>
 
-              {tab === 'origin' &&
-                (character.chietTu ? (
-                  <section className="breakdown-card mnemonic-card">
-                    <div className="card-micro-label">
-                      <span>{isEtymology ? 'NGUỒN GỐC CHỮ HÁN' : 'MẸO NHỚ DÂN GIAN'}</span>
-                      <span className={`tag-type-badge ${isEtymology ? 'etymology' : 'mnemonic'}`}>
-                        {isEtymology ? 'Văn tự học' : 'Chiết tự mẹo'}
-                      </span>
-                    </div>
-                    <p className="mnemonic-narrative-text">{character.chietTu}</p>
-                  </section>
-                ) : (
-                  <p className="bd-empty">Chưa có chiết tự cho chữ này.</p>
-                ))}
-
-              {tab === 'words' &&
-                (words.length > 0 ? (
-                  <section className="bd-words-pane">
-                    <p className="compound-helper-tip">
-                      Người Việt hiểu nghĩa ngay bằng cách đọc âm Hán Việt:
-                    </p>
-                    <div className="bd-words-fit" ref={wordsRef}>
-                      {pageWords.map((w) => (
-                        <div key={w.id} className="compound-word-row" title={w.meaningVi}>
-                          <div className="word-glyph-line">
-                            <span
-                              className="word-chinese-text font-sans-sc"
-                              lang="zh"
-                              onClick={() => handleSpeak(w.word)}
-                              title="Nghe phát âm từ"
-                            >
-                              {w.word}
-                            </span>
-                            <button
-                              type="button"
-                              className="word-audio-btn"
-                              onClick={() => handleSpeak(w.word)}
-                              title="Phát âm tiếng Trung"
-                              aria-label="Phát âm"
-                            >
-                              <Volume2 size={14} />
-                            </button>
-                            <span className="word-pinyin-label">{w.pinyin}</span>
-                            <span className="word-seal-hv">
-                              {w.hanViet ? w.hanViet.toUpperCase() : '—'}
-                            </span>
-                          </div>
-                          <div className="word-meaning-line">{w.meaningVi}</div>
-                        </div>
-                      ))}
-                    </div>
-                    {wordPages > 1 && (
-                      <div className="sidebar-pager">
-                        <button
-                          type="button"
-                          className="pager-btn"
-                          onClick={() => setWordPage(Math.max(0, safeWordPage - 1))}
-                          disabled={safeWordPage === 0}
-                          aria-label="Trang trước"
-                        >
-                          <ChevronLeft size={16} />
-                        </button>
-                        <span className="pager-label">
-                          {safeWordPage + 1} / {wordPages}
-                        </span>
-                        <button
-                          type="button"
-                          className="pager-btn"
-                          onClick={() => setWordPage(Math.min(wordPages - 1, safeWordPage + 1))}
-                          disabled={safeWordPage >= wordPages - 1}
-                          aria-label="Trang sau"
-                        >
-                          <ChevronRight size={16} />
-                        </button>
-                      </div>
-                    )}
-                  </section>
-                ) : (
-                  <p className="bd-empty">Chưa có từ ghép cho chữ này.</p>
-                ))}
-            </div>
-          </>
-        )}
-      </div>
-    </aside>
+      {words.length > 0 && (
+        <section className="bd-section">
+          <SectionHeader title="Từ ghép" badge={`${words.length} từ`} />
+          <div className="bd-words-flow">
+            {shownWords.map((w) => (
+              <div key={w.id} className="compound-word-row" title={w.meaningVi}>
+                <div className="word-glyph-line">
+                  <span className="word-chinese-text font-sans-sc" lang="zh" onClick={() => speakChinese(w.word)} title="Nghe phát âm từ">
+                    {w.word}
+                  </span>
+                  <button type="button" className="word-audio-btn" onClick={() => speakChinese(w.word)} title="Phát âm tiếng Trung" aria-label="Phát âm">
+                    <Volume2 size={14} />
+                  </button>
+                  <span className="word-pinyin-label">{w.pinyin}</span>
+                  <span className="word-seal-hv">{w.hanViet ? w.hanViet.toUpperCase() : '—'}</span>
+                </div>
+                <div className="word-meaning-line">{w.meaningVi}</div>
+              </div>
+            ))}
+          </div>
+          {words.length > WORDS_PREVIEW && (
+            <button type="button" className="bd-more-btn" onClick={() => setShowAllWords((v) => !v)}>
+              {showAllWords ? 'Thu gọn' : `Xem thêm ${words.length - WORDS_PREVIEW} từ`}
+            </button>
+          )}
+        </section>
+      )}
+    </div>,
   )
 }
