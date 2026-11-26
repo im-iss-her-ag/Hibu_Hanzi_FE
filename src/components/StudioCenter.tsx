@@ -5,6 +5,8 @@ import {
   Volume2,
   Star,
   Play,
+  RotateCcw,
+  Eye,
   PenTool,
   ArrowLeft,
   ChevronLeft,
@@ -100,8 +102,10 @@ export function StudioCenter({
   const [showPracticeModal, setShowPracticeModal] = useState(false)
 
   // Mobile inline stroke animation inside square box
+  const [mobileMode, setMobileMode] = useState<'display' | 'animate' | 'quiz'>('display')
   const [isAnimating, setIsAnimating] = useState(false)
   const [isWriterReady, setIsWriterReady] = useState(false)
+  const [mobileMistakes, setMobileMistakes] = useState<number | null>(null)
   const mobileWriterContainerRef = useRef<HTMLDivElement>(null)
   const mobileWriterRef = useRef<HanziWriter | null>(null)
 
@@ -111,6 +115,8 @@ export function StudioCenter({
     setSelectedReadingIndex(primaryIdx >= 0 ? primaryIdx : 0)
     setIsAnimating(false)
     setIsWriterReady(false)
+    setMobileMode('display')
+    setMobileMistakes(null)
   }, [character.hanzi])
 
   // Initialize or update HanziWriter when character or displayMode changes
@@ -122,8 +128,8 @@ export function StudioCenter({
     const isDark = document.documentElement.classList.contains('dark')
     let isSubscribed = true
     const writer = HanziWriter.create(mobileWriterContainerRef.current, character.hanzi, {
-      width: 120,
-      height: 120,
+      width: 125,
+      height: 125,
       padding: 10,
       showOutline: true,
       strokeAnimationSpeed: 1.2,
@@ -131,7 +137,9 @@ export function StudioCenter({
       strokeColor: isDark ? '#f87171' : '#dc2626',
       radicalColor: isDark ? '#38bdf8' : '#0284c7',
       outlineColor: isDark ? '#262c38' : '#e7e3da',
-      showCharacter: isComponents,
+      drawingColor: isDark ? '#38bdf8' : '#1d4ed8',
+      highlightColor: '#10b981',
+      showCharacter: isComponents || mobileMode === 'animate',
       onLoadCharDataSuccess: () => {
         if (isSubscribed) {
           setIsWriterReady(true)
@@ -155,17 +163,39 @@ export function StudioCenter({
   }, [character.hanzi, isComponents])
 
   const handlePlayAnimate = () => {
-    if (isAnimating) return
-    if (mobileWriterRef.current) {
-      setIsAnimating(true)
-      mobileWriterRef.current.animateCharacter({
-        onComplete: () => {
-          setIsAnimating(false)
-          if (isComponents) {
-            mobileWriterRef.current?.showCharacter()
-          }
-        },
-      })
+    if (isAnimating || !mobileWriterRef.current) return
+    setMobileMode('animate')
+    setIsAnimating(true)
+    setMobileMistakes(null)
+    mobileWriterRef.current.showCharacter()
+    mobileWriterRef.current.animateCharacter({
+      onComplete: () => {
+        setIsAnimating(false)
+        if (isComponents) {
+          mobileWriterRef.current?.showCharacter()
+        }
+      },
+    })
+  }
+
+  const handleStartMobileQuiz = () => {
+    if (!mobileWriterRef.current) return
+    setMobileMode('quiz')
+    setIsAnimating(false)
+    setMobileMistakes(null)
+    mobileWriterRef.current.quiz({
+      onComplete: (summary) => {
+        setMobileMistakes(summary.totalMistakes)
+      },
+    })
+  }
+
+  const handleResetMobile = () => {
+    setMobileMistakes(null)
+    if (mobileMode === 'quiz') {
+      handleStartMobileQuiz()
+    } else {
+      handlePlayAnimate()
     }
   }
 
@@ -302,13 +332,13 @@ export function StudioCenter({
                   <line x1="6" y1="50" x2="94" y2="50" stroke="currentColor" strokeWidth="0.75" strokeDasharray="2.5,2.5" strokeOpacity="0.24" />
                 </svg>
 
-                {/* Surface for colored HanziWriter (active when isComponents or animating) */}
+                {/* Surface for colored HanziWriter (active when isComponents or animating or quiz) */}
                 <div
                   ref={mobileWriterContainerRef}
                   className="mobile-writer-surface"
                   style={{
-                    opacity: (isComponents && isWriterReady) || isAnimating ? 1 : 0,
-                    pointerEvents: (isComponents && isWriterReady) || isAnimating ? 'auto' : 'none',
+                    opacity: (isComponents && isWriterReady) || isAnimating || mobileMode === 'quiz' ? 1 : 0,
+                    pointerEvents: (isComponents && isWriterReady) || isAnimating || mobileMode === 'quiz' ? 'auto' : 'none',
                   }}
                 />
 
@@ -317,7 +347,7 @@ export function StudioCenter({
                   className="mobile-hanzi-glyph font-sans-sc"
                   lang="zh"
                   style={{
-                    opacity: (isComponents && isWriterReady) || isAnimating ? 0 : 1,
+                    opacity: (isComponents && isWriterReady) || isAnimating || mobileMode === 'quiz' ? 0 : 1,
                   }}
                 >
                   {character.hanzi}
@@ -370,10 +400,10 @@ export function StudioCenter({
               <div className="mobile-actions-grid">
                 <button
                   type="button"
-                  className={`mobile-action-pill ${isAnimating ? 'playing' : ''}`}
+                  className={`mobile-action-pill ${mobileMode === 'animate' && isAnimating ? 'playing' : ''}`}
                   onClick={handlePlayAnimate}
                   disabled={isAnimating}
-                  title="Xem nét bút động"
+                  title="Xem nét bút động trực tiếp"
                 >
                   <Play size={13} fill={isAnimating ? 'currentColor' : 'none'} />
                   <span>{isAnimating ? 'Đang vẽ…' : 'Xem nét'}</span>
@@ -381,14 +411,45 @@ export function StudioCenter({
 
                 <button
                   type="button"
-                  className="mobile-action-pill primary"
-                  onClick={() => setShowPracticeModal(true)}
-                  title="Mở bảng tập viết nổi lên màn hình"
+                  className={`mobile-action-pill ${mobileMode === 'quiz' ? 'active-quiz' : 'primary'}`}
+                  onClick={handleStartMobileQuiz}
+                  title="Tự tay vẽ nét chữ trực tiếp lên ô Mễ tự"
                 >
                   <PenTool size={13} />
-                  <span>Tập viết</span>
+                  <span>{mobileMode === 'quiz' ? 'Đang tập viết' : 'Tập viết'}</span>
                 </button>
               </div>
+
+              {mobileMode !== 'display' && (
+                <div className="mobile-canvas-mini-ctrls">
+                  <button
+                    type="button"
+                    className="mobile-mini-ctrl-btn"
+                    onClick={handleResetMobile}
+                    title="Vẽ lại"
+                  >
+                    <RotateCcw size={12} />
+                    <span>Lại</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="mobile-mini-ctrl-btn exit"
+                    onClick={() => {
+                      setMobileMode('display')
+                      setMobileMistakes(null)
+                    }}
+                    title="Trở về chữ tĩnh"
+                  >
+                    <Eye size={12} />
+                    <span>Chữ tĩnh</span>
+                  </button>
+                  {mobileMistakes !== null && (
+                    <span className="mobile-quiz-badge">
+                      {mobileMistakes === 0 ? '✓ Chuẩn 100%' : `Sai ${mobileMistakes} nét`}
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 

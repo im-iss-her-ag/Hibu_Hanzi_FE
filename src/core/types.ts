@@ -101,6 +101,7 @@ export interface WordDetail {
 // chiet tu and part details come from /characters/:hanzi.
 export type BundleCharacter = Pick<Character, 'hanzi' | 'traditional' | 'hsk2Level' | 'hsk3Level' | 'readings' | 'radical'> & {
   parts: string[]
+  strokeCount?: number | null
 }
 
 export interface Bundle {

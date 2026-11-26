@@ -1,5 +1,17 @@
-import { useState, useMemo, useEffect } from 'react'
-import { Search, Star, BookOpen, Layers, X, ChevronLeft, ChevronRight, ArrowLeft } from 'lucide-react'
+import { useState, useMemo, useEffect, useRef } from 'react'
+import {
+  Search,
+  Star,
+  BookOpen,
+  Layers,
+  X,
+  ChevronLeft,
+  ChevronRight,
+  ArrowLeft,
+  ArrowUpDown,
+  LayoutGrid,
+  ScrollText,
+} from 'lucide-react'
 import { useFitCount } from '../utils/useFitCount'
 import type { BundleCharacter, LevelFilter, RadicalFamily } from '../core'
 import { searchCharacters, searchRadicals } from '../core'
@@ -14,11 +26,9 @@ interface LeftSidebarProps {
   isOpenMobile?: boolean
   onCloseMobile?: () => void
   families?: readonly RadicalFamily[]
-  // The radical being browsed and its characters; null = the radicals tab lists radicals.
   activeFamily?: RadicalFamily | null
   radicalCharacters?: readonly BundleCharacter[] | null
   onBrowseRadical?: (form: string | null) => void
-  // Lets the keyboard move a whole row (up/down) or page (Ctrl + left/right).
   onGridChange?: (cols: number, perPage: number) => void
 }
 
@@ -27,6 +37,8 @@ const familyName = (f: RadicalFamily) => f.info.nameVi ?? `Bộ ${f.info.hanViet
 const TILE_W = 52
 const TILE_H = 58
 const TILE_GAP = 6
+
+export type SortOrder = 'default' | 'strokeAsc' | 'strokeDesc' | 'pinyinAsc'
 
 export function LeftSidebar({
   characters,
@@ -45,6 +57,8 @@ export function LeftSidebar({
 }: LeftSidebarProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const [filterMode, setFilterMode] = useState<'all' | 'favorites'>('all')
+  const [sortOrder, setSortOrder] = useState<SortOrder>('default')
+  const [viewStyle, setViewStyle] = useState<'paged' | 'scroll'>('paged')
 
   // The radicals tab without a chosen radical lists radical families instead of characters.
   const listingRadicals = selectedLevel === 'radicals' && !activeFamily
@@ -54,22 +68,37 @@ export function LeftSidebar({
     [families, matchedFamilies, searchQuery],
   )
 
-  // Filter list
+  // Filter & Sort list
   const filteredList = useMemo(() => {
-    let list: readonly BundleCharacter[] =
-      selectedLevel === 'radicals' ? radicalCharacters ?? [] : characters.filter((c) => c.hsk3Level === selectedLevel)
+    let list: BundleCharacter[] =
+      selectedLevel === 'radicals'
+        ? (radicalCharacters ? [...radicalCharacters] : [])
+        : characters.filter((c) => c.hsk3Level === selectedLevel)
 
     if (filterMode === 'favorites') {
       list = list.filter((c) => favorites.includes(c.hanzi))
     }
     if (searchQuery.trim()) {
-      list = searchCharacters(list, searchQuery)
+      list = searchCharacters(list, searchQuery) as BundleCharacter[]
     }
+
+    // Apply sorting
+    if (sortOrder === 'strokeAsc') {
+      list = [...list].sort((a, b) => (a.strokeCount ?? 99) - (b.strokeCount ?? 99))
+    } else if (sortOrder === 'strokeDesc') {
+      list = [...list].sort((a, b) => (b.strokeCount ?? 0) - (a.strokeCount ?? 0))
+    } else if (sortOrder === 'pinyinAsc') {
+      list = [...list].sort((a, b) => {
+        const pyA = a.readings[0]?.pinyin ?? ''
+        const pyB = b.readings[0]?.pinyin ?? ''
+        return pyA.localeCompare(pyB)
+      })
+    }
+
     return list
-  }, [characters, radicalCharacters, filterMode, favorites, selectedLevel, searchQuery])
+  }, [characters, radicalCharacters, filterMode, favorites, selectedLevel, searchQuery, sortOrder])
 
   const itemCount = listingRadicals ? familyList.length : filteredList.length
-
 
   // Fit as many fixed-size tiles as the available area allows, then paginate
   const [gridRef, fit] = useFitCount<HTMLDivElement>(TILE_W, TILE_H, TILE_GAP)
@@ -83,13 +112,41 @@ export function LeftSidebar({
 
   // Jump to the page containing the active character when list / size / selection changes
   useEffect(() => {
-    const idx = activeHanzi ? filteredList.findIndex((c) => c.hanzi === activeHanzi) : -1
-    setPage(idx >= 0 ? Math.floor(idx / perPage) : 0)
-  }, [filteredList, perPage, activeHanzi])
+    if (viewStyle === 'paged') {
+      const idx = activeHanzi ? filteredList.findIndex((c) => c.hanzi === activeHanzi) : -1
+      setPage(idx >= 0 ? Math.floor(idx / perPage) : 0)
+    }
+  }, [filteredList, perPage, activeHanzi, viewStyle])
 
-  const pageItems = filteredList.slice(safePage * perPage, safePage * perPage + perPage)
-  const pageFamilies = familyList.slice(safePage * perPage, safePage * perPage + perPage)
-  useEffect(() => setPage(0), [listingRadicals, activeFamily, searchQuery])
+  const pageItems = useMemo(() => {
+    if (viewStyle === 'scroll') return filteredList
+    return filteredList.slice(safePage * perPage, safePage * perPage + perPage)
+  }, [filteredList, safePage, perPage, viewStyle])
+
+  const pageFamilies = useMemo(() => {
+    if (viewStyle === 'scroll') return familyList
+    return familyList.slice(safePage * perPage, safePage * perPage + perPage)
+  }, [familyList, safePage, perPage, viewStyle])
+
+  useEffect(() => setPage(0), [listingRadicals, activeFamily, searchQuery, sortOrder])
+
+  // Mouse wheel pagination support
+  const handleWheel = (e: React.WheelEvent) => {
+    if (viewStyle === 'scroll' || pageCount <= 1) return
+    if (e.deltaY > 20) {
+      setPage((p) => Math.min(pageCount - 1, p + 1))
+    } else if (e.deltaY < -20) {
+      setPage((p) => Math.max(0, p - 1))
+    }
+  }
+
+  // Scroll to selected element in scroll mode
+  const activeTileRef = useRef<HTMLButtonElement | null>(null)
+  useEffect(() => {
+    if (viewStyle === 'scroll' && activeTileRef.current) {
+      activeTileRef.current.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+    }
+  }, [activeHanzi, viewStyle])
 
   return (
     <aside className={`studio-sidebar-left ${isOpenMobile ? 'mobile-open' : ''}`}>
@@ -101,16 +158,30 @@ export function LeftSidebar({
             <span>{listingRadicals ? 'Bộ thủ' : 'Kho Hán Tự'}</span>
             <span className="count-badge">{itemCount}</span>
           </div>
-          {onCloseMobile && (
+
+          <div className="sidebar-header-right-tools">
+            {/* Toggle View: Phân trang vs Cuộn liên tục */}
             <button
               type="button"
-              className="mobile-close-btn"
-              onClick={onCloseMobile}
-              aria-label="Đóng danh mục"
+              className={`view-toggle-btn ${viewStyle === 'scroll' ? 'active' : ''}`}
+              onClick={() => setViewStyle((v) => (v === 'paged' ? 'scroll' : 'paged'))}
+              title={viewStyle === 'paged' ? 'Chuyển sang chế độ cuộn tự do' : 'Chuyển sang chế độ phân trang'}
             >
-              <X size={20} />
+              {viewStyle === 'paged' ? <ScrollText size={14} /> : <LayoutGrid size={14} />}
+              <span>{viewStyle === 'paged' ? 'Cuộn' : 'Trang'}</span>
             </button>
-          )}
+
+            {onCloseMobile && (
+              <button
+                type="button"
+                className="mobile-close-btn"
+                onClick={onCloseMobile}
+                aria-label="Đóng danh mục"
+              >
+                <X size={20} />
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Search input */}
@@ -135,24 +206,45 @@ export function LeftSidebar({
           )}
         </div>
 
-        {/* View mode toggle: Tất cả vs Sổ tay đã lưu */}
+        {/* Filter mode & Sort row */}
         <div className="sidebar-mode-tabs">
-          <button
-            type="button"
-            className={`mode-tab-btn ${filterMode === 'all' ? 'active' : ''}`}
-            onClick={() => setFilterMode('all')}
-          >
-            <Layers size={14} />
-            <span>Tất cả</span>
-          </button>
-          <button
-            type="button"
-            className={`mode-tab-btn ${filterMode === 'favorites' ? 'active' : ''}`}
-            onClick={() => setFilterMode('favorites')}
-          >
-            <Star size={14} />
-            <span>Sổ tay ({favorites.length})</span>
-          </button>
+          <div className="sidebar-tab-pills">
+            <button
+              type="button"
+              className={`mode-tab ${filterMode === 'all' ? 'active' : ''}`}
+              onClick={() => setFilterMode('all')}
+            >
+              <Layers size={13} />
+              <span>Tất cả</span>
+            </button>
+            <button
+              type="button"
+              className={`mode-tab ${filterMode === 'favorites' ? 'active' : ''}`}
+              onClick={() => setFilterMode('favorites')}
+            >
+              <Star size={13} fill={filterMode === 'favorites' ? 'currentColor' : 'none'} />
+              <span>Sổ tay ({favorites.length})</span>
+            </button>
+          </div>
+
+          {/* Sort selector dropdown */}
+          {!listingRadicals && (
+            <div className="sidebar-sort-control">
+              <ArrowUpDown size={12} className="sort-icon" />
+              <select
+                className="sidebar-sort-select"
+                value={sortOrder}
+                onChange={(e) => setSortOrder(e.target.value as SortOrder)}
+                title="Sắp xếp danh sách Hán tự"
+                aria-label="Sắp xếp Hán tự"
+              >
+                <option value="default">Mặc định (HSK)</option>
+                <option value="strokeAsc">Số nét: Ít ➔ Nhiều</option>
+                <option value="strokeDesc">Số nét: Nhiều ➔ Ít</option>
+                <option value="pinyinAsc">Pinyin: A ➔ Z</option>
+              </select>
+            </div>
+          )}
         </div>
 
         {/* HSK Level Filter Row */}
@@ -181,7 +273,6 @@ export function LeftSidebar({
               Bộ thủ
             </button>
           </div>
-
         </div>
 
         {listingRadicals && !searchQuery.trim() && (
@@ -238,8 +329,12 @@ export function LeftSidebar({
         )}
       </div>
 
-      {/* Character Tile Grid (paginated to fit, no scrolling) */}
-      <div className="sidebar-tile-area" ref={gridRef}>
+      {/* Character Tile Grid */}
+      <div
+        className={`sidebar-tile-area ${viewStyle === 'scroll' ? 'scroll-mode' : ''}`}
+        ref={gridRef}
+        onWheel={handleWheel}
+      >
         {itemCount === 0 ? (
           <div className="sidebar-empty-state">
             <p>{listingRadicals ? 'Không có bộ thủ nào phù hợp.' : 'Không có chữ nào phù hợp.'}</p>
@@ -248,7 +343,7 @@ export function LeftSidebar({
           <div
             className="sidebar-tile-grid"
             role="list"
-            style={{ gridTemplateColumns: `repeat(${fit.cols}, 1fr)` }}
+            style={{ gridTemplateColumns: `repeat(${fit.cols || 5}, 1fr)` }}
           >
             {pageFamilies.map((f) => (
               <button
@@ -269,7 +364,7 @@ export function LeftSidebar({
           <div
             className="sidebar-tile-grid"
             role="list"
-            style={{ gridTemplateColumns: `repeat(${fit.cols}, 1fr)` }}
+            style={{ gridTemplateColumns: `repeat(${fit.cols || 5}, 1fr)` }}
           >
             {pageItems.map((item) => {
               const isSelected = item.hanzi === activeHanzi
@@ -279,9 +374,10 @@ export function LeftSidebar({
                 <button
                   type="button"
                   key={item.hanzi}
+                  ref={isSelected ? activeTileRef : undefined}
                   role="listitem"
                   className={`sidebar-char-tile ${isSelected ? 'selected' : ''}`}
-                  title={`${primary?.pinyin ?? ''} · ${primary?.meaningVi ?? ''}`}
+                  title={`${primary?.pinyin ?? ''} · ${primary?.meaningVi ?? ''} (${item.strokeCount ? `${item.strokeCount} nét` : ''})`}
                   onClick={() => {
                     onSelectHanzi(item.hanzi)
                     if (onCloseMobile) onCloseMobile()
@@ -290,6 +386,9 @@ export function LeftSidebar({
                   {isFav && <Star size={9} className="tile-fav-star" fill="currentColor" />}
                   <span className="tile-glyph" lang="zh">{item.hanzi}</span>
                   <span className="tile-hv">{primary?.hanViet ?? '—'}</span>
+                  {sortOrder.startsWith('stroke') && item.strokeCount && (
+                    <span className="tile-sub-badge">{item.strokeCount}n</span>
+                  )}
                 </button>
               )
             })}
@@ -297,7 +396,7 @@ export function LeftSidebar({
         )}
       </div>
 
-      {pageCount > 1 && (
+      {viewStyle === 'paged' && pageCount > 1 && (
         <div className="sidebar-pager">
           <button
             type="button"
