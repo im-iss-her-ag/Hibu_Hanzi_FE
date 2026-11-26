@@ -1,9 +1,8 @@
 import { useState, useMemo, useEffect } from 'react'
-import { Search, Star, BookOpen, Layers, X, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Search, Star, BookOpen, Layers, X, ChevronLeft, ChevronRight, ArrowLeft } from 'lucide-react'
 import { useFitCount } from '../utils/useFitCount'
-import type { BundleCharacter, LevelFilter } from '../core'
-import { RADICAL_CHARACTERS } from '../core'
-import { filterAndSortCharacters } from '../utils/search'
+import type { BundleCharacter, LevelFilter, RadicalFamily } from '../core'
+import { searchCharacters, searchRadicals } from '../core'
 
 interface LeftSidebarProps {
   characters: BundleCharacter[]
@@ -14,8 +13,16 @@ interface LeftSidebarProps {
   favorites: string[]
   isOpenMobile?: boolean
   onCloseMobile?: () => void
-  onOpenGlobalSearch?: () => void
+  families?: readonly RadicalFamily[]
+  // The radical being browsed and its characters; null = the radicals tab lists radicals.
+  activeFamily?: RadicalFamily | null
+  radicalCharacters?: readonly BundleCharacter[] | null
+  onBrowseRadical?: (form: string | null) => void
+  // Lets the keyboard move a whole row (up/down) or page (Ctrl + left/right).
+  onGridChange?: (cols: number, perPage: number) => void
 }
+
+const familyName = (f: RadicalFamily) => f.info.nameVi ?? `Bộ ${f.info.hanViet ?? f.key}`
 
 const TILE_W = 52
 const TILE_H = 58
@@ -30,39 +37,47 @@ export function LeftSidebar({
   favorites,
   isOpenMobile = false,
   onCloseMobile,
-  onOpenGlobalSearch,
+  families = [],
+  activeFamily = null,
+  radicalCharacters = null,
+  onBrowseRadical,
+  onGridChange,
 }: LeftSidebarProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const [filterMode, setFilterMode] = useState<'all' | 'favorites'>('all')
 
-  // Filter list (favorites tab shows all saved characters across HSK & Radicals)
+  // The radicals tab without a chosen radical lists radical families instead of characters.
+  const listingRadicals = selectedLevel === 'radicals' && !activeFamily
+  const matchedFamilies = useMemo(() => searchRadicals(families, searchQuery), [families, searchQuery])
+  const familyList = useMemo(
+    () => (searchQuery.trim() ? matchedFamilies : families),
+    [families, matchedFamilies, searchQuery],
+  )
+
+  // Filter list
   const filteredList = useMemo(() => {
-    let list: readonly BundleCharacter[]
+    let list: readonly BundleCharacter[] =
+      selectedLevel === 'radicals' ? radicalCharacters ?? [] : characters.filter((c) => c.hsk3Level === selectedLevel)
 
     if (filterMode === 'favorites') {
-      const seen = new Set(characters.map((c) => c.hanzi))
-      const combined = [
-        ...characters,
-        ...RADICAL_CHARACTERS.filter((r) => !seen.has(r.hanzi)),
-      ]
-      list = combined.filter((c) => favorites.includes(c.hanzi))
-    } else if (selectedLevel === 'radicals') {
-      list = RADICAL_CHARACTERS
-    } else {
-      list = characters.filter((c) => c.hsk3Level === selectedLevel)
+      list = list.filter((c) => favorites.includes(c.hanzi))
     }
-
     if (searchQuery.trim()) {
-      return filterAndSortCharacters(list, searchQuery)
+      list = searchCharacters(list, searchQuery)
     }
-
     return list
-  }, [characters, filterMode, favorites, selectedLevel, searchQuery])
+  }, [characters, radicalCharacters, filterMode, favorites, selectedLevel, searchQuery])
+
+  const itemCount = listingRadicals ? familyList.length : filteredList.length
+
 
   // Fit as many fixed-size tiles as the available area allows, then paginate
   const [gridRef, fit] = useFitCount<HTMLDivElement>(TILE_W, TILE_H, TILE_GAP)
   const perPage = Math.max(1, fit.cols * fit.rows)
-  const pageCount = Math.max(1, Math.ceil(filteredList.length / perPage))
+  useEffect(() => {
+    if (fit.cols > 0) onGridChange?.(fit.cols, perPage)
+  }, [fit.cols, perPage, onGridChange])
+  const pageCount = Math.max(1, Math.ceil(itemCount / perPage))
   const [page, setPage] = useState(0)
   const safePage = Math.min(page, pageCount - 1)
 
@@ -73,15 +88,8 @@ export function LeftSidebar({
   }, [filteredList, perPage, activeHanzi])
 
   const pageItems = filteredList.slice(safePage * perPage, safePage * perPage + perPage)
-
-  const handleWheel = (e: React.WheelEvent) => {
-    if (pageCount <= 1) return
-    if (e.deltaY > 15) {
-      setPage((p) => Math.min(pageCount - 1, p + 1))
-    } else if (e.deltaY < -15) {
-      setPage((p) => Math.max(0, p - 1))
-    }
-  }
+  const pageFamilies = familyList.slice(safePage * perPage, safePage * perPage + perPage)
+  useEffect(() => setPage(0), [listingRadicals, activeFamily, searchQuery])
 
   return (
     <aside className={`studio-sidebar-left ${isOpenMobile ? 'mobile-open' : ''}`}>
@@ -90,8 +98,8 @@ export function LeftSidebar({
         <div className="sidebar-title-row">
           <div className="sidebar-heading">
             <BookOpen size={18} className="sidebar-heading-icon" />
-            <span>Kho Hán Tự</span>
-            <span className="count-badge">{filteredList.length}</span>
+            <span>{listingRadicals ? 'Bộ thủ' : 'Kho Hán Tự'}</span>
+            <span className="count-badge">{itemCount}</span>
           </div>
           {onCloseMobile && (
             <button
@@ -109,12 +117,9 @@ export function LeftSidebar({
         <div className="sidebar-search-box">
           <Search size={15} className="search-icon" />
           <input
-            id="sidebar-hanzi-filter"
-            name="sidebar-hanzi-filter"
             type="text"
             className="sidebar-search-input"
-            placeholder="Lọc Hán tự, Pinyin (vd: hao)..."
-            aria-label="Lọc nhanh chữ Hán trong danh sách"
+            placeholder={listingRadicals ? 'Tìm bộ: thủy, nước, 氵…' : 'Gõ 好, hảo, hao, tốt, bộ nữ…'}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -124,7 +129,6 @@ export function LeftSidebar({
               className="clear-search-btn"
               onClick={() => setSearchQuery('')}
               title="Xóa tìm kiếm"
-              aria-label="Xóa bộ lọc"
             >
               <X size={14} />
             </button>
@@ -151,55 +155,115 @@ export function LeftSidebar({
           </button>
         </div>
 
-        {/* HSK Level Filter Row (active in 'all' mode) */}
-        {filterMode === 'all' && (
-          <div className="sidebar-filter-cluster">
-            <span className="hsk-standard-badge" title="Chuẩn HSK 3.0 (2021)">
-              HSK 3.0
-            </span>
-            <div className="hsk-level-pills">
-              {[1, 2, 3, 4, 5, 6].map((lvl) => (
-                <button
-                  key={lvl}
-                  type="button"
-                  className={`lvl-pill ${selectedLevel === lvl ? 'active' : ''}`}
-                  onClick={() => onLevelChange(lvl as LevelFilter)}
-                  title={`HSK 3.0 Cấp ${lvl}`}
-                >
-                  {lvl}
-                </button>
-              ))}
+        {/* HSK Level Filter Row */}
+        <div className="sidebar-filter-cluster">
+          <span className="hsk-standard-badge" title="Chuẩn HSK 3.0 (2021)">
+            HSK 3.0
+          </span>
+          <div className="hsk-level-pills">
+            {[1, 2, 3, 4, 5, 6].map((lvl) => (
               <button
+                key={lvl}
                 type="button"
-                className={`lvl-pill radical-tab-pill ${selectedLevel === 'radicals' ? 'active' : ''}`}
-                onClick={() => onLevelChange('radicals')}
-                title="214 Bộ thủ & Thành phần chữ Hán"
+                className={`lvl-pill ${selectedLevel === lvl ? 'active' : ''}`}
+                onClick={() => onLevelChange(lvl as LevelFilter)}
+                title={`HSK 3.0 Cấp ${lvl}`}
               >
-                Bộ thủ
+                {lvl}
               </button>
+            ))}
+            <button
+              type="button"
+              className={`lvl-pill radical-tab-pill ${selectedLevel === 'radicals' ? 'active' : ''}`}
+              onClick={() => onLevelChange('radicals')}
+              title="214 Bộ thủ & Thành phần chữ Hán"
+            >
+              Bộ thủ
+            </button>
+          </div>
+
+        </div>
+
+        {listingRadicals && !searchQuery.trim() && (
+          <details className="radical-intro">
+            <summary>Bộ thủ là gì? Học thế nào?</summary>
+            <p>
+              Chữ Hán được ghép từ những <strong>mảnh nhỏ</strong>. <strong>Bộ thủ</strong> là mảnh mang nghĩa chung:
+              chữ có bộ <span lang="zh">氵</span> (thủy, nước) thường liên quan đến nước —{' '}
+              <span lang="zh">河</span> sông, <span lang="zh">海</span> biển, <span lang="zh">洗</span> rửa.
+            </p>
+            <p>
+              Bấm một bộ để xem <strong>mọi chữ có chứa nó</strong>. Bộ ở trên cùng gặp nhiều nhất: thuộc khoảng
+              20 bộ đầu là đã đoán được nghĩa của rất nhiều chữ.
+            </p>
+          </details>
+        )}
+
+        {activeFamily && selectedLevel === 'radicals' && (
+          <div className="radical-focus-card">
+            <button type="button" className="radical-back-btn" onClick={() => onBrowseRadical?.(null)}>
+              <ArrowLeft size={14} /> Tất cả bộ thủ
+            </button>
+            <div className="radical-focus-row">
+              <span className="radical-focus-glyph" lang="zh">{activeFamily.display}</span>
+              <div className="radical-focus-meta">
+                <div className="radical-focus-name">
+                  {familyName(activeFamily)}
+                  {activeFamily.info.pinyin && <span className="radical-focus-py">{activeFamily.info.pinyin}</span>}
+                </div>
+                <div className="radical-focus-mean">Nghĩa: {activeFamily.info.meaningVi ?? '—'}</div>
+                {activeFamily.forms.length > 1 && (
+                  <div className="radical-focus-forms">
+                    Các dạng: <span lang="zh">{activeFamily.forms.join('  ')}</span>
+                  </div>
+                )}
+              </div>
             </div>
+            <p className="radical-focus-hint">
+              {activeFamily.count} chữ có chứa bộ này. Chữ có nó thường mang nghĩa liên quan đến
+              "{activeFamily.info.meaningVi ?? activeFamily.info.hanViet}". Bấm từng chữ để xem cách ghép.
+            </p>
+          </div>
+        )}
+
+        {!listingRadicals && searchQuery.trim() && matchedFamilies.length > 0 && (
+          <div className="radical-match-row">
+            <span className="radical-match-label">Bộ thủ:</span>
+            {matchedFamilies.slice(0, 4).map((f) => (
+              <button key={f.key} type="button" className="radical-chip" onClick={() => onBrowseRadical?.(f.key)}>
+                <span lang="zh">{f.display}</span> {familyName(f)} · {f.count} chữ
+              </button>
+            ))}
           </div>
         )}
       </div>
 
-      {/* Character Tile Grid (paginated to fit, wheel-friendly) */}
-      <div className="sidebar-tile-area" ref={gridRef} onWheel={handleWheel}>
-        {filteredList.length === 0 ? (
+      {/* Character Tile Grid (paginated to fit, no scrolling) */}
+      <div className="sidebar-tile-area" ref={gridRef}>
+        {itemCount === 0 ? (
           <div className="sidebar-empty-state">
-            <p>
-              {filterMode === 'favorites' && favorites.length === 0
-                ? 'Bạn chưa lưu chữ nào vào sổ tay.'
-                : 'Không có chữ nào phù hợp trong mục này.'}
-            </p>
-            {searchQuery.trim() && onOpenGlobalSearch && (
+            <p>{listingRadicals ? 'Không có bộ thủ nào phù hợp.' : 'Không có chữ nào phù hợp.'}</p>
+          </div>
+        ) : listingRadicals ? (
+          <div
+            className="sidebar-tile-grid"
+            role="list"
+            style={{ gridTemplateColumns: `repeat(${fit.cols}, 1fr)` }}
+          >
+            {pageFamilies.map((f) => (
               <button
                 type="button"
-                className="sidebar-global-search-btn"
-                onClick={onOpenGlobalSearch}
+                key={f.key}
+                role="listitem"
+                className="sidebar-char-tile radical-family-tile"
+                title={`${familyName(f)} · ${f.info.meaningVi ?? ''} · ${f.count} chữ`}
+                onClick={() => onBrowseRadical?.(f.key)}
               >
-                Tìm toàn bộ kho (Ctrl+K)
+                <span className="tile-count">{f.count}</span>
+                <span className="tile-glyph" lang="zh">{f.display}</span>
+                <span className="tile-hv">{f.info.hanViet ?? '—'}</span>
               </button>
-            )}
+            ))}
           </div>
         ) : (
           <div

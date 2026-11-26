@@ -1,7 +1,14 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import type { BundleCharacter, HskLevel, LevelFilter } from './core'
-import { pickRandom, RADICAL_CHARACTERS } from './core'
+import {
+  charactersWithRadical,
+  containedForms,
+  findFamily,
+  pickRandom,
+  RADICAL_CHARACTERS,
+  radicalFamilies,
+} from './core'
 import { api } from './api'
 import { Navbar } from './components/Navbar'
 import { LeftSidebar } from './components/LeftSidebar'
@@ -9,7 +16,6 @@ import { StudioCenter } from './components/StudioCenter'
 import { RightBreakdown } from './components/RightBreakdown'
 import { SearchModal } from './components/SearchModal'
 import { FavoritesModal } from './components/FavoritesModal'
-import { PronunciationModal } from './components/PronunciationModal'
 import { PinyinChartModal } from './components/PinyinChartModal'
 import { PipWidget } from './components/PipWidget'
 import { MobileBottomBar } from './components/MobileBottomBar'
@@ -29,6 +35,11 @@ export function App() {
 
   const allCharacters = useMemo(() => bundle.data?.characters ?? [], [bundle.data?.characters])
   const allWords = useMemo(() => bundle.data?.words ?? [], [bundle.data?.words])
+  const contained = useMemo(() => containedForms(allCharacters), [allCharacters])
+  const families = useMemo(
+    () => radicalFamilies(allCharacters, bundle.data?.components ?? [], contained),
+    [allCharacters, bundle.data?.components, contained],
+  )
 
   // Initial route parsed once from URL (?c=...&level=...)
   const initialRouteRef = useRef(parseRouteFromUrl())
@@ -42,6 +53,10 @@ export function App() {
     () => initialRouteRef.current.hanzi,
   )
 
+  // Inside the radicals tab: the radical family whose characters are listed (null = list radicals).
+  const [radicalKey, setRadicalKey] = useState<string | null>(null)
+  const activeFamily = useMemo(() => families.find((f) => f.key === radicalKey) ?? null, [families, radicalKey])
+
   // In-app navigation history synchronized with browser History API
   const [historyStack, setHistoryStack] = useState<HistoryEntry[]>([])
   const [historyIndex, setHistoryIndex] = useState<number>(-1)
@@ -54,44 +69,32 @@ export function App() {
   const [showSearch, setShowSearch] = useState<boolean>(false)
   const [showFavorites, setShowFavorites] = useState<boolean>(false)
   const [showPinyinChart, setShowPinyinChart] = useState<boolean>(false)
-  const [pronounceTarget, setPronounceTarget] = useState<{
-    hanzi: string
-    pinyin: string
-    hanViet?: string | null
-    meaningVi?: string | null
-  } | null>(null)
+  const [pronounceTarget, setPronounceTarget] = useState<string | null>(null)
 
-  // Appearance: Chế độ hiển thị chữ ('modern' - Mặc định hoặc 'components' - Thành phần)
+  // Mobile drawer state
+  const [mobileListOpen, setMobileListOpen] = useState(false)
+
+  // Display mode
   const [displayMode, setDisplayMode] = useState<'modern' | 'components'>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('hibu_display_mode')
-      if (saved === 'components' || saved === 'modern') return saved
+      if (saved === 'modern' || saved === 'components') return saved
     }
     return 'modern'
   })
+
+  // Theme mode
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('hibu_theme')
-      if (saved) return saved === 'dark'
+      const savedTheme = localStorage.getItem('hibu_theme')
+      if (savedTheme) {
+        return savedTheme === 'dark'
+      }
       return window.matchMedia('(prefers-color-scheme: dark)').matches
     }
     return false
   })
 
-  // Favorites in localStorage
-  const [favorites, setFavorites] = useState<string[]>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const saved = localStorage.getItem('hibu_hanzi_favs')
-        return saved ? JSON.parse(saved) : []
-      } catch {
-        return []
-      }
-    }
-    return []
-  })
-
-  // Apply dark mode class to root
   useEffect(() => {
     if (isDarkMode) {
       document.documentElement.classList.add('dark')
@@ -102,31 +105,34 @@ export function App() {
     }
   }, [isDarkMode])
 
-  // Save favorites
-  useEffect(() => {
-    try {
-      localStorage.setItem('hibu_hanzi_favs', JSON.stringify(favorites))
-    } catch {
-      // ignore
-    }
-  }, [favorites])
+  const toggleDarkMode = () => setIsDarkMode((prev) => !prev)
 
-  // Save selected HSK level
-  useEffect(() => {
-    try {
-      localStorage.setItem('hibu_hsk_level', String(selectedLevel))
-    } catch {
-      // ignore
+  // Favorites state
+  const [favorites, setFavorites] = useState<string[]>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('hibu_favorites')
+      if (saved) {
+        try {
+          return JSON.parse(saved)
+        } catch {
+          return []
+        }
+      }
     }
-  }, [selectedLevel])
+    return []
+  })
+
+  useEffect(() => {
+    localStorage.setItem('hibu_favorites', JSON.stringify(favorites))
+  }, [favorites])
 
   // Filter pool based on HSK 3.0 level (1-6) or Radicals
   const filteredCharacters = useMemo(() => {
     if (selectedLevel === 'radicals') {
-      return RADICAL_CHARACTERS
+      return activeFamily ? charactersWithRadical(allCharacters, activeFamily, contained) : RADICAL_CHARACTERS
     }
     return allCharacters.filter((c) => c.hsk3Level === selectedLevel)
-  }, [allCharacters, selectedLevel])
+  }, [allCharacters, selectedLevel, activeFamily, contained])
 
   // Resolve target level & canonical character for any hanzi
   const resolveTarget = useCallback(
@@ -166,7 +172,7 @@ export function App() {
     [allCharacters, filteredCharacters, selectedLevel],
   )
 
-  // Active character: check current level pool first, then global characters/radicals, then fallback to first item
+  // Active character
   const activeChar: BundleCharacter | null = useMemo(() => {
     if (currentHanzi) {
       const inPool = filteredCharacters.find(
@@ -182,10 +188,11 @@ export function App() {
       const inRadicals = RADICAL_CHARACTERS.find((r) => r.hanzi === currentHanzi)
       if (inRadicals) return inRadicals
 
-      // Preserve requested hanzi even if not in bundle list (will load via detail API)
       return {
         hanzi: currentHanzi,
         traditional: null,
+        radical: null,
+        parts: [],
         hsk2Level: null,
         hsk3Level: null,
         readings: [],
@@ -209,6 +216,9 @@ export function App() {
 
       setSelectedLevel(level)
       setCurrentHanzi(hanzi)
+      if (level !== 'radicals') {
+        setRadicalKey(null)
+      }
 
       if (typeof window === 'undefined') return
       const nextUrl = buildCharacterUrl(hanzi, level)
@@ -239,6 +249,35 @@ export function App() {
       window.history.pushState({ idx: nextIdx, hanzi, level }, '', nextUrl)
     },
     [currentHanzi, selectedLevel],
+  )
+
+  const changeLevel = useCallback((lvl: LevelFilter) => {
+    setSelectedLevel(lvl)
+    setRadicalKey(null)
+    const nextPool =
+      lvl === 'radicals'
+        ? RADICAL_CHARACTERS
+        : allCharacters.filter((c) => c.hsk3Level === lvl)
+    if (nextPool[0]) {
+      navigateTo(nextPool[0].hanzi, lvl, 'push')
+    }
+  }, [allCharacters, navigateTo])
+
+  const browseRadical = useCallback(
+    (form: string | null) => {
+      const family = form ? findFamily(families, form) : null
+      setSelectedLevel('radicals')
+      setRadicalKey(family?.key ?? null)
+      if (family) {
+        const pool = charactersWithRadical(allCharacters, family, contained)
+        if (pool[0]) {
+          navigateTo(pool[0].hanzi, 'radicals', 'push')
+          return
+        }
+      }
+      setCurrentHanzi(null)
+    },
+    [families, allCharacters, contained, navigateTo],
   )
 
   // Initialize canonical URL & first history entry once bundle finishes loading
@@ -315,25 +354,6 @@ export function App() {
     [resolveTarget, navigateTo],
   )
 
-  // Level switching: updates URL and pushes history so Back returns to previous character & level
-  const handleLevelChange = useCallback(
-    (lvl: LevelFilter) => {
-      if (lvl === selectedLevel) return
-      const nextPool =
-        lvl === 'radicals'
-          ? RADICAL_CHARACTERS
-          : allCharacters.filter((c) => c.hsk3Level === lvl)
-      const nextHanzi = nextPool[0]?.hanzi ?? null
-      if (nextHanzi) {
-        navigateTo(nextHanzi, lvl, 'push')
-      } else {
-        setSelectedLevel(lvl)
-        setCurrentHanzi(null)
-      }
-    },
-    [selectedLevel, allCharacters, navigateTo],
-  )
-
   // In-app Back action (keeps browser Back/Forward synchronized)
   const canGoBack = historyIndex > 0
   const previousEntry = canGoBack ? historyStack[historyIndex - 1] : null
@@ -370,88 +390,49 @@ export function App() {
     navigateTo(filteredCharacters[prevIdx].hanzi, selectedLevel, 'push')
   }, [filteredCharacters, currentIndex, selectedLevel, navigateTo])
 
-  const handlePipCharacterChange = useCallback(
-    (h: string) => {
-      const resolved = resolveTarget(h)
-      navigateTo(resolved.hanzi, resolved.level, 'replace')
+  // Up / down move one row in the left grid; the sidebar reports how many columns it shows.
+  const [gridCols, setGridCols] = useState(5)
+  const [gridPerPage, setGridPerPage] = useState(30)
+  const handleGridChange = useCallback((cols: number, perPage: number) => {
+    setGridCols(cols)
+    setGridPerPage(perPage)
+  }, [])
+  const handleRow = useCallback(
+    (dir: 1 | -1) => {
+      const idx = currentIndex + dir * gridCols
+      if (idx < 0 || idx >= filteredCharacters.length) return
+      navigateTo(filteredCharacters[idx].hanzi, selectedLevel, 'push')
     },
-    [resolveTarget, navigateTo],
+    [filteredCharacters, currentIndex, gridCols, selectedLevel, navigateTo],
+  )
+
+  const handlePage = useCallback(
+    (dir: 1 | -1) => {
+      const page = Math.floor(currentIndex / gridPerPage) + dir
+      const idx = page * gridPerPage
+      if (page < 0 || idx >= filteredCharacters.length) return
+      navigateTo(filteredCharacters[idx].hanzi, selectedLevel, 'push')
+    },
+    [filteredCharacters, currentIndex, gridPerPage, selectedLevel, navigateTo],
   )
 
   // Toggle favorite
   const handleToggleFavorite = useCallback(() => {
     if (!activeChar) return
+    const hanzi = activeChar.hanzi
     setFavorites((prev) =>
-      prev.includes(activeChar.hanzi)
-        ? prev.filter((h) => h !== activeChar.hanzi)
-        : [...prev, activeChar.hanzi],
+      prev.includes(hanzi) ? prev.filter((h) => h !== hanzi) : [...prev, hanzi],
     )
   }, [activeChar])
 
-  // Fetch character details for breakdown
+  // Query character detail (chiet tu, components, compounds)
   const detailQuery = useQuery({
-    queryKey: ['character', activeChar?.hanzi],
+    queryKey: ['detail', activeChar?.hanzi],
     queryFn: () => (activeChar ? api.getCharacter(activeChar.hanzi) : null),
     enabled: Boolean(activeChar),
   })
 
-  // Keyboard navigation
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't trigger if user is typing in an input
-      if (['INPUT', 'TEXTAREA', 'SELECT'].includes((e.target as HTMLElement)?.tagName)) {
-        return
-      }
-
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
-        e.preventDefault()
-        setShowSearch(true)
-        return
-      }
-
-      switch (e.key) {
-        case 'ArrowRight':
-          e.preventDefault()
-          handleNext()
-          break
-        case 'ArrowLeft':
-          e.preventDefault()
-          handlePrev()
-          break
-        case ' ':
-          e.preventDefault()
-          pickNextRandom()
-          break
-        case 'f':
-        case 'F':
-          e.preventDefault()
-          handleToggleFavorite()
-          break
-        case 'p':
-        case 'P':
-          e.preventDefault()
-          setShowPinyinChart((prev) => !prev)
-          break
-        case 'Backspace':
-          if (canGoBack) {
-            e.preventDefault()
-            handleGoBack()
-          }
-          break
-        case 'Escape':
-          setShowSearch(false)
-          setShowFavorites(false)
-          setShowPinyinChart(false)
-          setPronounceTarget(null)
-          break
-      }
-    }
-
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [handleNext, handlePrev, pickNextRandom, handleToggleFavorite, canGoBack, handleGoBack])
-
-  const toggleDisplayMode = () => {
+  const toggleDisplayMode = useCallback(() => {
     setDisplayMode((prev) => {
       const next = prev === 'modern' ? 'components' : 'modern'
       try {
@@ -461,30 +442,94 @@ export function App() {
       }
       return next
     })
-  }
+  }, [])
+
+  const modalOpen = showSearch || showFavorites || showPinyinChart || pronounceTarget !== null
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes((e.target as HTMLElement)?.tagName)) {
+        return
+      }
+
+      if (e.key === 'Escape') {
+        setShowSearch(false)
+        setShowFavorites(false)
+        setShowPinyinChart(false)
+        setPronounceTarget(null)
+        return
+      }
+
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault()
+        setShowSearch(true)
+        return
+      }
+
+      if (e.key === 'Backspace' && canGoBack && !modalOpen) {
+        e.preventDefault()
+        handleGoBack()
+        return
+      }
+
+      if (modalOpen || e.altKey) return
+
+      if (e.ctrlKey || e.metaKey) {
+        if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+          e.preventDefault()
+          handlePage(e.key === 'ArrowRight' ? 1 : -1)
+        }
+        return
+      }
+
+      const key = e.key.length === 1 ? e.key.toLowerCase() : e.key
+      const actions: Record<string, () => void> = {
+        ArrowRight: handleNext,
+        d: handleNext,
+        ArrowLeft: handlePrev,
+        a: handlePrev,
+        ArrowDown: () => handleRow(1),
+        s: () => handleRow(1),
+        ArrowUp: () => handleRow(-1),
+        w: () => handleRow(-1),
+        ' ': pickNextRandom,
+        Tab: toggleDisplayMode,
+        f: () => setShowSearch(true),
+        g: handleToggleFavorite,
+        b: () => changeLevel('radicals'),
+        p: () => setShowPinyinChart((prev) => !prev),
+      }
+      for (const n of [1, 2, 3, 4, 5, 6] as const) actions[String(n)] = () => changeLevel(n)
+
+      const action = actions[key]
+      if (!action || (key === 'Tab' && e.shiftKey)) return
+      e.preventDefault()
+      action()
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [
+    modalOpen,
+    canGoBack,
+    handleGoBack,
+    handleNext,
+    handlePrev,
+    handleRow,
+    handlePage,
+    pickNextRandom,
+    handleToggleFavorite,
+    toggleDisplayMode,
+    changeLevel,
+  ])
 
   // Check if any modal or overlay is currently active
   const isModalActive = Boolean(
-    showSearch ||
-    showFavorites ||
-    showPinyinChart ||
-    pronounceTarget ||
-    (typeof document !== 'undefined' && document.querySelector('.modal-backdrop'))
+    showSearch || showFavorites || showPinyinChart || pronounceTarget !== null || mobileListOpen,
   )
 
-  // Prevent background scrolling while any modal is open
-  useEffect(() => {
-    if (isModalActive) {
-      document.body.style.overflow = 'hidden'
-    } else {
-      document.body.style.overflow = ''
-    }
-    return () => {
-      document.body.style.overflow = ''
-    }
-  }, [isModalActive])
-
-  // Mobile horizontal swipe gestures: restricted to the hero card so vertical scroll never misfires
+  // Mobile horizontal swipe gestures: restricted to the hero card
   const touchStartXRef = useRef<number | null>(null)
   const touchStartYRef = useRef<number | null>(null)
 
@@ -500,10 +545,8 @@ export function App() {
       touchStartYRef.current = null
       return
     }
-    if (e.touches.length === 1) {
-      touchStartXRef.current = e.touches[0].clientX
-      touchStartYRef.current = e.touches[0].clientY
-    }
+    touchStartXRef.current = e.touches[0].clientX
+    touchStartYRef.current = e.touches[0].clientY
   }
 
   const handleTouchEnd = (e: React.TouchEvent) => {
@@ -517,7 +560,6 @@ export function App() {
     const deltaX = touchEndX - touchStartXRef.current
     const deltaY = touchEndY - touchStartYRef.current
 
-    // Strict horizontal gesture threshold (> 75px and > 2.2x vertical travel)
     if (Math.abs(deltaX) > 75 && Math.abs(deltaX) > Math.abs(deltaY) * 2.2) {
       if (deltaX < 0) {
         handleNext()
@@ -533,44 +575,50 @@ export function App() {
     <div className="studio-app-root">
       {/* Top Header / Navigation */}
       <Navbar
+        isDarkMode={isDarkMode}
+        onToggleDarkMode={toggleDarkMode}
         displayMode={displayMode}
         onToggleDisplayMode={toggleDisplayMode}
-        isDarkMode={isDarkMode}
-        onToggleDarkMode={() => setIsDarkMode(!isDarkMode)}
         favoritesCount={favorites.length}
         onOpenFavorites={() => setShowFavorites(true)}
         onOpenSearch={() => setShowSearch(true)}
         onOpenPinyinChart={() => setShowPinyinChart(true)}
+        widget={
+          bundle.isSuccess && (
+            <PipWidget characters={allCharacters} favorites={favorites} onCharacterChange={handleSelectHanzi} />
+          )
+        }
       />
 
       {/* Main Study Studio Content */}
-      <main className="studio-main-viewport">
-        {bundle.isPending && (
-          <div className="studio-state-center">
+      <main className="studio-main-container">
+        {bundle.isLoading ? (
+          <div className="studio-loading-state">
             <div className="spinner-ring" />
-            <p>Đang chuẩn bị kho dữ liệu Hán tự & Chiết tự…</p>
+            <p className="loading-text">Khởi tạo dữ liệu Hán tự Hibu…</p>
           </div>
-        )}
-
-        {bundle.isError && (
-          <div className="studio-state-center error">
-            <p className="error-title">Chưa tải được dữ liệu</p>
-            <p className="error-sub">Vui lòng kiểm tra lại kết nối và thử lại.</p>
-            <button type="button" className="pill-btn active" onClick={() => bundle.refetch()}>
-              Thử lại
+        ) : bundle.isError ? (
+          <div className="studio-error-state">
+            <div className="error-icon-box">!</div>
+            <h3>Không thể tải kho dữ liệu</h3>
+            <p>{String(bundle.error)}</p>
+            <button
+              type="button"
+              className="retry-fetch-btn"
+              onClick={() => bundle.refetch()}
+            >
+              Thử kết nối lại
             </button>
           </div>
-        )}
-
-        {bundle.isSuccess && (
+        ) : (
           <>
-            {bundle.data.offline && (
-              <div className="offline-notice" role="status">
-                Đang dùng dữ liệu mẫu (không kết nối được máy chủ).
-                <button type="button" onClick={() => bundle.refetch()}>
-                  Thử lại
-                </button>
-              </div>
+            {/* Mobile Drawer Backdrop */}
+            {mobileListOpen && (
+              <div
+                className="mobile-backdrop-overlay"
+                onClick={() => setMobileListOpen(false)}
+                aria-hidden="true"
+              />
             )}
 
             {/* Studio Workspace: Desktop 3-Column / Mobile Single Unified Scroll */}
@@ -579,19 +627,25 @@ export function App() {
               onTouchStart={handleTouchStart}
               onTouchEnd={handleTouchEnd}
             >
-              {/* Left Column: Character Library (Desktop Only) */}
+              {/* Left Column: Character List / Directory */}
               <LeftSidebar
                 characters={allCharacters}
                 activeHanzi={activeChar?.hanzi ?? null}
                 onSelectHanzi={handleSelectHanzi}
                 selectedLevel={selectedLevel}
-                onLevelChange={handleLevelChange}
+                onLevelChange={changeLevel}
                 favorites={favorites}
-                onOpenGlobalSearch={() => setShowSearch(true)}
+                families={families}
+                activeFamily={activeFamily}
+                radicalCharacters={activeFamily ? filteredCharacters : null}
+                onBrowseRadical={browseRadical}
+                onGridChange={handleGridChange}
+                isOpenMobile={mobileListOpen}
+                onCloseMobile={() => setMobileListOpen(false)}
               />
 
               {/* Center Column: Slide 1 (Writing Canvas & Pronunciation) */}
-              <div className="studio-col-center">
+              <div className="studio-column-center">
                 {activeChar ? (
                   <StudioCenter
                     character={activeChar}
@@ -609,67 +663,63 @@ export function App() {
                     recentTrail={recentTrail}
                     onGoBack={handleGoBack}
                     onSelectTrailEntry={(entry) => navigateTo(entry.hanzi, entry.level, 'push')}
+                    onOpenMobileList={() => setMobileListOpen(true)}
                   />
                 ) : (
                   <div className="center-empty-workspace">
-                    <div className="empty-calligraphy-seal" aria-hidden="true">無</div>
-                    <div className="empty-workspace-content">
-                      <h3 className="empty-workspace-title">Chưa có chữ Hán ở bộ lọc này</h3>
-                      <p className="empty-workspace-desc">
-                        {selectedLevel === 'radicals'
-                          ? 'Chưa có bộ thủ nào trong kho dữ liệu hiện tại.'
-                          : `Cấp độ HSK 3.0 Cấp ${selectedLevel} hiện chưa có từ trong gói dữ liệu hiện tại.`}
-                      </p>
-                      <button
-                        type="button"
-                        className="empty-reset-pill-btn"
-                        onClick={() => handleLevelChange(1)}
-                      >
-                        Quay về Cấp 1
-                      </button>
-                    </div>
+                    <p>
+                      {selectedLevel === 'radicals' && !activeFamily
+                        ? 'Bấm một bộ thủ bên trái để xem các chữ chứa bộ đó.'
+                        : 'Không có chữ Hán nào phù hợp trong danh mục này.'}
+                    </p>
+                    <button
+                      type="button"
+                      className="empty-reset-pill-btn"
+                      onClick={() => changeLevel(1)}
+                    >
+                      Quay về Cấp 1
+                    </button>
                   </div>
                 )}
               </div>
 
-              {/* Right Column: Slide 2 (Deep Decomposition & Vocabulary) */}
-              <div className="studio-col-right">
+              {/* Right Column: Slide 2 (Etymology Decomposition & Compound Words) */}
+              <div className="studio-column-right">
                 <RightBreakdown
                   detail={detailQuery.data ?? null}
-                  isLoading={detailQuery.isPending}
+                  isLoading={detailQuery.isLoading}
                   onSelectHanzi={handleSelectHanzi}
                   displayMode={displayMode}
                   characters={allCharacters}
+                  families={families}
+                  onBrowseRadical={browseRadical}
                 />
               </div>
             </div>
 
-            {/* Mobile Horizontal Bottom Bar: Fixed Swipeable Character Strip */}
+            {/* Mobile Bottom Bar for Level switching & mobile character directory access */}
             <MobileBottomBar
-              characters={filteredCharacters}
+              characters={allCharacters}
               activeHanzi={activeChar?.hanzi ?? null}
               onSelectHanzi={handleSelectHanzi}
               selectedLevel={selectedLevel}
-              onLevelChange={handleLevelChange}
+              onLevelChange={changeLevel}
               favorites={favorites}
             />
           </>
         )}
       </main>
 
-      {bundle.isSuccess && (
-        <PipWidget
-          characters={allCharacters}
-          favorites={favorites}
-          onCharacterChange={handlePipCharacterChange}
-        />
-      )}
-
       {/* Search Modal */}
       {showSearch && (
         <SearchModal
           characters={allCharacters}
           words={allWords}
+          families={families}
+          onBrowseRadical={(form) => {
+            browseRadical(form)
+            setShowSearch(false)
+          }}
           onSelectHanzi={(h) => {
             handleSelectHanzi(h)
             setShowSearch(false)
@@ -687,7 +737,9 @@ export function App() {
             handleSelectHanzi(h)
             setShowFavorites(false)
           }}
-          onRemoveFavorite={(h) => setFavorites((prev) => prev.filter((fav) => fav !== h))}
+          onRemoveFavorite={(h) =>
+            setFavorites((prev) => prev.filter((item) => item !== h))
+          }
           onClearAll={() => setFavorites([])}
           onClose={() => setShowFavorites(false)}
         />
@@ -696,26 +748,15 @@ export function App() {
       {/* Comprehensive Pinyin Chart Modal */}
       {showPinyinChart && (
         <PinyinChartModal
-          onClose={() => setShowPinyinChart(false)}
           onInspectPinyin={(pinyin) => {
-            setPronounceTarget({
-              hanzi: '拼',
-              pinyin,
-              hanViet: 'ÂM TIẾT PINYIN',
-              meaningVi: `Tra cứu khẩu hình và cách phát âm cho âm tiết [ ${pinyin} ]`,
-            })
+            setPronounceTarget(pinyin)
+            setShowPinyinChart(false)
+            setShowSearch(true)
           }}
-        />
-      )}
-
-      {/* Pronunciation & Mouth Shape Modal for Individual Syllable */}
-      {pronounceTarget && (
-        <PronunciationModal
-          hanzi={pronounceTarget.hanzi}
-          pinyin={pronounceTarget.pinyin}
-          hanViet={pronounceTarget.hanViet}
-          meaningVi={pronounceTarget.meaningVi}
-          onClose={() => setPronounceTarget(null)}
+          onClose={() => {
+            setShowPinyinChart(false)
+            setPronounceTarget(null)
+          }}
         />
       )}
     </div>

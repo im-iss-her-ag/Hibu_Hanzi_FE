@@ -620,32 +620,12 @@ export function StudioCenter({
           <div className="nav-btn-cluster">
             <button
               type="button"
-              className="nav-step-btn prev-btn"
-              onClick={onPrev}
-              title="Chữ trước đó (Phím ←)"
-            >
-              <ChevronLeft size={16} />
-              <span>Trước</span>
-            </button>
-
-            <button
-              type="button"
               className="nav-random-btn"
               onClick={onRandom}
               title="Đổi chữ ngẫu nhiên (Phím Space)"
             >
               <Shuffle size={15} />
               <span>Ngẫu nhiên</span>
-            </button>
-
-            <button
-              type="button"
-              className="nav-step-btn next-btn"
-              onClick={onNext}
-              title="Chữ tiếp theo (Phím →)"
-            >
-              <span>Tiếp</span>
-              <ChevronRight size={16} />
             </button>
           </div>
         </div>

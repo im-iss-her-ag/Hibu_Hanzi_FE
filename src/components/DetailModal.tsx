@@ -111,6 +111,16 @@ export function DetailModal({
           </div>
         )}
 
+        {character.mnemonicVi && (
+          <div className="section-block chiet-tu-box">
+            <div className="chiet-tu-header">
+              <Sparkles size={16} className="sparkle-icon" />
+              <h4>Mẹo nhớ nhanh</h4>
+            </div>
+            <p className="chiet-tu-content">{character.mnemonicVi}</p>
+          </div>
+        )}
+
         {/* Radical info */}
         {radical && (
           <div className="section-block">

@@ -17,6 +17,8 @@ export interface Component {
   variantOf: string | null
   isRadical: boolean
   nameVi: string | null
+  // Optional: the built-in offline sample has none.
+  pinyin?: string | null
   hanViet: string | null
   meaningVi: string | null
   strokeCount: number | null
@@ -41,6 +43,8 @@ export interface Character {
   radical: string | null
   chietTu: string | null
   chietTuType: ChietTuType | null
+  // Quick memory aid built on the parts; chietTu holds the origin.
+  mnemonicVi: string | null
   strokeCount: number | null
   hsk2Level: HskLevel | null
   hsk3Level: Hsk3Level | null
@@ -61,11 +65,17 @@ export interface Word {
 
 // --- API responses (DESIGN.md §6) ---
 
+// 'radical' = the character's radical or a radical-only shape (氵, 辶); 'character' = a standalone
+// character (马 in 妈); 'component' = any other shape. The UI draws each kind differently.
+export type PartKind = 'radical' | 'character' | 'component'
+
 export interface PartInfo {
   part: string
+  pinyin: string | null
   hanViet: string | null
   meaningVi: string | null
   label: string | null
+  kind: PartKind
 }
 
 export interface CharacterDetail {
@@ -87,13 +97,18 @@ export interface WordDetail {
   characters: WordCharacter[]
 }
 
-// Basic bundle: characters carry readings and levels only; chiet tu and parts come from /characters/:hanzi.
-export type BundleCharacter = Pick<Character, 'hanzi' | 'traditional' | 'hsk2Level' | 'hsk3Level' | 'readings'>
+// Basic bundle: characters carry readings, levels, radical and part forms (for the radical filter);
+// chiet tu and part details come from /characters/:hanzi.
+export type BundleCharacter = Pick<Character, 'hanzi' | 'traditional' | 'hsk2Level' | 'hsk3Level' | 'readings' | 'radical'> & {
+  parts: string[]
+}
 
 export interface Bundle {
   version: string
   characters: BundleCharacter[]
   words: Word[]
+  // Always the full list, not a delta.
+  components: Component[]
   // Rows removed from the bundle since `since`; the client deletes them from its local copy.
   removed: { characters: string[]; words: string[] }
   // Set by the client when the API was unreachable and the small built-in sample is shown instead.

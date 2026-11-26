@@ -27,6 +27,7 @@ export interface AdminCharacter {
   radical: string | null
   chietTu: string | null
   chietTuType: ChietTuType | null
+  mnemonicVi: string | null
   strokeCount: number | null
   hsk2Level: number | null
   hsk3Level: number | null
@@ -55,6 +56,7 @@ export interface CharacterInput {
   strokeCount: number | null
   chietTu: string | null
   chietTuType: ChietTuType | null
+  mnemonicVi: string | null
   readings: AdminReading[]
   parts: string[]
 }

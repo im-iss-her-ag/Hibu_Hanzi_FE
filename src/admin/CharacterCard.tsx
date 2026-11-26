@@ -99,6 +99,14 @@ export function CharacterCard({ item, busy, onReview, onSave }: Props) {
           ) : (
             <p className="adm-chiettu adm-muted">Chưa có chiết tự</p>
           )}
+          {item.mnemonicVi ? (
+            <p className="adm-chiettu">
+              <span className="adm-tag adm-tag-mnemonic">Mẹo nhớ nhanh</span>
+              {item.mnemonicVi}
+            </p>
+          ) : (
+            <p className="adm-chiettu adm-muted">Chưa có mẹo nhớ</p>
+          )}
 
           <Problems items={problems} />
         </div>

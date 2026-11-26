@@ -10,6 +10,8 @@ interface NavbarProps {
   onOpenFavorites: () => void
   onOpenSearch: () => void
   onOpenPinyinChart: () => void
+  // Widget launcher (PipWidget), shown in the tool row.
+  widget?: React.ReactNode
 }
 
 export function Navbar({
@@ -21,6 +23,7 @@ export function Navbar({
   onOpenFavorites,
   onOpenSearch,
   onOpenPinyinChart,
+  widget,
 }: NavbarProps) {
   const [showShortcutsPopover, setShowShortcutsPopover] = useState(false)
   const shortcutsRef = useRef<HTMLDivElement>(null)
@@ -66,7 +69,7 @@ export function Navbar({
             type="button"
             className="tool-btn search-trigger-btn"
             onClick={onOpenSearch}
-            title="Tìm kiếm chữ Hán, Pinyin, Hán Việt (Ctrl+K)"
+            title="Tìm kiếm chữ Hán, Pinyin, Hán Việt (F hoặc Ctrl+K)"
             aria-label="Tìm kiếm"
           >
             <Search size={16} />
@@ -106,6 +109,8 @@ export function Navbar({
             </span>
           </button>
 
+          {widget}
+
           {/* Keyboard Shortcuts Helper */}
           <div className="shortcuts-trigger-wrapper" ref={shortcutsRef}>
             <button
@@ -126,34 +131,55 @@ export function Navbar({
                 </div>
                 <div className="shortcuts-list">
                   <div className="shortcut-row">
-                    <kbd className="sc-kbd">Space</kbd>
-                    <span className="sc-desc">Đổi chữ ngẫu nhiên</span>
+                    <div className="sc-kbd-group"><kbd className="sc-kbd">W</kbd><kbd className="sc-kbd">A</kbd><kbd className="sc-kbd">S</kbd><kbd className="sc-kbd">D</kbd></div>
+                    <span className="sc-desc">Lên / trái / xuống / phải (như mũi tên)</span>
                   </div>
                   <div className="shortcut-row">
-                    <div className="sc-kbd-group">
-                      <kbd className="sc-kbd">←</kbd>
-                      <kbd className="sc-kbd">→</kbd>
-                    </div>
-                    <span className="sc-desc">Chữ trước / tiếp theo</span>
+                    <div className="sc-kbd-group"><kbd className="sc-kbd">↑</kbd><kbd className="sc-kbd">←</kbd><kbd className="sc-kbd">↓</kbd><kbd className="sc-kbd">→</kbd></div>
+                    <span className="sc-desc">Di chuyển giữa các chữ</span>
                   </div>
                   <div className="shortcut-row">
-                    <kbd className="sc-kbd">Backspace</kbd>
+                    <div className="sc-kbd-group"><kbd className="sc-kbd">Backspace</kbd></div>
                     <span className="sc-desc">Quay lại chữ vừa xem</span>
                   </div>
                   <div className="shortcut-row">
-                    <kbd className="sc-kbd">F</kbd>
-                    <span className="sc-desc">Lưu / Bỏ lưu sổ tay</span>
+                    <div className="sc-kbd-group"><kbd className="sc-kbd">Ctrl+←</kbd><kbd className="sc-kbd">Ctrl+→</kbd></div>
+                    <span className="sc-desc">Trang trước / sau</span>
                   </div>
                   <div className="shortcut-row">
-                    <kbd className="sc-kbd">P</kbd>
-                    <span className="sc-desc">Mở Bảng Pinyin toàn diện</span>
+                    <div className="sc-kbd-group"><kbd className="sc-kbd">1</kbd><span className="sc-desc">–</span><kbd className="sc-kbd">6</kbd></div>
+                    <span className="sc-desc">Chuyển cấp HSK</span>
                   </div>
                   <div className="shortcut-row">
-                    <kbd className="sc-kbd">Ctrl+K</kbd>
-                    <span className="sc-desc">Tra cứu nhanh</span>
+                    <div className="sc-kbd-group"><kbd className="sc-kbd">B</kbd></div>
+                    <span className="sc-desc">Tab Bộ thủ</span>
                   </div>
                   <div className="shortcut-row">
-                    <kbd className="sc-kbd">Esc</kbd>
+                    <div className="sc-kbd-group"><kbd className="sc-kbd">Tab</kbd></div>
+                    <span className="sc-desc">Đổi Hiện đại / Thành phần</span>
+                  </div>
+                  <div className="shortcut-row">
+                    <div className="sc-kbd-group"><kbd className="sc-kbd">F</kbd></div>
+                    <span className="sc-desc">Tìm kiếm</span>
+                  </div>
+                  <div className="shortcut-row">
+                    <div className="sc-kbd-group"><kbd className="sc-kbd">G</kbd></div>
+                    <span className="sc-desc">Lưu / bỏ lưu (ngôi sao)</span>
+                  </div>
+                  <div className="shortcut-row">
+                    <div className="sc-kbd-group"><kbd className="sc-kbd">Space</kbd></div>
+                    <span className="sc-desc">Chữ ngẫu nhiên</span>
+                  </div>
+                  <div className="shortcut-row">
+                    <div className="sc-kbd-group"><kbd className="sc-kbd">P</kbd></div>
+                    <span className="sc-desc">Bảng Pinyin</span>
+                  </div>
+                  <div className="shortcut-row">
+                    <div className="sc-kbd-group"><kbd className="sc-kbd">Ctrl+K</kbd></div>
+                    <span className="sc-desc">Tìm kiếm</span>
+                  </div>
+                  <div className="shortcut-row">
+                    <div className="sc-kbd-group"><kbd className="sc-kbd">Esc</kbd></div>
                     <span className="sc-desc">Đóng cửa sổ bật lên</span>
                   </div>
                 </div>
