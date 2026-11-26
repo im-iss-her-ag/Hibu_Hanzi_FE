@@ -1,5 +1,7 @@
+import { useState } from 'react'
 import { X, Star, Trash2 } from 'lucide-react'
 import type { BundleCharacter } from '../core'
+import { RADICAL_CHARACTERS } from '../core'
 
 interface FavoritesModalProps {
   favorites: string[]
@@ -18,8 +20,14 @@ export function FavoritesModal({
   onClearAll,
   onClose,
 }: FavoritesModalProps) {
+  const [confirmClear, setConfirmClear] = useState(false)
+
   const favoriteChars = favorites
-    .map((f) => characters.find((c) => c.hanzi === f))
+    .map(
+      (f) =>
+        characters.find((c) => c.hanzi === f) ??
+        RADICAL_CHARACTERS.find((r) => r.hanzi === f),
+    )
     .filter((c): c is BundleCharacter => Boolean(c))
 
   return (
@@ -30,6 +38,7 @@ export function FavoritesModal({
       onTouchEnd={(e) => e.stopPropagation()}
       role="dialog"
       aria-modal="true"
+      aria-label="Sổ tay chữ đã lưu"
     >
       <div
         className="modal-content fav-modal-content"
@@ -37,24 +46,44 @@ export function FavoritesModal({
         onTouchStart={(e) => e.stopPropagation()}
         onTouchEnd={(e) => e.stopPropagation()}
       >
-
         <div className="modal-header">
           <div className="header-info">
             <h3 className="modal-title">Sổ tay chữ đã lưu</h3>
             <span className="badge-tag">{favorites.length} chữ</span>
           </div>
           <div className="header-actions">
-            {favorites.length > 0 && (
-              <button
-                type="button"
-                className="clear-all-btn"
-                onClick={onClearAll}
-                title="Xóa toàn bộ sổ tay"
-              >
-                <Trash2 size={16} />
-                <span>Xóa hết</span>
-              </button>
-            )}
+            {favorites.length > 0 &&
+              (confirmClear ? (
+                <div className="confirm-clear-group">
+                  <button
+                    type="button"
+                    className="clear-all-confirm-btn"
+                    onClick={() => {
+                      onClearAll()
+                      setConfirmClear(false)
+                    }}
+                  >
+                    Xác nhận xóa
+                  </button>
+                  <button
+                    type="button"
+                    className="clear-all-cancel-btn"
+                    onClick={() => setConfirmClear(false)}
+                  >
+                    Hủy
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  className="clear-all-btn"
+                  onClick={() => setConfirmClear(true)}
+                  title="Xóa toàn bộ sổ tay"
+                >
+                  <Trash2 size={16} />
+                  <span>Xóa hết</span>
+                </button>
+              ))}
             <button type="button" className="icon-btn close-btn" onClick={onClose} aria-label="Đóng">
               <X size={20} />
             </button>

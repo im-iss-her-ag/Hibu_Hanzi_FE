@@ -3,6 +3,7 @@ import { Search, Star, BookOpen, Layers, X, ChevronLeft, ChevronRight } from 'lu
 import { useFitCount } from '../utils/useFitCount'
 import type { BundleCharacter, LevelFilter } from '../core'
 import { RADICAL_CHARACTERS } from '../core'
+import { filterAndSortCharacters } from '../utils/search'
 
 interface LeftSidebarProps {
   characters: BundleCharacter[]
@@ -13,6 +14,7 @@ interface LeftSidebarProps {
   favorites: string[]
   isOpenMobile?: boolean
   onCloseMobile?: () => void
+  onOpenGlobalSearch?: () => void
 }
 
 const TILE_W = 52
@@ -28,44 +30,34 @@ export function LeftSidebar({
   favorites,
   isOpenMobile = false,
   onCloseMobile,
+  onOpenGlobalSearch,
 }: LeftSidebarProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const [filterMode, setFilterMode] = useState<'all' | 'favorites'>('all')
 
-  // Filter list
+  // Filter list (favorites tab shows all saved characters across HSK & Radicals)
   const filteredList = useMemo(() => {
-    let list = selectedLevel === 'radicals' ? RADICAL_CHARACTERS : characters
+    let list: readonly BundleCharacter[]
 
-    // Filter by favorites tab
     if (filterMode === 'favorites') {
-      list = list.filter((c) => favorites.includes(c.hanzi))
+      const seen = new Set(characters.map((c) => c.hanzi))
+      const combined = [
+        ...characters,
+        ...RADICAL_CHARACTERS.filter((r) => !seen.has(r.hanzi)),
+      ]
+      list = combined.filter((c) => favorites.includes(c.hanzi))
+    } else if (selectedLevel === 'radicals') {
+      list = RADICAL_CHARACTERS
+    } else {
+      list = characters.filter((c) => c.hsk3Level === selectedLevel)
     }
 
-    // Filter by HSK Level (if not radicals)
-    if (selectedLevel !== 'radicals') {
-      list = list.filter((c) => c.hsk3Level === selectedLevel)
-    }
-
-    // Filter by search query
     if (searchQuery.trim()) {
-      const q = searchQuery.trim().toLowerCase()
-      list = list.filter((c) => {
-        return (
-          c.hanzi.includes(q) ||
-          (c.traditional && c.traditional.includes(q)) ||
-          c.readings.some(
-            (r) =>
-              r.pinyin.toLowerCase().includes(q) ||
-              (r.hanViet && r.hanViet.toLowerCase().includes(q)) ||
-              r.meaningVi.toLowerCase().includes(q),
-          )
-        )
-      })
+      return filterAndSortCharacters(list, searchQuery)
     }
 
     return list
   }, [characters, filterMode, favorites, selectedLevel, searchQuery])
-
 
   // Fit as many fixed-size tiles as the available area allows, then paginate
   const [gridRef, fit] = useFitCount<HTMLDivElement>(TILE_W, TILE_H, TILE_GAP)
@@ -81,6 +73,15 @@ export function LeftSidebar({
   }, [filteredList, perPage, activeHanzi])
 
   const pageItems = filteredList.slice(safePage * perPage, safePage * perPage + perPage)
+
+  const handleWheel = (e: React.WheelEvent) => {
+    if (pageCount <= 1) return
+    if (e.deltaY > 15) {
+      setPage((p) => Math.min(pageCount - 1, p + 1))
+    } else if (e.deltaY < -15) {
+      setPage((p) => Math.max(0, p - 1))
+    }
+  }
 
   return (
     <aside className={`studio-sidebar-left ${isOpenMobile ? 'mobile-open' : ''}`}>
@@ -108,9 +109,12 @@ export function LeftSidebar({
         <div className="sidebar-search-box">
           <Search size={15} className="search-icon" />
           <input
+            id="sidebar-hanzi-filter"
+            name="sidebar-hanzi-filter"
             type="text"
             className="sidebar-search-input"
-            placeholder="Tra Hán tự, Hán Việt, Pinyin..."
+            placeholder="Lọc Hán tự, Pinyin (vd: hao)..."
+            aria-label="Lọc nhanh chữ Hán trong danh sách"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -120,6 +124,7 @@ export function LeftSidebar({
               className="clear-search-btn"
               onClick={() => setSearchQuery('')}
               title="Xóa tìm kiếm"
+              aria-label="Xóa bộ lọc"
             >
               <X size={14} />
             </button>
@@ -146,41 +151,55 @@ export function LeftSidebar({
           </button>
         </div>
 
-        {/* HSK Level Filter Row */}
-        <div className="sidebar-filter-cluster">
-          <span className="hsk-standard-badge" title="Chuẩn HSK 3.0 (2021)">
-            HSK 3.0
-          </span>
-          <div className="hsk-level-pills">
-            {[1, 2, 3, 4, 5, 6].map((lvl) => (
+        {/* HSK Level Filter Row (active in 'all' mode) */}
+        {filterMode === 'all' && (
+          <div className="sidebar-filter-cluster">
+            <span className="hsk-standard-badge" title="Chuẩn HSK 3.0 (2021)">
+              HSK 3.0
+            </span>
+            <div className="hsk-level-pills">
+              {[1, 2, 3, 4, 5, 6].map((lvl) => (
+                <button
+                  key={lvl}
+                  type="button"
+                  className={`lvl-pill ${selectedLevel === lvl ? 'active' : ''}`}
+                  onClick={() => onLevelChange(lvl as LevelFilter)}
+                  title={`HSK 3.0 Cấp ${lvl}`}
+                >
+                  {lvl}
+                </button>
+              ))}
               <button
-                key={lvl}
                 type="button"
-                className={`lvl-pill ${selectedLevel === lvl ? 'active' : ''}`}
-                onClick={() => onLevelChange(lvl as LevelFilter)}
-                title={`HSK 3.0 Cấp ${lvl}`}
+                className={`lvl-pill radical-tab-pill ${selectedLevel === 'radicals' ? 'active' : ''}`}
+                onClick={() => onLevelChange('radicals')}
+                title="214 Bộ thủ & Thành phần chữ Hán"
               >
-                {lvl}
+                Bộ thủ
               </button>
-            ))}
-            <button
-              type="button"
-              className={`lvl-pill radical-tab-pill ${selectedLevel === 'radicals' ? 'active' : ''}`}
-              onClick={() => onLevelChange('radicals')}
-              title="214 Bộ thủ & Thành phần chữ Hán"
-            >
-              Bộ thủ
-            </button>
+            </div>
           </div>
-
-        </div>
+        )}
       </div>
 
-      {/* Character Tile Grid (paginated to fit, no scrolling) */}
-      <div className="sidebar-tile-area" ref={gridRef}>
+      {/* Character Tile Grid (paginated to fit, wheel-friendly) */}
+      <div className="sidebar-tile-area" ref={gridRef} onWheel={handleWheel}>
         {filteredList.length === 0 ? (
           <div className="sidebar-empty-state">
-            <p>Không có chữ nào phù hợp.</p>
+            <p>
+              {filterMode === 'favorites' && favorites.length === 0
+                ? 'Bạn chưa lưu chữ nào vào sổ tay.'
+                : 'Không có chữ nào phù hợp trong mục này.'}
+            </p>
+            {searchQuery.trim() && onOpenGlobalSearch && (
+              <button
+                type="button"
+                className="sidebar-global-search-btn"
+                onClick={onOpenGlobalSearch}
+              >
+                Tìm toàn bộ kho (Ctrl+K)
+              </button>
+            )}
           </div>
         ) : (
           <div

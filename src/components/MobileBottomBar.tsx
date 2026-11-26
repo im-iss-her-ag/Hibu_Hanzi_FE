@@ -21,12 +21,16 @@ export function MobileBottomBar({
 }: MobileBottomBarProps) {
   const activeTileRef = useRef<HTMLButtonElement | null>(null)
   const trackRef = useRef<HTMLDivElement | null>(null)
+  const prevLevelRef = useRef<LevelFilter>(selectedLevel)
 
   // Auto center active tile when character or level changes
   useEffect(() => {
+    const levelChanged = prevLevelRef.current !== selectedLevel
+    prevLevelRef.current = selectedLevel
+
     if (activeTileRef.current) {
       activeTileRef.current.scrollIntoView({
-        behavior: 'smooth',
+        behavior: levelChanged ? 'auto' : 'smooth',
         inline: 'center',
         block: 'nearest',
       })
@@ -35,7 +39,7 @@ export function MobileBottomBar({
 
   return (
     <nav className="mobile-bottom-nav" aria-label="Thanh lướt chọn Hán tự">
-      {/* Top Control Strip: Big Easy-to-Tap H1-H6 + Bộ thủ + Count */}
+      {/* Top Control Strip: Clean full-width H1-H6 + Bộ thủ */}
       <div className="mobile-bottom-controls">
         <div className="mobile-level-pills" role="group" aria-label="Cấp độ HSK hoặc Bộ thủ">
           {[1, 2, 3, 4, 5, 6].map((lvl) => (
@@ -60,12 +64,7 @@ export function MobileBottomBar({
             Bộ thủ
           </button>
         </div>
-        <span className="mobile-char-count">
-          {characters.length} {selectedLevel === 'radicals' ? 'bộ' : 'chữ'}
-        </span>
       </div>
-
-
 
       {/* Horizontal Swipeable Character Tile Track */}
       <div className="mobile-tile-track" ref={trackRef} role="tablist" aria-label="Danh sách Hán tự">

@@ -1,7 +1,9 @@
 import { useState, useMemo, useEffect } from 'react'
 import { Search, X, Volume2 } from 'lucide-react'
 import type { BundleCharacter, Word } from '../core'
+import { RADICAL_CHARACTERS } from '../core'
 import { speakChinese } from '../utils/speech'
+import { filterAndSortCharacters, filterAndSortWords } from '../utils/search'
 
 interface SearchModalProps {
   characters: readonly BundleCharacter[]
@@ -19,36 +21,22 @@ export function SearchModal({
   const [query, setQuery] = useState('')
   const [tab, setTab] = useState<'chars' | 'words'>('chars')
 
-  const filteredChars = useMemo(() => {
-    const q = query.trim().toLowerCase()
-    if (!q) return []
-    return characters.filter((c) => {
-      return (
-        c.hanzi.includes(q) ||
-        (c.traditional && c.traditional.includes(q)) ||
-        c.readings.some(
-          (r) =>
-            r.pinyin.toLowerCase().includes(q) ||
-            (r.hanViet && r.hanViet.toLowerCase().includes(q)) ||
-            r.meaningVi.toLowerCase().includes(q),
-        )
-      )
-    })
-  }, [characters, query])
+  // Merge HSK characters with standalone radicals so searching "mịch", "trảo", "氵" also works
+  const searchableCharacters = useMemo(() => {
+    const seen = new Set(characters.map((c) => c.hanzi))
+    const uniqueRadicals = RADICAL_CHARACTERS.filter((r) => !seen.has(r.hanzi))
+    return [...characters, ...uniqueRadicals]
+  }, [characters])
 
-  const filteredWords = useMemo(() => {
-    const q = query.trim().toLowerCase()
-    if (!q) return []
-    return words.filter((w) => {
-      return (
-        w.word.includes(q) ||
-        (w.traditional && w.traditional.includes(q)) ||
-        w.pinyin.toLowerCase().includes(q) ||
-        (w.hanViet && w.hanViet.toLowerCase().includes(q)) ||
-        w.meaningVi.toLowerCase().includes(q)
-      )
-    })
-  }, [words, query])
+  const filteredChars = useMemo(
+    () => filterAndSortCharacters(searchableCharacters, query),
+    [searchableCharacters, query],
+  )
+
+  const filteredWords = useMemo(
+    () => filterAndSortWords(words, query),
+    [words, query],
+  )
 
   // Tự động chuyển sang tab có kết quả khi tìm kiếm (ví dụ gõ từ ghép "你好" sẽ tự chuyển sang tab Từ ghép)
   useEffect(() => {
@@ -61,12 +49,13 @@ export function SearchModal({
 
   return (
     <div
-      className="modal-backdrop"
+      className="modal-backdrop search-modal-backdrop"
       onClick={onClose}
       onTouchStart={(e) => e.stopPropagation()}
       onTouchEnd={(e) => e.stopPropagation()}
       role="dialog"
       aria-modal="true"
+      aria-label="Tra cứu Hán tự và Từ ghép"
     >
       <div
         className="modal-content search-modal-content"
@@ -74,14 +63,16 @@ export function SearchModal({
         onTouchStart={(e) => e.stopPropagation()}
         onTouchEnd={(e) => e.stopPropagation()}
       >
-
         {/* Search Input Bar */}
         <div className="search-bar-wrap">
           <Search size={18} className="search-icon-inside" />
           <input
+            id="global-hanzi-search"
+            name="global-hanzi-search"
             type="text"
             className="search-input-field"
-            placeholder="Tra chữ Hán, Pinyin, Hán Việt hoặc nghĩa tiếng Việt..."
+            placeholder="Tra chữ Hán, Pinyin (vd: hao), Hán Việt, nghĩa..."
+            aria-label="Tra cứu chữ Hán, Pinyin, Hán Việt hoặc nghĩa tiếng Việt"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             autoFocus
@@ -89,11 +80,11 @@ export function SearchModal({
           {query && (
             <button
               type="button"
-              className="clear-search-btn"
+              className="search-clear-pill"
               onClick={() => setQuery('')}
-              aria-label="Xóa tìm kiếm"
+              aria-label="Xóa từ khóa"
             >
-              <X size={16} />
+              Xóa
             </button>
           )}
           <button type="button" className="icon-btn close-btn" onClick={onClose} aria-label="Đóng">
@@ -109,7 +100,7 @@ export function SearchModal({
               className={`filter-pill ${tab === 'chars' ? 'active' : ''}`}
               onClick={() => setTab('chars')}
             >
-              Chữ đơn {query.trim() ? `(${filteredChars.length})` : ''}
+              Chữ đơn & Bộ thủ {query.trim() ? `(${filteredChars.length})` : ''}
             </button>
             <button
               type="button"
@@ -121,7 +112,6 @@ export function SearchModal({
           </div>
         </div>
 
-
         {/* Results List */}
         <div className="search-results-box">
           {!query.trim() ? (
@@ -131,11 +121,11 @@ export function SearchModal({
               </div>
               <h4 className="prompt-title">Nhập từ khóa để bắt đầu tra cứu</h4>
               <p className="prompt-desc">
-                Nhập <strong>chữ Hán</strong> (你, 好...), <strong>Pinyin</strong> (ni, hao...), <strong>âm Hán Việt</strong> (nhĩ, hảo...) hoặc <strong>nghĩa tiếng Việt</strong> (chào, ăn, đi...) để tìm kiếm.
+                Nhập <strong>chữ Hán</strong> (你, 好...), <strong>Pinyin không dấu hoặc có dấu</strong> (hao, nǐ...), <strong>âm Hán Việt</strong> (nhân, hảo...) hoặc <strong>nghĩa tiếng Việt</strong>.
               </p>
               <div className="search-quick-tags">
                 <span className="quick-tags-label">Gợi ý nhanh:</span>
-                {['你好', '爱', '学习', 'hǎo', 'nhân', 'tâm'].map((tag) => (
+                {['你好', '爱', '学习', 'hao', 'nhân', 'tâm'].map((tag) => (
                   <button
                     key={tag}
                     type="button"
@@ -154,11 +144,11 @@ export function SearchModal({
               </div>
             ) : (
               <div className="char-results-grid">
-
-                {filteredChars.map((c) => {
+                {filteredChars.slice(0, 60).map((c) => {
                   const primary = c.readings.find((r) => r.isPrimary) ?? c.readings[0]
                   return (
-                    <div
+                    <button
+                      type="button"
                       key={c.hanzi}
                       className="char-result-card"
                       onClick={() => {
@@ -172,14 +162,16 @@ export function SearchModal({
                       <div className="char-result-info">
                         <div className="pinyin-line">
                           <span className="pinyin">{primary?.pinyin}</span>
-                          {c.hsk3Level && <span className="hsk-tag">HSK {c.hsk3Level}</span>}
+                          <span className="hsk-tag">
+                            {c.hsk3Level ? `HSK ${c.hsk3Level}` : 'Bộ thủ'}
+                          </span>
                         </div>
                         <div className="hanviet-line">
                           {primary?.hanViet ? primary.hanViet.toUpperCase() : '—'}
                         </div>
                         <div className="meaning-line">{primary?.meaningVi}</div>
                       </div>
-                    </div>
+                    </button>
                   )
                 })}
               </div>
@@ -190,39 +182,64 @@ export function SearchModal({
             </div>
           ) : (
             <div className="word-results-grid">
-              {filteredWords.map((w) => (
-                <div
-                  key={w.id}
-                  className="word-result-card"
-                  onClick={() => {
-                    const firstChar = Array.from(w.word)[0]
-                    if (firstChar) onSelectHanzi(firstChar)
-                    onClose()
-                  }}
-                >
-                  <div className="word-glyph-line">
-                    <span className="word-text" lang="zh">
-                      {w.word}
-                    </span>
-                    <button
-                      type="button"
-                      className="word-speak-mini"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        speakChinese(w.word)
-                      }}
-                      title="Phát âm"
-                    >
-                      <Volume2 size={14} />
-                    </button>
-                    <span className="word-pinyin">{w.pinyin}</span>
+              {filteredWords.slice(0, 60).map((w) => {
+                const chars = Array.from(w.word)
+                return (
+                  <div
+                    key={w.id}
+                    className="word-result-card"
+                    onClick={() => {
+                      const firstChar = chars[0]
+                      if (firstChar) onSelectHanzi(firstChar)
+                      onClose()
+                    }}
+                  >
+                    <div className="word-glyph-line">
+                      <span className="word-text" lang="zh">
+                        {w.word}
+                      </span>
+                      <button
+                        type="button"
+                        className="word-speak-mini"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          speakChinese(w.word)
+                        }}
+                        title="Phát âm"
+                        aria-label={`Phát âm ${w.word}`}
+                      >
+                        <Volume2 size={14} />
+                      </button>
+                      <span className="word-pinyin">{w.pinyin}</span>
+                    </div>
+                    <div className="word-info-line">
+                      <span className="word-hv">{w.hanViet?.toUpperCase()}</span>
+                      <span className="word-mean">{w.meaningVi}</span>
+                    </div>
+                    {chars.length > 1 && (
+                      <div className="word-char-jumps">
+                        <span className="word-jump-label">Xem chữ:</span>
+                        {chars.map((ch, idx) => (
+                          <button
+                            key={`${ch}-${idx}`}
+                            type="button"
+                            className="word-jump-chip"
+                            lang="zh"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              onSelectHanzi(ch)
+                              onClose()
+                            }}
+                            title={`Mở chữ ${ch}`}
+                          >
+                            {ch}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                  <div className="word-info-line">
-                    <span className="word-hv">{w.hanViet?.toUpperCase()}</span>
-                    <span className="word-mean">{w.meaningVi}</span>
-                  </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           )}
         </div>

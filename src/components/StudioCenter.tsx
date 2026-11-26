@@ -6,8 +6,13 @@ import {
   Star,
   Play,
   PenTool,
+  ArrowLeft,
+  ChevronLeft,
+  ChevronRight,
+  Shuffle,
 } from 'lucide-react'
-import type { BundleCharacter, CharacterDetail } from '../core'
+import type { BundleCharacter, CharacterDetail, LevelFilter } from '../core'
+import type { HistoryEntry } from '../App'
 import { HanziWriterCanvas } from './HanziWriterCanvas'
 import { HanziWriterModal } from './HanziWriterModal'
 import { speakChinese } from '../utils/speech'
@@ -44,26 +49,36 @@ interface StudioCenterProps {
   detail: CharacterDetail | null
   currentIndex: number
   totalCount: number
+  selectedLevel: LevelFilter
   isFavorite: boolean
   displayMode: 'modern' | 'components'
   onToggleFavorite: () => void
   onNext: () => void
   onPrev: () => void
   onRandom: () => void
-  // Mobile drawer trigger
+  previousEntry: HistoryEntry | null
+  recentTrail: HistoryEntry[]
+  onGoBack: () => void
+  onSelectTrailEntry: (entry: HistoryEntry) => void
   onOpenMobileList?: () => void
 }
 
 export function StudioCenter({
   character,
   detail,
+  currentIndex,
   totalCount,
+  selectedLevel,
   isFavorite,
   displayMode,
   onToggleFavorite,
   onNext,
   onPrev,
   onRandom,
+  previousEntry,
+  recentTrail,
+  onGoBack,
+  onSelectTrailEntry,
   onOpenMobileList,
 }: StudioCenterProps) {
   const readings = character.readings || []
@@ -154,16 +169,18 @@ export function StudioCenter({
     }
   }
 
-
   // Scale the writing grid to the pane so nothing overflows on desktop
   const [paneRef, paneFit] = useFitCount<HTMLElement>(1, 1, 0)
   const isDesktop = typeof window !== 'undefined' && window.innerWidth > 1024
   const canvasSize = isDesktop
-    ? Math.round(Math.max(150, Math.min(290, paneFit.rows - 250, paneFit.cols * 0.4)))
-    : 290
+    ? Math.round(Math.max(150, Math.min(280, paneFit.rows - 260, paneFit.cols * 0.4)))
+    : 280
 
   const activeReading = readings[selectedReadingIndex] ?? readings[0]
   const isPolyphonic = readings.length > 1
+  const levelLabel = selectedLevel === 'radicals' ? 'Bộ thủ' : `HSK ${selectedLevel}`
+  const strokeCount = detail?.character.strokeCount
+  const traditionalForm = detail?.character.traditional ?? character.traditional
 
   const handleSpeak = (text: string, rate: number = 1.0) => {
     speakChinese(text, rate)
@@ -171,35 +188,82 @@ export function StudioCenter({
 
   return (
     <section className="studio-canvas-pane" ref={paneRef}>
-      {/* Top action row (Desktop only - Mobile has star directly inside hero card) */}
-      {!isMobile && (
-        <div className="canvas-header-bar">
-          <div className="canvas-badges-left">
-            {onOpenMobileList && (
-              <button
-                type="button"
-                className="mobile-drawer-toggle-btn"
-                onClick={onOpenMobileList}
-                title="Mở danh sách Hán tự"
-              >
-                Kho chữ ({totalCount})
-              </button>
-            )}
-          </div>
+      {/* Unified Context & History Header Bar (PC & Mobile) */}
+      <div className="canvas-header-bar">
+        <div className="canvas-badges-left">
+          {previousEntry && (
+            <button
+              type="button"
+              className="nav-back-pill"
+              onClick={onGoBack}
+              title={`Quay lại chữ "${previousEntry.hanzi}" (Backspace)`}
+            >
+              <ArrowLeft size={14} />
+              <span>Quay lại</span>
+              <span className="nav-back-hanzi" lang="zh">{previousEntry.hanzi}</span>
+            </button>
+          )}
 
-          <div className="canvas-actions-right">
+          {!isMobile && recentTrail.length > 2 && (
+            <nav className="history-trail-crumbs" aria-label="Lịch sử vừa xem">
+              {recentTrail.slice(0, -1).map((entry, idx) => (
+                <span key={`${entry.hanzi}-${idx}`} className="trail-step">
+                  <button
+                    type="button"
+                    className="trail-chip-btn"
+                    lang="zh"
+                    onClick={() => onSelectTrailEntry(entry)}
+                    title={`Mở lại chữ "${entry.hanzi}"`}
+                  >
+                    {entry.hanzi}
+                  </button>
+                  <span className="trail-sep" aria-hidden="true">›</span>
+                </span>
+              ))}
+              <span className="trail-current" lang="zh">{character.hanzi}</span>
+            </nav>
+          )}
+
+          {onOpenMobileList && (
+            <button
+              type="button"
+              className="mobile-drawer-toggle-btn"
+              onClick={onOpenMobileList}
+              title="Mở danh sách Hán tự"
+            >
+              Kho chữ ({totalCount})
+            </button>
+          )}
+        </div>
+
+        <div className="canvas-actions-right">
+          <span className="badge-hsk-level">{levelLabel}</span>
+          {totalCount > 0 && (
+            <span className="badge-progress-count">
+              {currentIndex + 1}/{totalCount}
+            </span>
+          )}
+          {strokeCount && !isMobile && (
+            <span className="badge-stroke-count">{strokeCount} nét</span>
+          )}
+          {traditionalForm && traditionalForm !== character.hanzi && !isMobile && (
+            <span className="badge-traditional" title="Chữ Phồn thể">
+              Phồn: <span lang="zh">{traditionalForm}</span>
+            </span>
+          )}
+          {!isMobile && (
             <button
               type="button"
               className={`fav-action-btn ${isFavorite ? 'starred' : ''}`}
               onClick={onToggleFavorite}
-              title={isFavorite ? 'Bỏ lưu khỏi sổ tay' : 'Lưu chữ vào sổ tay'}
+              title={isFavorite ? 'Bỏ lưu khỏi sổ tay (F)' : 'Lưu chữ vào sổ tay (F)'}
               aria-label="Lưu vào sổ tay"
             >
               <Star size={18} fill={isFavorite ? 'currentColor' : 'none'} />
             </button>
-          </div>
+          )}
         </div>
-      )}
+      </div>
 
       {isMobile ? (
         /* Mobile Hero: Left Square Mige Box + Right Linguistic Info & Actions */
@@ -266,7 +330,7 @@ export function StudioCenter({
               {/* Row 1: Pinyin, Loa & Chậm capsule, Hán Việt */}
               <div className="mobile-identity-row">
                 <span className="mobile-pinyin-text">
-                  {activeReading?.pinyin || (detail?.character?.strokeCount ? `${detail.character.strokeCount} nét` : '')}
+                  {activeReading?.pinyin || (strokeCount ? `${strokeCount} nét` : '')}
                 </span>
 
                 <div className="mobile-audio-capsule">
@@ -295,16 +359,15 @@ export function StudioCenter({
                 </span>
               </div>
 
-              {/* Row 2: Vietnamese Definition Box (emphasized, high contrast) */}
+              {/* Row 2: Vietnamese Definition Box (full text, high contrast) */}
               <div className="mobile-def-box">
                 <p className="mobile-def-text">
                   {activeReading?.meaningVi || 'Chưa có định nghĩa tiếng Việt cho mục này.'}
                 </p>
               </div>
 
-              {/* Row 3: Balanced 2 Action Buttons (Thành phần is toggled in Navbar) */}
+              {/* Row 3: Balanced 2 Action Buttons */}
               <div className="mobile-actions-grid">
-                {/* Nút 1: Xem nét */}
                 <button
                   type="button"
                   className={`mobile-action-pill ${isAnimating ? 'playing' : ''}`}
@@ -316,7 +379,6 @@ export function StudioCenter({
                   <span>{isAnimating ? 'Đang vẽ…' : 'Xem nét'}</span>
                 </button>
 
-                {/* Nút 2: Tập viết */}
                 <button
                   type="button"
                   className="mobile-action-pill primary"
@@ -330,6 +392,36 @@ export function StudioCenter({
             </div>
           </div>
 
+          {/* Explicit Mobile Navigation Controls (Prev / Random / Next) */}
+          <div className="mobile-nav-strip">
+            <button
+              type="button"
+              className="mobile-nav-btn"
+              onClick={onPrev}
+              aria-label="Chữ trước"
+            >
+              <ChevronLeft size={15} />
+              <span>Trước</span>
+            </button>
+            <button
+              type="button"
+              className="mobile-nav-btn random"
+              onClick={onRandom}
+              aria-label="Chữ ngẫu nhiên"
+            >
+              <Shuffle size={14} />
+              <span>Ngẫu nhiên</span>
+            </button>
+            <button
+              type="button"
+              className="mobile-nav-btn"
+              onClick={onNext}
+              aria-label="Chữ tiếp theo"
+            >
+              <span>Tiếp</span>
+              <ChevronRight size={15} />
+            </button>
+          </div>
 
           {/* Polyphonic readings list if character has >1 reading */}
           {isPolyphonic && (
@@ -406,7 +498,9 @@ export function StudioCenter({
           <div className="linguistic-identity-block">
             {/* Layer 1: Pinyin with Pronunciation audio & Polyphonic Badge */}
             <div className="pinyin-voice-cluster">
-              <span className="pinyin-text-hero">{activeReading?.pinyin}</span>
+              <span className="pinyin-text-hero">
+                {activeReading?.pinyin || (strokeCount ? `${strokeCount} nét` : '—')}
+              </span>
               <button
                 type="button"
                 className="speak-hero-btn"
@@ -456,9 +550,9 @@ export function StudioCenter({
               </div>
             </div>
 
-            {/* Layer 4: Reading Variant Slot */}
-            <div className="reading-variant-slot">
-              {isPolyphonic ? (
+            {/* Layer 4: Polyphonic reading selector (only shown when > 1 reading) */}
+            {isPolyphonic && (
+              <div className="reading-variant-slot">
                 <div className="polyphonic-readings-card">
                   <div className="polyphonic-header">
                     <div className="poly-title-badge">
@@ -514,17 +608,8 @@ export function StudioCenter({
                     })}
                   </div>
                 </div>
-              ) : (
-                <div className="single-reading-status-card">
-                  <div className="single-status-header">
-                    <span className="single-status-label">Chữ đơn âm</span>
-                  </div>
-                  <p className="single-status-desc">
-                    Chữ có 1 cách đọc Pinyin và 1 âm Hán Việt chuẩn duy nhất.
-                  </p>
-                </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -539,7 +624,8 @@ export function StudioCenter({
               onClick={onPrev}
               title="Chữ trước đó (Phím ←)"
             >
-              Trước
+              <ChevronLeft size={16} />
+              <span>Trước</span>
             </button>
 
             <button
@@ -548,7 +634,8 @@ export function StudioCenter({
               onClick={onRandom}
               title="Đổi chữ ngẫu nhiên (Phím Space)"
             >
-              Ngẫu nhiên
+              <Shuffle size={15} />
+              <span>Ngẫu nhiên</span>
             </button>
 
             <button
@@ -557,7 +644,8 @@ export function StudioCenter({
               onClick={onNext}
               title="Chữ tiếp theo (Phím →)"
             >
-              Tiếp
+              <span>Tiếp</span>
+              <ChevronRight size={16} />
             </button>
           </div>
         </div>

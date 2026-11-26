@@ -137,6 +137,10 @@ export function Navbar({
                     <span className="sc-desc">Chữ trước / tiếp theo</span>
                   </div>
                   <div className="shortcut-row">
+                    <kbd className="sc-kbd">Backspace</kbd>
+                    <span className="sc-desc">Quay lại chữ vừa xem</span>
+                  </div>
+                  <div className="shortcut-row">
                     <kbd className="sc-kbd">F</kbd>
                     <span className="sc-desc">Lưu / Bỏ lưu sổ tay</span>
                   </div>
