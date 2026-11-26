@@ -7,9 +7,8 @@ import {
   PenTool,
   CheckCircle,
   Eye,
-  Gauge,
-  SkipBack,
-  SkipForward,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react'
 import { inferStrokeName, type StrokeNameInfo } from '../utils/strokeNames'
 
@@ -31,7 +30,6 @@ export function HanziWriterCanvas({
   const containerRef = useRef<HTMLDivElement>(null)
   const writerRef = useRef<HanziWriter | null>(null)
   const [mode, setMode] = useState<'display' | 'animate' | 'quiz'>(defaultMode)
-  const [, setIsPlaying] = useState(false)
   const [isPaused, setIsPaused] = useState(false)
   const [speed, setSpeed] = useState<number>(1)
   const [quizResult, setQuizResult] = useState<{ mistakes: number } | null>(null)
@@ -97,19 +95,14 @@ export function HanziWriterCanvas({
     writerRef.current = writer
 
     if (mode === 'animate') {
-      setIsPlaying(true)
       setCurrentStrokeIndex(0)
       writer.animateCharacter({
         onComplete: () => {
-          setIsPlaying(false)
           setIsPaused(false)
         },
       })
     } else if (mode === 'quiz') {
       writer.quiz({
-        onMistake: (_strokeData) => {
-          // Keep quiz state active
-        },
         onCorrectStroke: (strokeData) => {
           setCurrentStrokeIndex(strokeData.strokeNum + 1)
         },
@@ -132,11 +125,9 @@ export function HanziWriterCanvas({
     setIsPaused(false)
     setCurrentStrokeIndex(0)
     if (writerRef.current) {
-      setIsPlaying(true)
       writerRef.current.showCharacter()
       writerRef.current.animateCharacter({
         onComplete: () => {
-          setIsPlaying(false)
           setIsPaused(false)
         },
       })
@@ -146,7 +137,6 @@ export function HanziWriterCanvas({
   const handleStartQuiz = useCallback(() => {
     setMode('quiz')
     setQuizResult(null)
-    setIsPlaying(false)
     setIsPaused(false)
     setCurrentStrokeIndex(0)
     if (writerRef.current) {
@@ -167,22 +157,11 @@ export function HanziWriterCanvas({
     if (isPaused) {
       writerRef.current.resumeAnimation()
       setIsPaused(false)
-      setIsPlaying(true)
     } else {
       writerRef.current.pauseAnimation()
       setIsPaused(true)
-      setIsPlaying(false)
     }
   }, [isPaused])
-
-  const handleReset = useCallback(() => {
-    setCurrentStrokeIndex(0)
-    if (mode === 'quiz') {
-      handleStartQuiz()
-    } else {
-      handleStartAnimate()
-    }
-  }, [mode, handleStartQuiz, handleStartAnimate])
 
   // Step-by-step: Play single stroke
   const handlePlayStroke = useCallback((index: number) => {
@@ -190,13 +169,8 @@ export function HanziWriterCanvas({
     const max = charData.strokes.length
     const targetIdx = Math.max(0, Math.min(index, max - 1))
     setCurrentStrokeIndex(targetIdx)
-    setIsPlaying(true)
     setIsPaused(false)
-    writerRef.current.animateStroke(targetIdx, {
-      onComplete: () => {
-        setIsPlaying(false)
-      },
-    })
+    writerRef.current.animateStroke(targetIdx)
   }, [charData])
 
   const handleNextStroke = useCallback(() => {
@@ -227,32 +201,6 @@ export function HanziWriterCanvas({
 
   return (
     <div className="hanzi-writer-canvas-wrapper">
-      {/* Stroke Step & Name Banner */}
-      {mode !== 'display' && (
-        <div className="stroke-step-banner">
-          <div className="stroke-counter-pill">
-            <span className="stroke-num-label">Nét</span>
-            <span className="stroke-num-val">
-              {totalStrokes > 0 ? `${currentStrokeIndex + 1}/${totalStrokes}` : '—'}
-            </span>
-          </div>
-
-          <div className="stroke-info-text">
-            {strokeInfo ? (
-              <>
-                <span className="stroke-name-vi">{strokeInfo.nameVi}</span>
-                <span className="stroke-name-zh" lang="zh">{strokeInfo.nameZh}</span>
-                {strokeInfo.direction && (
-                  <span className="stroke-direction">({strokeInfo.direction})</span>
-                )}
-              </>
-            ) : (
-              <span className="stroke-loading">Đang tải nét bút…</span>
-            )}
-          </div>
-        </div>
-      )}
-
       {/* Traditional Calligraphy Practice Card with authentic vector 米字格 (Mễ tự cách) */}
       <div
         className="mige-canvas-frame"
@@ -302,117 +250,107 @@ export function HanziWriterCanvas({
         )}
       </div>
 
-      {/* Main Mode Toolbar (Chữ tĩnh / Xem nét / Tập viết) */}
-      <div className="canvas-segmented-toolbar" role="toolbar" aria-label="Điều khiển nét chữ">
-        <button
-          type="button"
-          className={`toolbar-seg-btn ${mode === 'display' ? 'active' : ''}`}
-          onClick={() => setMode('display')}
-          title="Chế độ chữ tĩnh chuẩn mực"
-        >
-          <Eye size={14} />
-          <span>Chữ tĩnh</span>
-        </button>
-
-        <button
-          type="button"
-          className={`toolbar-seg-btn ${mode === 'animate' ? 'active' : ''}`}
-          onClick={handleStartAnimate}
-          title="Xem hoạt họa thứ tự từng nét bút"
-        >
-          <Play size={14} />
-          <span>Xem nét</span>
-        </button>
-
-        <button
-          type="button"
-          className={`toolbar-seg-btn ${mode === 'quiz' ? 'active' : ''}`}
-          onClick={handleStartQuiz}
-          title="Tự tay vẽ nét chữ trực tiếp lên ô mễ tự"
-        >
-          <PenTool size={14} />
-          <span>Tập viết tại đây</span>
-        </button>
-      </div>
-
-      {/* Auxiliary Animation Controls (Step-by-step, Pause/Resume, Speed) */}
-      {mode === 'animate' && (
-        <div className="stroke-control-strip">
-          <button
-            type="button"
-            className="stroke-ctrl-btn"
-            onClick={handlePrevStroke}
-            title="Xem nét trước"
-            aria-label="Nét trước"
-          >
-            <SkipBack size={14} />
-            <span>Nét trước</span>
-          </button>
-
-          <button
-            type="button"
-            className={`stroke-ctrl-btn play-pause-btn ${isPaused ? 'paused' : ''}`}
-            onClick={handleTogglePause}
-            title={isPaused ? 'Tiếp tục vẽ' : 'Tạm dừng xem nét'}
-            aria-label={isPaused ? 'Tiếp tục' : 'Tạm dừng'}
-          >
-            {isPaused ? <Play size={14} /> : <Pause size={14} />}
-            <span>{isPaused ? 'Tiếp tục' : 'Tạm dừng'}</span>
-          </button>
-
-          <button
-            type="button"
-            className="stroke-ctrl-btn"
-            onClick={handleNextStroke}
-            title="Xem nét tiếp theo"
-            aria-label="Nét tiếp"
-          >
-            <span>Nét tiếp</span>
-            <SkipForward size={14} />
-          </button>
-
-          <div className="strip-divider" />
-
-          <button
-            type="button"
-            className="stroke-ctrl-btn small-btn"
-            onClick={handleReset}
-            title="Vẽ lại toàn bộ từ đầu"
-            aria-label="Vẽ lại"
-          >
-            <RotateCcw size={14} />
-          </button>
-
-          <button
-            type="button"
-            className="stroke-ctrl-btn speed-btn"
-            onClick={toggleSpeed}
-            title="Đổi tốc độ nét vẽ (0.6x / 1.0x / 1.5x)"
-            aria-label="Tốc độ"
-          >
-            <Gauge size={13} />
-            <span>{speed}x</span>
-          </button>
+      {/* Stroke step info: Compact 1-liner right under canvas */}
+      {mode === 'animate' && strokeInfo && (
+        <div className="stroke-step-inline-info">
+          <span className="stroke-step-badge">Nét {currentStrokeIndex + 1}/{totalStrokes}</span>
+          <span className="stroke-step-name">{strokeInfo.nameVi}</span>
+          <span className="stroke-step-zh" lang="zh">{strokeInfo.nameZh}</span>
         </div>
       )}
 
-      {mode === 'quiz' && (
-        <div className="stroke-control-strip">
+      {/* Unified Minimal Toolbar: Exactly 1 clean bar */}
+      <div className="canvas-unified-toolbar" role="toolbar" aria-label="Điều khiển chữ Hán">
+        <div className="toolbar-segment-group">
           <button
             type="button"
-            className="stroke-ctrl-btn primary-reset"
+            className={`toolbar-btn ${mode === 'display' ? 'active' : ''}`}
+            onClick={() => setMode('display')}
+            title="Chế độ chữ tĩnh chuẩn mực"
+          >
+            <Eye size={14} />
+            <span>Chữ tĩnh</span>
+          </button>
+
+          <button
+            type="button"
+            className={`toolbar-btn ${mode === 'animate' ? 'active' : ''}`}
+            onClick={handleStartAnimate}
+            title="Xem hoạt họa thứ tự từng nét bút"
+          >
+            <Play size={14} />
+            <span>Xem nét</span>
+          </button>
+
+          <button
+            type="button"
+            className={`toolbar-btn ${mode === 'quiz' ? 'active' : ''}`}
             onClick={handleStartQuiz}
-            title="Xóa viết lại từ đầu"
+            title="Tự tay vẽ nét chữ trực tiếp lên ô mễ tự"
           >
-            <RotateCcw size={14} />
-            <span>Viết lại từ đầu</span>
+            <PenTool size={14} />
+            <span>Tập viết</span>
           </button>
-
-          <span className="quiz-instruction-hint">
-            Dùng chuột hoặc ngón tay vẽ theo từng nét trong ô Mễ tự
-          </span>
         </div>
-      )}
+
+        {/* Dynamic sub-controls integrated seamlessly on the right */}
+        {mode === 'animate' && (
+          <div className="toolbar-sub-controls">
+            <button
+              type="button"
+              className="toolbar-sub-icon-btn"
+              onClick={handlePrevStroke}
+              title="Nét trước"
+              aria-label="Nét trước"
+            >
+              <ChevronLeft size={15} />
+            </button>
+
+            <button
+              type="button"
+              className={`toolbar-sub-icon-btn ${isPaused ? 'paused' : ''}`}
+              onClick={handleTogglePause}
+              title={isPaused ? 'Tiếp tục vẽ' : 'Tạm dừng'}
+              aria-label={isPaused ? 'Tiếp tục' : 'Tạm dừng'}
+            >
+              {isPaused ? <Play size={13} fill="currentColor" /> : <Pause size={13} fill="currentColor" />}
+            </button>
+
+            <button
+              type="button"
+              className="toolbar-sub-icon-btn"
+              onClick={handleNextStroke}
+              title="Nét tiếp"
+              aria-label="Nét tiếp"
+            >
+              <ChevronRight size={15} />
+            </button>
+
+            <button
+              type="button"
+              className="toolbar-speed-badge"
+              onClick={toggleSpeed}
+              title="Tốc độ nét bút"
+            >
+              {speed}x
+            </button>
+          </div>
+        )}
+
+        {mode === 'quiz' && (
+          <div className="toolbar-sub-controls">
+            <button
+              type="button"
+              className="toolbar-sub-action-btn"
+              onClick={handleStartQuiz}
+              title="Xóa viết lại từ đầu"
+            >
+              <RotateCcw size={13} />
+              <span>Viết lại</span>
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   )
 }

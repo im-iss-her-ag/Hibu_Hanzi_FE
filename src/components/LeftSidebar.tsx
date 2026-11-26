@@ -3,16 +3,12 @@ import {
   Search,
   Star,
   BookOpen,
-  Layers,
   X,
   ChevronLeft,
   ChevronRight,
   ArrowLeft,
   ArrowUpDown,
-  LayoutGrid,
-  ScrollText,
 } from 'lucide-react'
-import { useFitCount } from '../utils/useFitCount'
 import type { BundleCharacter, LevelFilter, RadicalFamily } from '../core'
 import { searchCharacters, searchRadicals } from '../core'
 
@@ -34,9 +30,11 @@ interface LeftSidebarProps {
 
 const familyName = (f: RadicalFamily) => f.info.nameVi ?? `Bộ ${f.info.hanViet ?? f.key}`
 
-const TILE_W = 52
-const TILE_H = 58
-const TILE_GAP = 6
+const SIZES = {
+  TILE_W: 52,
+  TILE_H: 58,
+  TILE_GAP: 6,
+}
 
 export type SortOrder = 'default' | 'strokeAsc' | 'strokeDesc' | 'pinyinAsc'
 
@@ -58,7 +56,19 @@ export function LeftSidebar({
   const [searchQuery, setSearchQuery] = useState('')
   const [filterMode, setFilterMode] = useState<'all' | 'favorites'>('all')
   const [sortOrder, setSortOrder] = useState<SortOrder>('default')
-  const [viewStyle, setViewStyle] = useState<'paged' | 'scroll'>('paged')
+  const [showSortMenu, setShowSortMenu] = useState(false)
+  const sortMenuRef = useRef<HTMLDivElement>(null)
+
+  // Close sort menu on click outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (sortMenuRef.current && !sortMenuRef.current.contains(e.target as Node)) {
+        setShowSortMenu(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   // The radicals tab without a chosen radical lists radical families instead of characters.
   const listingRadicals = selectedLevel === 'radicals' && !activeFamily
@@ -82,7 +92,6 @@ export function LeftSidebar({
       list = searchCharacters(list, searchQuery) as BundleCharacter[]
     }
 
-    // Apply sorting
     if (sortOrder === 'strokeAsc') {
       list = [...list].sort((a, b) => (a.strokeCount ?? 99) - (b.strokeCount ?? 99))
     } else if (sortOrder === 'strokeDesc') {
@@ -100,39 +109,53 @@ export function LeftSidebar({
 
   const itemCount = listingRadicals ? familyList.length : filteredList.length
 
-  // Fit as many fixed-size tiles as the available area allows, then paginate
-  const [gridRef, fit] = useFitCount<HTMLDivElement>(TILE_W, TILE_H, TILE_GAP)
-  const perPage = Math.max(1, fit.cols * fit.rows)
+  // Measure grid container dimensions
+  const gridContainerRef = useRef<HTMLDivElement>(null)
+  const [gridDim, setGridDim] = useState({ cols: 5, rows: 6 })
+
   useEffect(() => {
-    if (fit.cols > 0) onGridChange?.(fit.cols, perPage)
-  }, [fit.cols, perPage, onGridChange])
+    const el = gridContainerRef.current
+    if (!el) return
+
+    const updateDim = () => {
+      const w = el.clientWidth
+      const h = el.clientHeight
+      const cols = Math.max(1, Math.floor((w + SIZES.TILE_GAP) / (SIZES.TILE_W + SIZES.TILE_GAP)))
+      const rows = Math.max(1, Math.floor((h + SIZES.TILE_GAP) / (SIZES.TILE_H + SIZES.TILE_GAP)))
+      setGridDim({ cols, rows })
+      onGridChange?.(cols, cols * rows)
+    }
+
+    updateDim()
+    const observer = new ResizeObserver(updateDim)
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [onGridChange])
+
+  const perPage = Math.max(1, gridDim.cols * gridDim.rows)
   const pageCount = Math.max(1, Math.ceil(itemCount / perPage))
   const [page, setPage] = useState(0)
   const safePage = Math.min(page, pageCount - 1)
 
-  // Jump to the page containing the active character when list / size / selection changes
+  // Jump to the page containing the active character
   useEffect(() => {
-    if (viewStyle === 'paged') {
-      const idx = activeHanzi ? filteredList.findIndex((c) => c.hanzi === activeHanzi) : -1
-      setPage(idx >= 0 ? Math.floor(idx / perPage) : 0)
-    }
-  }, [filteredList, perPage, activeHanzi, viewStyle])
+    const idx = activeHanzi ? filteredList.findIndex((c) => c.hanzi === activeHanzi) : -1
+    setPage(idx >= 0 ? Math.floor(idx / perPage) : 0)
+  }, [filteredList, perPage, activeHanzi])
 
   const pageItems = useMemo(() => {
-    if (viewStyle === 'scroll') return filteredList
     return filteredList.slice(safePage * perPage, safePage * perPage + perPage)
-  }, [filteredList, safePage, perPage, viewStyle])
+  }, [filteredList, safePage, perPage])
 
   const pageFamilies = useMemo(() => {
-    if (viewStyle === 'scroll') return familyList
     return familyList.slice(safePage * perPage, safePage * perPage + perPage)
-  }, [familyList, safePage, perPage, viewStyle])
+  }, [familyList, safePage, perPage])
 
   useEffect(() => setPage(0), [listingRadicals, activeFamily, searchQuery, sortOrder])
 
   // Mouse wheel pagination support
   const handleWheel = (e: React.WheelEvent) => {
-    if (viewStyle === 'scroll' || pageCount <= 1) return
+    if (pageCount <= 1) return
     if (e.deltaY > 20) {
       setPage((p) => Math.min(pageCount - 1, p + 1))
     } else if (e.deltaY < -20) {
@@ -140,13 +163,12 @@ export function LeftSidebar({
     }
   }
 
-  // Scroll to selected element in scroll mode
-  const activeTileRef = useRef<HTMLButtonElement | null>(null)
-  useEffect(() => {
-    if (viewStyle === 'scroll' && activeTileRef.current) {
-      activeTileRef.current.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
-    }
-  }, [activeHanzi, viewStyle])
+  const sortLabelMap: Record<SortOrder, string> = {
+    default: 'Mặc định',
+    strokeAsc: 'Nét: Ít → Nhiều',
+    strokeDesc: 'Nét: Nhiều → Ít',
+    pinyinAsc: 'Pinyin: A → Z',
+  }
 
   return (
     <aside className={`studio-sidebar-left ${isOpenMobile ? 'mobile-open' : ''}`}>
@@ -154,22 +176,71 @@ export function LeftSidebar({
       <div className="sidebar-header">
         <div className="sidebar-title-row">
           <div className="sidebar-heading">
-            <BookOpen size={18} className="sidebar-heading-icon" />
+            <BookOpen size={17} className="sidebar-heading-icon" />
             <span>{listingRadicals ? 'Bộ thủ' : 'Kho Hán Tự'}</span>
             <span className="count-badge">{itemCount}</span>
           </div>
 
           <div className="sidebar-header-right-tools">
-            {/* Toggle View: Phân trang vs Cuộn liên tục */}
-            <button
-              type="button"
-              className={`view-toggle-btn ${viewStyle === 'scroll' ? 'active' : ''}`}
-              onClick={() => setViewStyle((v) => (v === 'paged' ? 'scroll' : 'paged'))}
-              title={viewStyle === 'paged' ? 'Chuyển sang chế độ cuộn tự do' : 'Chuyển sang chế độ phân trang'}
-            >
-              {viewStyle === 'paged' ? <ScrollText size={14} /> : <LayoutGrid size={14} />}
-              <span>{viewStyle === 'paged' ? 'Cuộn' : 'Trang'}</span>
-            </button>
+            {/* Sort custom button & menu */}
+            {!listingRadicals && (
+              <div className="sidebar-sort-wrapper" ref={sortMenuRef}>
+                <button
+                  type="button"
+                  className={`sidebar-sort-btn ${sortOrder !== 'default' ? 'active' : ''}`}
+                  onClick={() => setShowSortMenu((v) => !v)}
+                  title="Sắp xếp danh sách"
+                >
+                  <ArrowUpDown size={13} />
+                  <span>{sortLabelMap[sortOrder]}</span>
+                </button>
+
+                {showSortMenu && (
+                  <div className="sidebar-sort-menu">
+                    <button
+                      type="button"
+                      className={`sort-menu-item ${sortOrder === 'default' ? 'selected' : ''}`}
+                      onClick={() => {
+                        setSortOrder('default')
+                        setShowSortMenu(false)
+                      }}
+                    >
+                      Mặc định (HSK)
+                    </button>
+                    <button
+                      type="button"
+                      className={`sort-menu-item ${sortOrder === 'strokeAsc' ? 'selected' : ''}`}
+                      onClick={() => {
+                        setSortOrder('strokeAsc')
+                        setShowSortMenu(false)
+                      }}
+                    >
+                      Số nét: Ít ➔ Nhiều
+                    </button>
+                    <button
+                      type="button"
+                      className={`sort-menu-item ${sortOrder === 'strokeDesc' ? 'selected' : ''}`}
+                      onClick={() => {
+                        setSortOrder('strokeDesc')
+                        setShowSortMenu(false)
+                      }}
+                    >
+                      Số nét: Nhiều ➔ Ít
+                    </button>
+                    <button
+                      type="button"
+                      className={`sort-menu-item ${sortOrder === 'pinyinAsc' ? 'selected' : ''}`}
+                      onClick={() => {
+                        setSortOrder('pinyinAsc')
+                        setShowSortMenu(false)
+                      }}
+                    >
+                      Pinyin: A ➔ Z
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
 
             {onCloseMobile && (
               <button
@@ -178,15 +249,15 @@ export function LeftSidebar({
                 onClick={onCloseMobile}
                 aria-label="Đóng danh mục"
               >
-                <X size={20} />
+                <X size={18} />
               </button>
             )}
           </div>
         </div>
 
-        {/* Search input */}
+        {/* Search input with integrated Favorites Toggle */}
         <div className="sidebar-search-box">
-          <Search size={15} className="search-icon" />
+          <Search size={14} className="search-icon" />
           <input
             type="text"
             className="sidebar-search-input"
@@ -201,56 +272,26 @@ export function LeftSidebar({
               onClick={() => setSearchQuery('')}
               title="Xóa tìm kiếm"
             >
-              <X size={14} />
+              <X size={13} />
             </button>
           )}
-        </div>
 
-        {/* Filter mode & Sort row */}
-        <div className="sidebar-mode-tabs">
-          <div className="sidebar-tab-pills">
-            <button
-              type="button"
-              className={`mode-tab ${filterMode === 'all' ? 'active' : ''}`}
-              onClick={() => setFilterMode('all')}
-            >
-              <Layers size={13} />
-              <span>Tất cả</span>
-            </button>
-            <button
-              type="button"
-              className={`mode-tab ${filterMode === 'favorites' ? 'active' : ''}`}
-              onClick={() => setFilterMode('favorites')}
-            >
-              <Star size={13} fill={filterMode === 'favorites' ? 'currentColor' : 'none'} />
-              <span>Sổ tay ({favorites.length})</span>
-            </button>
-          </div>
-
-          {/* Sort selector dropdown */}
-          {!listingRadicals && (
-            <div className="sidebar-sort-control">
-              <ArrowUpDown size={12} className="sort-icon" />
-              <select
-                className="sidebar-sort-select"
-                value={sortOrder}
-                onChange={(e) => setSortOrder(e.target.value as SortOrder)}
-                title="Sắp xếp danh sách Hán tự"
-                aria-label="Sắp xếp Hán tự"
-              >
-                <option value="default">Mặc định (HSK)</option>
-                <option value="strokeAsc">Số nét: Ít ➔ Nhiều</option>
-                <option value="strokeDesc">Số nét: Nhiều ➔ Ít</option>
-                <option value="pinyinAsc">Pinyin: A ➔ Z</option>
-              </select>
-            </div>
-          )}
+          {/* Quick toggle for Favorites inside search row */}
+          <button
+            type="button"
+            className={`sidebar-fav-pill ${filterMode === 'favorites' ? 'active' : ''}`}
+            onClick={() => setFilterMode((m) => (m === 'all' ? 'favorites' : 'all'))}
+            title={filterMode === 'favorites' ? 'Xem tất cả chữ' : 'Chỉ xem chữ trong sổ tay'}
+          >
+            <Star size={12} fill={filterMode === 'favorites' ? 'currentColor' : 'none'} />
+            <span>{favorites.length}</span>
+          </button>
         </div>
 
         {/* HSK Level Filter Row */}
         <div className="sidebar-filter-cluster">
           <span className="hsk-standard-badge" title="Chuẩn HSK 3.0 (2021)">
-            HSK 3.0
+            HSK
           </span>
           <div className="hsk-level-pills">
             {[1, 2, 3, 4, 5, 6].map((lvl) => (
@@ -284,8 +325,7 @@ export function LeftSidebar({
               <span lang="zh">河</span> sông, <span lang="zh">海</span> biển, <span lang="zh">洗</span> rửa.
             </p>
             <p>
-              Bấm một bộ để xem <strong>mọi chữ có chứa nó</strong>. Bộ ở trên cùng gặp nhiều nhất: thuộc khoảng
-              20 bộ đầu là đã đoán được nghĩa của rất nhiều chữ.
+              Bấm một bộ để xem <strong>mọi chữ có chứa nó</strong>. Bộ ở trên cùng gặp nhiều nhất.
             </p>
           </details>
         )}
@@ -293,7 +333,7 @@ export function LeftSidebar({
         {activeFamily && selectedLevel === 'radicals' && (
           <div className="radical-focus-card">
             <button type="button" className="radical-back-btn" onClick={() => onBrowseRadical?.(null)}>
-              <ArrowLeft size={14} /> Tất cả bộ thủ
+              <ArrowLeft size={13} /> Tất cả bộ thủ
             </button>
             <div className="radical-focus-row">
               <span className="radical-focus-glyph" lang="zh">{activeFamily.display}</span>
@@ -311,8 +351,7 @@ export function LeftSidebar({
               </div>
             </div>
             <p className="radical-focus-hint">
-              {activeFamily.count} chữ có chứa bộ này. Chữ có nó thường mang nghĩa liên quan đến
-              "{activeFamily.info.meaningVi ?? activeFamily.info.hanViet}". Bấm từng chữ để xem cách ghép.
+              {activeFamily.count} chữ có chứa bộ này. Bấm từng chữ để xem cách ghép.
             </p>
           </div>
         )}
@@ -320,9 +359,9 @@ export function LeftSidebar({
         {!listingRadicals && searchQuery.trim() && matchedFamilies.length > 0 && (
           <div className="radical-match-row">
             <span className="radical-match-label">Bộ thủ:</span>
-            {matchedFamilies.slice(0, 4).map((f) => (
+            {matchedFamilies.slice(0, 3).map((f) => (
               <button key={f.key} type="button" className="radical-chip" onClick={() => onBrowseRadical?.(f.key)}>
-                <span lang="zh">{f.display}</span> {familyName(f)} · {f.count} chữ
+                <span lang="zh">{f.display}</span> {familyName(f)} · {f.count}
               </button>
             ))}
           </div>
@@ -331,8 +370,8 @@ export function LeftSidebar({
 
       {/* Character Tile Grid */}
       <div
-        className={`sidebar-tile-area ${viewStyle === 'scroll' ? 'scroll-mode' : ''}`}
-        ref={gridRef}
+        className="sidebar-tile-area"
+        ref={gridContainerRef}
         onWheel={handleWheel}
       >
         {itemCount === 0 ? (
@@ -343,7 +382,7 @@ export function LeftSidebar({
           <div
             className="sidebar-tile-grid"
             role="list"
-            style={{ gridTemplateColumns: `repeat(${fit.cols || 5}, 1fr)` }}
+            style={{ gridTemplateColumns: `repeat(${gridDim.cols}, 1fr)` }}
           >
             {pageFamilies.map((f) => (
               <button
@@ -364,7 +403,7 @@ export function LeftSidebar({
           <div
             className="sidebar-tile-grid"
             role="list"
-            style={{ gridTemplateColumns: `repeat(${fit.cols || 5}, 1fr)` }}
+            style={{ gridTemplateColumns: `repeat(${gridDim.cols}, 1fr)` }}
           >
             {pageItems.map((item) => {
               const isSelected = item.hanzi === activeHanzi
@@ -374,7 +413,6 @@ export function LeftSidebar({
                 <button
                   type="button"
                   key={item.hanzi}
-                  ref={isSelected ? activeTileRef : undefined}
                   role="listitem"
                   className={`sidebar-char-tile ${isSelected ? 'selected' : ''}`}
                   title={`${primary?.pinyin ?? ''} · ${primary?.meaningVi ?? ''} (${item.strokeCount ? `${item.strokeCount} nét` : ''})`}
@@ -396,7 +434,7 @@ export function LeftSidebar({
         )}
       </div>
 
-      {viewStyle === 'paged' && pageCount > 1 && (
+      {pageCount > 1 && (
         <div className="sidebar-pager">
           <button
             type="button"
