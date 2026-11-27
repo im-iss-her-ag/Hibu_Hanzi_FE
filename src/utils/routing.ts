@@ -3,13 +3,14 @@ import type { HskLevel, LevelFilter } from '../core'
 export interface RouteState {
   hanzi: string | null
   level: LevelFilter | null
+  word: string | null
 }
 
 /**
  * Parse character and level from the current URL (?c=...&level=..., or /c/<hanzi> fallback).
  */
 export function parseRouteFromUrl(): RouteState {
-  if (typeof window === 'undefined') return { hanzi: null, level: null }
+  if (typeof window === 'undefined') return { hanzi: null, level: null, word: null }
 
   const params = new URLSearchParams(window.location.search)
   let hanzi = params.get('c')?.trim() || params.get('hanzi')?.trim() || null
@@ -37,18 +38,21 @@ export function parseRouteFromUrl(): RouteState {
     }
   }
 
-  return { hanzi, level }
+  const word = params.get('w')?.trim() || null
+
+  return { hanzi, level, word }
 }
 
 /**
  * Build a shareable relative URL preserving the current pathname root (works in dev, SPA, and Electron).
  */
-export function buildCharacterUrl(hanzi: string | null, level: LevelFilter): string {
+export function buildCharacterUrl(hanzi: string | null, level: LevelFilter, word?: string | null): string {
   const params = new URLSearchParams()
   if (hanzi) {
     params.set('c', hanzi)
   }
   params.set('level', String(level))
+  if (word) params.set('w', word)
 
   const basePath =
     typeof window !== 'undefined' && /^\/(?:c|hanzi)\//.test(window.location.pathname)

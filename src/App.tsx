@@ -5,6 +5,7 @@ import {
   charactersWithRadical,
   containedForms,
   findFamily,
+  getLocalBundle,
   pickRandom,
   RADICAL_CHARACTERS,
   radicalFamilies,
@@ -17,13 +18,20 @@ import { RightBreakdown } from './components/RightBreakdown'
 import { SearchModal } from './components/SearchModal'
 import { FavoritesModal } from './components/FavoritesModal'
 import { PinyinChartModal } from './components/PinyinChartModal'
+import { PronunciationModal } from './components/PronunciationModal'
+import { normalizeFolded } from './utils/search'
 import { PipWidget } from './components/PipWidget'
-import { MobileBottomBar } from './components/MobileBottomBar'
+import { Rail } from './components/Rail'
+import { StudyNav } from './components/StudyNav'
+import { EmptyState, ErrorState, RailSkeleton, SheetSkeleton } from './components/ShellStates'
+import { useShellMode } from './components/useShellMode'
+import { orderRadicalFamilies } from './utils/radicalOrder'
 import { buildCharacterUrl, getSavedLevelFallback, parseRouteFromUrl } from './utils/routing'
 
 export interface HistoryEntry {
   hanzi: string
   level: LevelFilter
+  word?: string | null
 }
 
 export function App() {
@@ -31,7 +39,14 @@ export function App() {
   const bundle = useQuery({
     queryKey: ['bundle'],
     queryFn: () => api.getBundle(),
+    // Render immediately from the built-in dataset while the server copy loads. placeholderData (not
+    // initialData): it never enters the cache, so with staleTime: Infinity the real fetch still runs.
+    placeholderData: () => getLocalBundle(),
+    // getBundle() swallows network errors (rate limit, offline) and returns the sample with
+    // offline: true. Keep retrying in the background so the real data replaces it on its own.
+    refetchInterval: (query) => (query.state.data?.offline ? 15_000 : false),
   })
+  const usingSample = bundle.data?.offline === true
 
   const allCharacters = useMemo(() => bundle.data?.characters ?? [], [bundle.data?.characters])
   const allWords = useMemo(() => bundle.data?.words ?? [], [bundle.data?.words])
@@ -39,6 +54,26 @@ export function App() {
   const families = useMemo(
     () => radicalFamilies(allCharacters, bundle.data?.components ?? [], contained),
     [allCharacters, bundle.data?.components, contained],
+  )
+
+  // Radical-mode pool: one entry per family, in the library's visual order (display form)
+  const radicalFamiliesOrdered = useMemo(() => orderRadicalFamilies(families), [families])
+  const radicalPool = useMemo<BundleCharacter[]>(
+    () =>
+      radicalFamiliesOrdered.map(
+        (f) =>
+          allCharacters.find((c) => c.hanzi === f.display) ??
+          RADICAL_CHARACTERS.find((c) => c.hanzi === f.display) ?? {
+            hanzi: f.display,
+            traditional: null,
+            radical: null,
+            parts: [],
+            hsk2Level: null,
+            hsk3Level: null,
+            readings: [],
+          },
+      ),
+    [radicalFamiliesOrdered, allCharacters],
   )
 
   // Initial route parsed once from URL (?c=...&level=...)
@@ -49,6 +84,7 @@ export function App() {
   const [selectedLevel, setSelectedLevel] = useState<LevelFilter>(
     () => initialRouteRef.current.level ?? getSavedLevelFallback(),
   )
+  const [activeWord, setActiveWord] = useState<string | null>(() => initialRouteRef.current.word)
   const [currentHanzi, setCurrentHanzi] = useState<string | null>(
     () => initialRouteRef.current.hanzi,
   )
@@ -71,8 +107,36 @@ export function App() {
   const [showPinyinChart, setShowPinyinChart] = useState<boolean>(false)
   const [pronounceTarget, setPronounceTarget] = useState<string | null>(null)
 
-  // Mobile drawer state
-  const [mobileListOpen, setMobileListOpen] = useState(false)
+  // Character list: a permanent rail (>=1200, collapsible), a drawer (768-1199) or a bottom sheet (<768).
+  const shellMode = useShellMode()
+  const overlayList = shellMode !== 'rail'
+  const [listOpen, setListOpen] = useState(false)
+  const [railCollapsed, setRailCollapsed] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('hibu_rail_collapsed') === '1'
+    } catch {
+      return false
+    }
+  })
+  useEffect(() => {
+    try {
+      localStorage.setItem('hibu_rail_collapsed', railCollapsed ? '1' : '0')
+    } catch {
+      // ignore
+    }
+  }, [railCollapsed])
+  // Crossing a breakpoint resets the overlay so it never lingers across layouts.
+  useEffect(() => setListOpen(false), [shellMode])
+  const closeList = useCallback(() => setListOpen(false), [])
+  const openList = useCallback(() => {
+    if (shellMode === 'rail') setRailCollapsed(false)
+    else setListOpen(true)
+  }, [shellMode])
+  const toggleList = useCallback(() => {
+    if (shellMode === 'rail') setRailCollapsed((v) => !v)
+    else setListOpen((v) => !v)
+  }, [shellMode])
+  const mainRef = useRef<HTMLElement>(null)
 
   // Display mode
   const [displayMode, setDisplayMode] = useState<'modern' | 'components'>(() => {
@@ -96,16 +160,25 @@ export function App() {
   })
 
   useEffect(() => {
-    if (isDarkMode) {
-      document.documentElement.classList.add('dark')
-      localStorage.setItem('hibu_theme', 'dark')
-    } else {
-      document.documentElement.classList.remove('dark')
-      localStorage.setItem('hibu_theme', 'light')
-    }
+    document.documentElement.classList.toggle('dark', isDarkMode)
   }, [isDarkMode])
 
-  const toggleDarkMode = () => setIsDarkMode((prev) => !prev)
+  // With no stored choice, keep following the system theme (live)
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-color-scheme: dark)')
+    const onChange = (e: MediaQueryListEvent) => {
+      if (!localStorage.getItem('hibu_theme')) setIsDarkMode(e.matches)
+    }
+    mq.addEventListener('change', onChange)
+    return () => mq.removeEventListener('change', onChange)
+  }, [])
+
+  // Only an explicit toggle is persisted
+  const toggleDarkMode = () =>
+    setIsDarkMode((prev) => {
+      localStorage.setItem('hibu_theme', prev ? 'light' : 'dark')
+      return !prev
+    })
 
   // Favorites state
   const [favorites, setFavorites] = useState<string[]>(() => {
@@ -129,14 +202,17 @@ export function App() {
   // Filter pool based on HSK 3.0 level (1-6) or Radicals
   const filteredCharacters = useMemo(() => {
     if (selectedLevel === 'radicals') {
-      return activeFamily ? charactersWithRadical(allCharacters, activeFamily, contained) : RADICAL_CHARACTERS
+      return activeFamily ? charactersWithRadical(allCharacters, activeFamily, contained) : radicalPool
     }
     return allCharacters.filter((c) => c.hsk3Level === selectedLevel)
-  }, [allCharacters, selectedLevel, activeFamily, contained])
+  }, [allCharacters, selectedLevel, activeFamily, contained, radicalPool])
 
   // Resolve target level & canonical character for any hanzi
   const resolveTarget = useCallback(
     (h: string, preferredLevel?: LevelFilter): { hanzi: string; level: LevelFilter } => {
+      if (preferredLevel === 'radicals' && families.some((f) => f.forms.includes(h))) {
+        return { hanzi: h, level: 'radicals' }
+      }
       if (preferredLevel !== undefined) {
         const pool =
           preferredLevel === 'radicals'
@@ -169,7 +245,7 @@ export function App() {
 
       return { hanzi: h, level: selectedLevel }
     },
-    [allCharacters, filteredCharacters, selectedLevel],
+    [allCharacters, filteredCharacters, selectedLevel, families],
   )
 
   // Active character
@@ -203,17 +279,23 @@ export function App() {
 
   const currentIndex = useMemo(() => {
     if (!activeChar) return 0
+    if (selectedLevel === 'radicals' && !activeFamily) {
+      const fi = radicalFamiliesOrdered.findIndex((f) => f.forms.includes(activeChar.hanzi))
+      return fi >= 0 ? fi : 0
+    }
     const idx = filteredCharacters.findIndex((c) => c.hanzi === activeChar.hanzi)
     return idx >= 0 ? idx : 0
-  }, [filteredCharacters, activeChar])
+  }, [filteredCharacters, activeChar, selectedLevel, activeFamily, radicalFamiliesOrdered])
 
   // Core navigation helper: keeps React state, URL query, and browser History in sync
   const navigateTo = useCallback(
-    (hanzi: string, level: LevelFilter, historyMode: 'push' | 'replace' = 'push') => {
+    (hanzi: string, level: LevelFilter, historyMode: 'push' | 'replace' = 'push', word: string | null = null) => {
       const currentUrlEntry = parseRouteFromUrl()
-      const isSameAsState = currentHanzi === hanzi && selectedLevel === level
-      const isSameAsUrl = currentUrlEntry.hanzi === hanzi && currentUrlEntry.level === level
+      const isSameAsState = currentHanzi === hanzi && selectedLevel === level && activeWord === word
+      const isSameAsUrl =
+        currentUrlEntry.hanzi === hanzi && currentUrlEntry.level === level && currentUrlEntry.word === word
 
+      setActiveWord(word)
       setSelectedLevel(level)
       setCurrentHanzi(hanzi)
       if (level !== 'radicals') {
@@ -221,18 +303,18 @@ export function App() {
       }
 
       if (typeof window === 'undefined') return
-      const nextUrl = buildCharacterUrl(hanzi, level)
+      const nextUrl = buildCharacterUrl(hanzi, level, word)
 
       if (historyMode === 'replace') {
         const baseStack =
           historyStackRef.current.length > 0
             ? [...historyStackRef.current]
-            : [{ hanzi, level }]
+            : [{ hanzi, level, word }]
         const idx = Math.max(0, historyIndexRef.current)
-        baseStack[idx] = { hanzi, level }
+        baseStack[idx] = { hanzi, level, word }
         setHistoryStack(baseStack)
         setHistoryIndex(idx)
-        window.history.replaceState({ idx, hanzi, level }, '', nextUrl)
+        window.history.replaceState({ idx, hanzi, level, word }, '', nextUrl)
         return
       }
 
@@ -240,28 +322,26 @@ export function App() {
 
       const base = historyStackRef.current.slice(0, historyIndexRef.current + 1)
       const last = base[base.length - 1]
-      if (last && last.hanzi === hanzi && last.level === level) return
+      if (last && last.hanzi === hanzi && last.level === level && (last.word ?? null) === word) return
 
-      const nextStack = [...base, { hanzi, level }].slice(-30)
+      const nextStack = [...base, { hanzi, level, word }].slice(-30)
       const nextIdx = nextStack.length - 1
       setHistoryStack(nextStack)
       setHistoryIndex(nextIdx)
-      window.history.pushState({ idx: nextIdx, hanzi, level }, '', nextUrl)
+      window.history.pushState({ idx: nextIdx, hanzi, level, word }, '', nextUrl)
     },
-    [currentHanzi, selectedLevel],
+    [currentHanzi, selectedLevel, activeWord],
   )
 
   const changeLevel = useCallback((lvl: LevelFilter) => {
     setSelectedLevel(lvl)
     setRadicalKey(null)
     const nextPool =
-      lvl === 'radicals'
-        ? RADICAL_CHARACTERS
-        : allCharacters.filter((c) => c.hsk3Level === lvl)
+      lvl === 'radicals' ? radicalPool : allCharacters.filter((c) => c.hsk3Level === lvl)
     if (nextPool[0]) {
       navigateTo(nextPool[0].hanzi, lvl, 'push')
     }
-  }, [allCharacters, navigateTo])
+  }, [allCharacters, navigateTo, radicalPool])
 
   const browseRadical = useCallback(
     (form: string | null) => {
@@ -288,7 +368,7 @@ export function App() {
     if (route.hanzi) {
       const resolved = resolveTarget(route.hanzi, route.level ?? undefined)
       hasInitializedUrlRef.current = true
-      navigateTo(resolved.hanzi, resolved.level, 'replace')
+      navigateTo(resolved.hanzi, resolved.level, 'replace', route.word)
     } else if (filteredCharacters[0]) {
       hasInitializedUrlRef.current = true
       navigateTo(filteredCharacters[0].hanzi, selectedLevel, 'replace')
@@ -307,6 +387,7 @@ export function App() {
         const resolved = resolveTarget(targetHanzi, targetLevel ?? undefined)
         setSelectedLevel(resolved.level)
         setCurrentHanzi(resolved.hanzi)
+        setActiveWord(parsed.word)
 
         if (typeof state?.idx === 'number') {
           setHistoryIndex(
@@ -319,10 +400,11 @@ export function App() {
           if (matchIdx >= 0) setHistoryIndex(matchIdx)
         }
       } else if (targetLevel) {
+        setActiveWord(null)
         setSelectedLevel(targetLevel)
         const pool =
           targetLevel === 'radicals'
-            ? RADICAL_CHARACTERS
+            ? radicalPool
             : allCharacters.filter((c) => c.hsk3Level === targetLevel)
         if (pool[0]) setCurrentHanzi(pool[0].hanzi)
       }
@@ -330,7 +412,7 @@ export function App() {
 
     window.addEventListener('popstate', handlePopState)
     return () => window.removeEventListener('popstate', handlePopState)
-  }, [allCharacters, resolveTarget])
+  }, [allCharacters, resolveTarget, radicalPool])
 
   // Sync document.title with active character so browser history dropdown shows character names
   useEffect(() => {
@@ -354,6 +436,32 @@ export function App() {
     [resolveTarget, navigateTo],
   )
 
+  // Word context: a word picked from search / Từ ghép keeps its banner while browsing its characters
+  const handleSelectWord = useCallback(
+    (word: string) => {
+      const chars = Array.from(word)
+      const first = (activeChar && chars.includes(activeChar.hanzi) ? activeChar.hanzi : chars[0]) ?? word
+      const resolved = resolveTarget(first)
+      navigateTo(resolved.hanzi, resolved.level, 'push', word)
+    },
+    [resolveTarget, navigateTo, activeChar],
+  )
+  const handleSelectWordChar = useCallback(
+    (h: string) => {
+      const resolved = resolveTarget(h)
+      navigateTo(resolved.hanzi, resolved.level, 'push', activeWord)
+    },
+    [resolveTarget, navigateTo, activeWord],
+  )
+  const handleDismissWord = useCallback(() => {
+    if (activeChar) navigateTo(activeChar.hanzi, selectedLevel, 'replace', null)
+  }, [activeChar, selectedLevel, navigateTo])
+  const wordInfo = useMemo(() => {
+    if (!activeWord) return null
+    const w = allWords.find((x) => x.word === activeWord || x.traditional === activeWord)
+    return w ?? { word: activeWord, pinyin: '', hanViet: null, meaningVi: '' }
+  }, [activeWord, allWords])
+
   // In-app Back action (keeps browser Back/Forward synchronized)
   const canGoBack = historyIndex > 0
   const previousEntry = canGoBack ? historyStack[historyIndex - 1] : null
@@ -361,6 +469,15 @@ export function App() {
     if (historyIndex <= 0) return []
     return historyStack.slice(Math.max(0, historyIndex - 3), historyIndex + 1)
   }, [historyStack, historyIndex])
+
+  const recentHanzi = useMemo(() => {
+    const out: string[] = []
+    for (let i = historyStack.length - 1; i >= 0 && out.length < 8; i--) {
+      const h = historyStack[i].hanzi
+      if (h !== activeChar?.hanzi && !out.includes(h)) out.push(h)
+    }
+    return out
+  }, [historyStack, activeChar?.hanzi])
 
   const handleGoBack = useCallback(() => {
     if (!canGoBack) return
@@ -444,6 +561,23 @@ export function App() {
     })
   }, [])
 
+  // Example character for the pronunciation guide: lowest-HSK character whose reading matches the
+  // syllable (ignoring tone); a syllable that merely ends with it (a final like "ang") is the fallback.
+  const pronounceExample = useMemo(() => {
+    if (pronounceTarget === null) return null
+    const want = normalizeFolded(pronounceTarget)
+    let best: { rank: number; hanzi: string; r: BundleCharacter['readings'][number] } | null = null
+    for (const c of allCharacters) {
+      for (const r of c.readings) {
+        const py = normalizeFolded(r.pinyin)
+        const rank = (py === want ? 0 : py.endsWith(want) ? 10 : 99) + (c.hsk3Level ?? 7)
+        if (rank < 99 && (!best || rank < best.rank)) best = { rank, hanzi: c.hanzi, r }
+      }
+    }
+    if (best) return { hanzi: best.hanzi, pinyin: best.r.pinyin, hanViet: best.r.hanViet, meaningVi: best.r.meaningVi }
+    return { hanzi: '', pinyin: pronounceTarget, hanViet: null, meaningVi: null }
+  }, [pronounceTarget, allCharacters])
+
   const modalOpen = showSearch || showFavorites || showPinyinChart || pronounceTarget !== null
 
   // Keyboard shortcuts
@@ -458,6 +592,7 @@ export function App() {
         setShowFavorites(false)
         setShowPinyinChart(false)
         setPronounceTarget(null)
+        setListOpen(false)
         return
       }
 
@@ -499,6 +634,7 @@ export function App() {
         g: handleToggleFavorite,
         b: () => changeLevel('radicals'),
         p: () => setShowPinyinChart((prev) => !prev),
+        l: toggleList,
       }
       for (const n of [1, 2, 3, 4, 5, 6] as const) actions[String(n)] = () => changeLevel(n)
 
@@ -522,11 +658,18 @@ export function App() {
     handleToggleFavorite,
     toggleDisplayMode,
     changeLevel,
+    toggleList,
   ])
+
+  // A new character starts at the top of the page.
+  const activeHanzi = activeChar?.hanzi
+  useEffect(() => {
+    mainRef.current?.scrollTo({ top: 0 })
+  }, [activeHanzi])
 
   // Check if any modal or overlay is currently active
   const isModalActive = Boolean(
-    showSearch || showFavorites || showPinyinChart || pronounceTarget !== null || mobileListOpen,
+    showSearch || showFavorites || showPinyinChart || pronounceTarget !== null || (overlayList && listOpen),
   )
 
   // Mobile horizontal swipe gestures: restricted to the hero card
@@ -537,9 +680,8 @@ export function App() {
     const target = e.target as HTMLElement | null
     if (
       isModalActive ||
-      !target?.closest('.mobile-hero-card') ||
-      target?.closest('.mobile-mige-frame') ||
-      target?.closest('.mobile-poly-card')
+      !target?.closest('.sheet') ||
+      target?.closest('button, a, input, canvas, svg, [role="dialog"]')
     ) {
       touchStartXRef.current = null
       touchStartYRef.current = null
@@ -571,9 +713,14 @@ export function App() {
     touchStartYRef.current = null
   }
 
+  const selectFromList = (h: string) => {
+    handleSelectHanzi(h)
+    if (overlayList) setListOpen(false)
+  }
+  const loaded = !bundle.isLoading && !bundle.isError
+
   return (
-    <div className="studio-app-root">
-      {/* Top Header / Navigation */}
+    <div className="app-shell">
       <Navbar
         isDarkMode={isDarkMode}
         onToggleDarkMode={toggleDarkMode}
@@ -583,6 +730,9 @@ export function App() {
         onOpenFavorites={() => setShowFavorites(true)}
         onOpenSearch={() => setShowSearch(true)}
         onOpenPinyinChart={() => setShowPinyinChart(true)}
+        showListButton={shellMode === 'drawer' || (shellMode === 'rail' && railCollapsed)}
+        listOpen={overlayList ? listOpen : !railCollapsed}
+        onOpenList={openList}
         widget={
           bundle.isSuccess && (
             <PipWidget characters={allCharacters} favorites={favorites} onCharacterChange={handleSelectHanzi} />
@@ -590,131 +740,122 @@ export function App() {
         }
       />
 
-      {/* Main Study Studio Content */}
-      <main className="studio-main-container">
-        {bundle.isLoading ? (
-          <div className="studio-loading-state">
-            <div className="spinner-ring" />
-            <p className="loading-text">Khởi tạo dữ liệu Hán tự Hibu…</p>
-          </div>
-        ) : bundle.isError ? (
-          <div className="studio-error-state">
-            <div className="error-icon-box">!</div>
-            <h3>Không thể tải kho dữ liệu</h3>
-            <p>{String(bundle.error)}</p>
-            <button
-              type="button"
-              className="retry-fetch-btn"
-              onClick={() => bundle.refetch()}
-            >
-              Thử kết nối lại
-            </button>
-          </div>
-        ) : (
-          <>
-            {/* Mobile Drawer Backdrop */}
-            {mobileListOpen && (
-              <div
-                className="mobile-backdrop-overlay"
-                onClick={() => setMobileListOpen(false)}
-                aria-hidden="true"
-              />
-            )}
+      <div className="app-body" data-mode={shellMode} data-collapsed={shellMode === 'rail' && railCollapsed}>
+        <Rail
+          mode={shellMode}
+          open={listOpen}
+          collapsed={railCollapsed}
+          onClose={closeList}
+          onCollapse={() => setRailCollapsed(true)}
+        >
+          {loaded ? (
+            <LeftSidebar
+              characters={allCharacters}
+              activeHanzi={activeChar?.hanzi ?? null}
+              onSelectHanzi={selectFromList}
+              selectedLevel={selectedLevel}
+              onLevelChange={changeLevel}
+              favorites={favorites}
+              families={families}
+              activeFamily={activeFamily}
+              radicalCharacters={activeFamily ? filteredCharacters : null}
+              onBrowseRadical={browseRadical}
+              onGridChange={handleGridChange}
+            />
+          ) : (
+            <RailSkeleton />
+          )}
+        </Rail>
 
-            {/* Studio Workspace: Desktop 3-Column / Mobile Single Unified Scroll */}
-            <div
-              className="studio-split-layout"
-              onTouchStart={handleTouchStart}
-              onTouchEnd={handleTouchEnd}
-            >
-              {/* Left Column: Character List / Directory */}
-              <LeftSidebar
-                characters={allCharacters}
-                activeHanzi={activeChar?.hanzi ?? null}
-                onSelectHanzi={handleSelectHanzi}
-                selectedLevel={selectedLevel}
-                onLevelChange={changeLevel}
-                favorites={favorites}
-                families={families}
-                activeFamily={activeFamily}
-                radicalCharacters={activeFamily ? filteredCharacters : null}
-                onBrowseRadical={browseRadical}
-                onGridChange={handleGridChange}
-                isOpenMobile={mobileListOpen}
-                onCloseMobile={() => setMobileListOpen(false)}
-              />
-
-              {/* Center Column: Slide 1 (Writing Canvas & Pronunciation) */}
-              <div className="studio-column-center">
-                {activeChar ? (
-                  <StudioCenter
-                    character={activeChar}
-                    detail={detailQuery.data ?? null}
-                    currentIndex={currentIndex}
-                    totalCount={filteredCharacters.length}
-                    selectedLevel={selectedLevel}
-                    isFavorite={favorites.includes(activeChar.hanzi)}
-                    displayMode={displayMode}
-                    onToggleFavorite={handleToggleFavorite}
-                    onNext={handleNext}
-                    onPrev={handlePrev}
-                    onRandom={pickNextRandom}
-                    previousEntry={previousEntry}
-                    recentTrail={recentTrail}
-                    onGoBack={handleGoBack}
-                    onSelectTrailEntry={(entry) => navigateTo(entry.hanzi, entry.level, 'push')}
-                    onOpenMobileList={() => setMobileListOpen(true)}
-                  />
-                ) : (
-                  <div className="center-empty-workspace">
-                    <p>
-                      {selectedLevel === 'radicals' && !activeFamily
-                        ? 'Bấm một bộ thủ bên trái để xem các chữ chứa bộ đó.'
-                        : 'Không có chữ Hán nào phù hợp trong danh mục này.'}
-                    </p>
-                    <button
-                      type="button"
-                      className="empty-reset-pill-btn"
-                      onClick={() => changeLevel(1)}
-                    >
-                      Quay về Cấp 1
-                    </button>
-                  </div>
-                )}
+        <div className="main-col">
+          <main
+            id="main"
+            className="main-scroll"
+            ref={mainRef}
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+          >
+            {usingSample && !bundle.isLoading && (
+              <div className="sample-notice" role="status">
+                <span>
+                  Chưa kết nối được máy chủ nên đang hiện bộ chữ mẫu. Ứng dụng tự thử lại sau mỗi 15 giây.
+                </span>
+                <button type="button" onClick={() => bundle.refetch()} disabled={bundle.isFetching}>
+                  {bundle.isFetching ? 'Đang thử…' : 'Thử lại'}
+                </button>
               </div>
-
-              {/* Right Column: Slide 2 (Etymology Decomposition & Compound Words) */}
-              <div className="studio-column-right">
+            )}
+            {bundle.isLoading ? (
+              <SheetSkeleton />
+            ) : bundle.isError ? (
+              <ErrorState message={String(bundle.error)} onRetry={() => bundle.refetch()} />
+            ) : activeChar ? (
+              <div className="sheet">
+                <StudioCenter
+                  character={activeChar}
+                  detail={detailQuery.data ?? null}
+                  currentIndex={currentIndex}
+                  totalCount={filteredCharacters.length}
+                  selectedLevel={selectedLevel}
+                  isFavorite={favorites.includes(activeChar.hanzi)}
+                  displayMode={displayMode}
+                  onToggleFavorite={handleToggleFavorite}
+                  onNext={handleNext}
+                  onPrev={handlePrev}
+                  onRandom={pickNextRandom}
+                  previousEntry={previousEntry}
+                  recentTrail={recentTrail}
+                  onGoBack={handleGoBack}
+                  onSelectTrailEntry={(entry) => navigateTo(entry.hanzi, entry.level, 'push')}
+                  onOpenMobileList={openList}
+                  wordInfo={wordInfo}
+                  onSelectWordChar={handleSelectWordChar}
+                  onDismissWord={handleDismissWord}
+                />
                 <RightBreakdown
                   detail={detailQuery.data ?? null}
                   isLoading={detailQuery.isLoading}
                   onSelectHanzi={handleSelectHanzi}
+                  onSelectWord={handleSelectWord}
                   displayMode={displayMode}
                   characters={allCharacters}
                   families={families}
                   onBrowseRadical={browseRadical}
+                  allWords={allWords}
                 />
               </div>
-            </div>
+            ) : (
+              <EmptyState
+                message={
+                  selectedLevel === 'radicals' && !activeFamily
+                    ? 'Chọn một bộ thủ trong danh sách để xem các chữ chứa bộ đó.'
+                    : 'Không có chữ Hán nào phù hợp trong danh mục này.'
+                }
+                actionLabel="Quay về Cấp 1"
+                onAction={() => changeLevel(1)}
+              />
+            )}
+          </main>
 
-            {/* Mobile Bottom Bar for Level switching & mobile character directory access */}
-            <MobileBottomBar
-              characters={allCharacters}
-              activeHanzi={activeChar?.hanzi ?? null}
-              onSelectHanzi={handleSelectHanzi}
-              selectedLevel={selectedLevel}
-              onLevelChange={changeLevel}
-              favorites={favorites}
-            />
-          </>
-        )}
-      </main>
+          <StudyNav
+            onPrev={handlePrev}
+            onNext={handleNext}
+            onRandom={pickNextRandom}
+            onOpenList={openList}
+            listOpen={overlayList ? listOpen : !railCollapsed}
+            index={currentIndex}
+            total={loaded && activeChar ? filteredCharacters.length : 0}
+            disabled={!loaded || filteredCharacters.length === 0}
+          />
+        </div>
+      </div>
 
       {/* Search Modal */}
       {showSearch && (
         <SearchModal
           characters={allCharacters}
           words={allWords}
+          recent={recentHanzi}
           families={families}
           onBrowseRadical={(form) => {
             browseRadical(form)
@@ -722,6 +863,10 @@ export function App() {
           }}
           onSelectHanzi={(h) => {
             handleSelectHanzi(h)
+            setShowSearch(false)
+          }}
+          onSelectWord={(w) => {
+            handleSelectWord(w)
             setShowSearch(false)
           }}
           onClose={() => setShowSearch(false)}
@@ -749,14 +894,21 @@ export function App() {
       {showPinyinChart && (
         <PinyinChartModal
           onInspectPinyin={(pinyin) => {
+            setShowPinyinChart(false)
             setPronounceTarget(pinyin)
-            setShowPinyinChart(false)
-            setShowSearch(true)
           }}
-          onClose={() => {
-            setShowPinyinChart(false)
-            setPronounceTarget(null)
-          }}
+          onClose={() => setShowPinyinChart(false)}
+        />
+      )}
+
+      {/* Pronunciation guide for a syllable picked in the pinyin chart */}
+      {pronounceTarget !== null && pronounceExample && (
+        <PronunciationModal
+          hanzi={pronounceExample.hanzi}
+          pinyin={pronounceExample.pinyin}
+          hanViet={pronounceExample.hanViet}
+          meaningVi={pronounceExample.meaningVi}
+          onClose={() => setPronounceTarget(null)}
         />
       )}
     </div>

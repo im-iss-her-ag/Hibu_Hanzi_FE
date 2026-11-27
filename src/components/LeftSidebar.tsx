@@ -1,16 +1,8 @@
-import { useState, useMemo, useEffect, useRef } from 'react'
-import {
-  Search,
-  Star,
-  BookOpen,
-  X,
-  ChevronLeft,
-  ChevronRight,
-  ArrowLeft,
-  ArrowUpDown,
-} from 'lucide-react'
+import { useState, useMemo, useEffect, useLayoutEffect, useRef } from 'react'
+import { Search, X, ArrowLeft, ArrowUpDown, Star, Check, Eraser } from 'lucide-react'
 import type { BundleCharacter, LevelFilter, RadicalFamily } from '../core'
 import { searchCharacters, searchRadicals } from '../core'
+import { orderRadicalFamilies } from '../utils/radicalOrder'
 
 interface LeftSidebarProps {
   characters: BundleCharacter[]
@@ -19,7 +11,9 @@ interface LeftSidebarProps {
   selectedLevel: LevelFilter
   onLevelChange: (lvl: LevelFilter) => void
   favorites: string[]
+  /** Legacy: the container (rail / drawer / bottom sheet) is owned by the shell now. */
   isOpenMobile?: boolean
+  /** Called after a character is picked so a drawer / sheet container can close itself. */
   onCloseMobile?: () => void
   families?: readonly RadicalFamily[]
   activeFamily?: RadicalFamily | null
@@ -30,13 +24,18 @@ interface LeftSidebarProps {
 
 const familyName = (f: RadicalFamily) => f.info.nameVi ?? `Bộ ${f.info.hanViet ?? f.key}`
 
-const SIZES = {
-  TILE_W: 52,
-  TILE_H: 58,
-  TILE_GAP: 6,
-}
+/** Minimum cell width in px; columns = floor(width / MIN_CELL), so cells land between 56 and ~68px. */
+const MIN_CELL = 56
+const LEVELS = [1, 2, 3, 4, 5, 6] as const
 
 export type SortOrder = 'default' | 'strokeAsc' | 'strokeDesc' | 'pinyinAsc'
+
+const SORT_OPTIONS: { id: SortOrder; label: string }[] = [
+  { id: 'default', label: 'Mặc định (HSK)' },
+  { id: 'strokeAsc', label: 'Số nét: ít → nhiều' },
+  { id: 'strokeDesc', label: 'Số nét: nhiều → ít' },
+  { id: 'pinyinAsc', label: 'Pinyin: A → Z' },
+]
 
 export function LeftSidebar({
   characters,
@@ -45,7 +44,6 @@ export function LeftSidebar({
   selectedLevel,
   onLevelChange,
   favorites,
-  isOpenMobile = false,
   onCloseMobile,
   families = [],
   activeFamily = null,
@@ -53,314 +51,305 @@ export function LeftSidebar({
   onBrowseRadical,
   onGridChange,
 }: LeftSidebarProps) {
-  const [searchQuery, setSearchQuery] = useState('')
-  const [filterMode, setFilterMode] = useState<'all' | 'favorites'>('all')
+  const [query, setQuery] = useState('')
+  const [savedOnly, setSavedOnly] = useState(false)
   const [sortOrder, setSortOrder] = useState<SortOrder>('default')
-  const [showSortMenu, setShowSortMenu] = useState(false)
-  const sortMenuRef = useRef<HTMLDivElement>(null)
+  const [menuOpen, setMenuOpen] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
+  const menuBtnRef = useRef<HTMLButtonElement>(null)
 
-  // Close sort menu on click outside
   useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (sortMenuRef.current && !sortMenuRef.current.contains(e.target as Node)) {
-        setShowSortMenu(false)
-      }
+    if (!menuOpen) return
+    const onDown = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false)
     }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
+    document.addEventListener('mousedown', onDown)
+    return () => document.removeEventListener('mousedown', onDown)
+  }, [menuOpen])
 
-  // The radicals tab without a chosen radical lists radical families instead of characters.
+  const favSet = useMemo(() => new Set(favorites), [favorites])
+
+  // "Bộ thủ" without a chosen radical lists radical families instead of characters.
   const listingRadicals = selectedLevel === 'radicals' && !activeFamily
-  const matchedFamilies = useMemo(() => searchRadicals(families, searchQuery), [families, searchQuery])
-  const familyList = useMemo(
-    () => (searchQuery.trim() ? matchedFamilies : families),
-    [families, matchedFamilies, searchQuery],
-  )
+  const q = query.trim()
+  const matchedFamilies = useMemo(() => searchRadicals(families, query), [families, query])
+  const familyList = useMemo(() => (q ? matchedFamilies : families), [families, matchedFamilies, q])
 
-  // Filter & Sort list
+  // Radical families grouped by stroke count, like a printed radical index.
+  const familyGroups = useMemo(() => {
+    if (q) return [{ key: 'found', title: null as string | null, items: familyList }]
+    const groups: { key: string; title: string | null; items: RadicalFamily[] }[] = []
+    for (const f of orderRadicalFamilies(familyList)) {
+      const n = f.info.strokeCount ?? 0
+      const last = groups[groups.length - 1]
+      if (last && last.key === String(n)) last.items.push(f)
+      else groups.push({ key: String(n), title: n ? `${n} nét` : 'Khác', items: [f] })
+    }
+    return groups
+  }, [familyList, q])
+
   const filteredList = useMemo(() => {
     let list: BundleCharacter[] =
       selectedLevel === 'radicals'
-        ? (radicalCharacters ? [...radicalCharacters] : [])
+        ? radicalCharacters
+          ? [...radicalCharacters]
+          : []
         : characters.filter((c) => c.hsk3Level === selectedLevel)
-
-    if (filterMode === 'favorites') {
-      list = list.filter((c) => favorites.includes(c.hanzi))
-    }
-    if (searchQuery.trim()) {
-      list = searchCharacters(list, searchQuery) as BundleCharacter[]
-    }
-
-    if (sortOrder === 'strokeAsc') {
-      list = [...list].sort((a, b) => (a.strokeCount ?? 99) - (b.strokeCount ?? 99))
-    } else if (sortOrder === 'strokeDesc') {
-      list = [...list].sort((a, b) => (b.strokeCount ?? 0) - (a.strokeCount ?? 0))
-    } else if (sortOrder === 'pinyinAsc') {
-      list = [...list].sort((a, b) => {
-        const pyA = a.readings[0]?.pinyin ?? ''
-        const pyB = b.readings[0]?.pinyin ?? ''
-        return pyA.localeCompare(pyB)
-      })
-    }
-
+    if (savedOnly) list = list.filter((c) => favSet.has(c.hanzi))
+    if (q) list = searchCharacters(list, query) as BundleCharacter[]
+    if (sortOrder === 'strokeAsc') list = [...list].sort((a, b) => (a.strokeCount ?? 99) - (b.strokeCount ?? 99))
+    else if (sortOrder === 'strokeDesc') list = [...list].sort((a, b) => (b.strokeCount ?? 0) - (a.strokeCount ?? 0))
+    else if (sortOrder === 'pinyinAsc')
+      list = [...list].sort((a, b) => (a.readings[0]?.pinyin ?? '').localeCompare(b.readings[0]?.pinyin ?? ''))
     return list
-  }, [characters, radicalCharacters, filterMode, favorites, selectedLevel, searchQuery, sortOrder])
+  }, [characters, radicalCharacters, savedOnly, favSet, selectedLevel, q, query, sortOrder])
 
   const itemCount = listingRadicals ? familyList.length : filteredList.length
+  const countLabel = listingRadicals ? `${itemCount} bộ (gộp biến thể)` : `${itemCount} chữ`
 
-  // Measure grid container dimensions
-  const gridContainerRef = useRef<HTMLDivElement>(null)
-  const [gridDim, setGridDim] = useState({ cols: 5, rows: 6 })
-
+  // Measure the scroller so the grid uses whole columns; the app maps ↑/↓ to one row and PgUp/PgDn to one screen.
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const [cols, setCols] = useState(5)
   useEffect(() => {
-    const el = gridContainerRef.current
+    const el = scrollRef.current
     if (!el) return
-
-    const updateDim = () => {
+    const measure = () => {
       const w = el.clientWidth
-      const h = el.clientHeight
-      const cols = Math.max(1, Math.floor((w + SIZES.TILE_GAP) / (SIZES.TILE_W + SIZES.TILE_GAP)))
-      const rows = Math.max(1, Math.floor((h + SIZES.TILE_GAP) / (SIZES.TILE_H + SIZES.TILE_GAP)))
-      setGridDim({ cols, rows })
-      onGridChange?.(cols, cols * rows)
+      const c = Math.max(2, Math.floor(w / MIN_CELL))
+      const cell = w / c
+      const rows = Math.max(1, Math.floor(el.clientHeight / cell))
+      setCols((prev) => (prev === c ? prev : c))
+      onGridChange?.(c, c * rows)
+      revealRef.current()
     }
-
-    updateDim()
-    const observer = new ResizeObserver(updateDim)
-    observer.observe(el)
-    return () => observer.disconnect()
+    measure()
+    const ro = new ResizeObserver(measure)
+    ro.observe(el)
+    return () => ro.disconnect()
   }, [onGridChange])
 
-  const perPage = Math.max(1, gridDim.cols * gridDim.rows)
-  const pageCount = Math.max(1, Math.ceil(itemCount / perPage))
-  const [page, setPage] = useState(0)
-  const safePage = Math.min(page, pageCount - 1)
-
-  // Jump to the page containing the active character
-  useEffect(() => {
-    const idx = activeHanzi ? filteredList.findIndex((c) => c.hanzi === activeHanzi) : -1
-    setPage(idx >= 0 ? Math.floor(idx / perPage) : 0)
-  }, [filteredList, perPage, activeHanzi])
-
-  const pageItems = useMemo(() => {
-    return filteredList.slice(safePage * perPage, safePage * perPage + perPage)
-  }, [filteredList, safePage, perPage])
-
-  const pageFamilies = useMemo(() => {
-    return familyList.slice(safePage * perPage, safePage * perPage + perPage)
-  }, [familyList, safePage, perPage])
-
-  useEffect(() => setPage(0), [listingRadicals, activeFamily, searchQuery, sortOrder])
-
-  // Mouse wheel pagination support
-  const handleWheel = (e: React.WheelEvent) => {
-    if (pageCount <= 1) return
-    if (e.deltaY > 20) {
-      setPage((p) => Math.min(pageCount - 1, p + 1))
-    } else if (e.deltaY < -20) {
-      setPage((p) => Math.max(0, p - 1))
-    }
+  // Keep the selected cell visible inside the list's own scroller (never scrolls the page).
+  const lastListRef = useRef<unknown>(null)
+  const revealSelected = () => {
+    const box = scrollRef.current
+    const el = box?.querySelector<HTMLElement>('.lib-cell.is-selected')
+    if (!box || !el) return
+    const b = box.getBoundingClientRect()
+    const r = el.getBoundingClientRect()
+    // Stepping one row past the edge: nudge just enough. A jump (load, random, search): centre it,
+    // so the selection never lands half-hidden against the edge.
+    const far = r.bottom < b.top - r.height || r.top > b.bottom + r.height
+    if (far) box.scrollTop += r.top - b.top - (b.height - r.height) / 2
+    else if (r.top < b.top) box.scrollTop += r.top - b.top
+    else if (r.bottom > b.bottom) box.scrollTop += r.bottom - b.bottom
   }
+  const revealRef = useRef(revealSelected)
+  revealRef.current = revealSelected
+  useLayoutEffect(() => {
+    const box = scrollRef.current
+    if (!box) return
+    const curList = listingRadicals ? familyList : filteredList
+    const listChanged = lastListRef.current !== curList
+    lastListRef.current = curList
+    if (!box.querySelector('.lib-cell.is-selected')) {
+      if (listChanged) box.scrollTop = 0
+      return
+    }
+    revealSelected()
+  }, [activeHanzi, filteredList, familyList, listingRadicals, cols])
 
-  const sortLabelMap: Record<SortOrder, string> = {
-    default: 'Mặc định',
-    strokeAsc: 'Nét: Ít → Nhiều',
-    strokeDesc: 'Nét: Nhiều → Ít',
-    pinyinAsc: 'Pinyin: A → Z',
+  const clearFilters = () => {
+    setQuery('')
+    setSavedOnly(false)
+  }
+  const gridStyle = { gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }
+  const sortActive = sortOrder !== 'default'
+
+  const renderFamilyCell = (f: RadicalFamily) => {
+    const selected = activeHanzi !== null && f.forms.includes(activeHanzi)
+    return (
+    <button
+      type="button"
+      key={f.key}
+      role="listitem"
+      aria-current={selected ? 'true' : undefined}
+      aria-label={`${f.display} ${familyName(f)}, ${f.count} chữ chứa bộ này`}
+      className={`lib-cell ${selected ? 'is-selected' : ''}`}
+      title={`${familyName(f)} · ${f.info.meaningVi ?? ''} · ${f.count} chữ chứa bộ này`}
+      onClick={() => onBrowseRadical?.(f.key)}
+    >
+      <span className="lib-glyph" lang="zh">{f.display}</span>
+      <span className="lib-hv">{f.info.hanViet ?? '—'}</span>
+      <span className="lib-badge" aria-hidden>{f.count}</span>
+    </button>
+    )
   }
 
   return (
-    <aside className={`studio-sidebar-left ${isOpenMobile ? 'mobile-open' : ''}`}>
-      {/* Sidebar Header */}
-      <div className="sidebar-header">
-        <div className="sidebar-title-row">
-          <div className="sidebar-heading">
-            <BookOpen size={17} className="sidebar-heading-icon" />
-            <span>{listingRadicals ? 'Bộ thủ' : 'Kho Hán Tự'}</span>
-            <span className="count-badge">{itemCount}</span>
-          </div>
-
-          <div className="sidebar-header-right-tools">
-            {/* Sort custom button & menu */}
-            {!listingRadicals && (
-              <div className="sidebar-sort-wrapper" ref={sortMenuRef}>
-                <button
-                  type="button"
-                  className={`sidebar-sort-btn ${sortOrder !== 'default' ? 'active' : ''}`}
-                  onClick={() => setShowSortMenu((v) => !v)}
-                  title="Sắp xếp danh sách"
-                >
-                  <ArrowUpDown size={13} />
-                  <span>{sortLabelMap[sortOrder]}</span>
-                </button>
-
-                {showSortMenu && (
-                  <div className="sidebar-sort-menu">
-                    <button
-                      type="button"
-                      className={`sort-menu-item ${sortOrder === 'default' ? 'selected' : ''}`}
-                      onClick={() => {
-                        setSortOrder('default')
-                        setShowSortMenu(false)
-                      }}
-                    >
-                      Mặc định (HSK)
-                    </button>
-                    <button
-                      type="button"
-                      className={`sort-menu-item ${sortOrder === 'strokeAsc' ? 'selected' : ''}`}
-                      onClick={() => {
-                        setSortOrder('strokeAsc')
-                        setShowSortMenu(false)
-                      }}
-                    >
-                      Số nét: Ít ➔ Nhiều
-                    </button>
-                    <button
-                      type="button"
-                      className={`sort-menu-item ${sortOrder === 'strokeDesc' ? 'selected' : ''}`}
-                      onClick={() => {
-                        setSortOrder('strokeDesc')
-                        setShowSortMenu(false)
-                      }}
-                    >
-                      Số nét: Nhiều ➔ Ít
-                    </button>
-                    <button
-                      type="button"
-                      className={`sort-menu-item ${sortOrder === 'pinyinAsc' ? 'selected' : ''}`}
-                      onClick={() => {
-                        setSortOrder('pinyinAsc')
-                        setShowSortMenu(false)
-                      }}
-                    >
-                      Pinyin: A ➔ Z
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {onCloseMobile && (
-              <button
-                type="button"
-                className="mobile-close-btn"
-                onClick={onCloseMobile}
-                aria-label="Đóng danh mục"
-              >
-                <X size={18} />
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Search input with integrated Favorites Toggle */}
-        <div className="sidebar-search-box">
-          <Search size={14} className="search-icon" />
-          <input
-            type="text"
-            className="sidebar-search-input"
-            placeholder={listingRadicals ? 'Tìm bộ: thủy, nước, 氵…' : 'Gõ 好, hảo, hao, tốt, bộ nữ…'}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-          {searchQuery && (
-            <button
-              type="button"
-              className="clear-search-btn"
-              onClick={() => setSearchQuery('')}
-              title="Xóa tìm kiếm"
-            >
-              <X size={13} />
-            </button>
-          )}
-
-          {/* Quick toggle for Favorites inside search row */}
-          <button
-            type="button"
-            className={`sidebar-fav-pill ${filterMode === 'favorites' ? 'active' : ''}`}
-            onClick={() => setFilterMode((m) => (m === 'all' ? 'favorites' : 'all'))}
-            title={filterMode === 'favorites' ? 'Xem tất cả chữ' : 'Chỉ xem chữ trong sổ tay'}
-          >
-            <Star size={12} fill={filterMode === 'favorites' ? 'currentColor' : 'none'} />
-            <span>{favorites.length}</span>
-          </button>
-        </div>
-
-        {/* HSK Level Filter Row */}
-        <div className="sidebar-filter-cluster">
-          <span className="hsk-standard-badge" title="Chuẩn HSK 3.0 (2021)">
-            HSK
-          </span>
-          <div className="hsk-level-pills">
-            {[1, 2, 3, 4, 5, 6].map((lvl) => (
+    <div className="lib">
+      <div className="lib-head">
+        <div className="lib-levels">
+          <span className="label">HSK</span>
+          <div className="lib-seg" role="group" aria-label="Cấp độ HSK 3.0">
+            {LEVELS.map((lvl) => (
               <button
                 key={lvl}
                 type="button"
-                className={`lvl-pill ${selectedLevel === lvl ? 'active' : ''}`}
-                onClick={() => onLevelChange(lvl as LevelFilter)}
-                title={`HSK 3.0 Cấp ${lvl}`}
+                className={`lib-seg-btn ${selectedLevel === lvl ? 'active' : ''}`}
+                onClick={() => onLevelChange(lvl)}
+                title={`HSK 3.0 cấp ${lvl}`}
+                aria-pressed={selectedLevel === lvl}
               >
                 {lvl}
               </button>
             ))}
             <button
               type="button"
-              className={`lvl-pill radical-tab-pill ${selectedLevel === 'radicals' ? 'active' : ''}`}
+              className={`lib-seg-btn lib-seg-wide ${selectedLevel === 'radicals' ? 'active' : ''}`}
               onClick={() => onLevelChange('radicals')}
-              title="214 Bộ thủ & Thành phần chữ Hán"
+              title="214 bộ thủ và thành phần chữ Hán"
+              aria-pressed={selectedLevel === 'radicals'}
             >
               Bộ thủ
             </button>
           </div>
         </div>
 
-        {listingRadicals && !searchQuery.trim() && (
-          <details className="radical-intro">
-            <summary>Bộ thủ là gì? Học thế nào?</summary>
-            <p>
-              Chữ Hán được ghép từ những <strong>mảnh nhỏ</strong>. <strong>Bộ thủ</strong> là mảnh mang nghĩa chung:
-              chữ có bộ <span lang="zh">氵</span> (thủy, nước) thường liên quan đến nước —{' '}
-              <span lang="zh">河</span> sông, <span lang="zh">海</span> biển, <span lang="zh">洗</span> rửa.
-            </p>
-            <p>
-              Bấm một bộ để xem <strong>mọi chữ có chứa nó</strong>. Bộ ở trên cùng gặp nhiều nhất.
-            </p>
-          </details>
-        )}
-
-        {activeFamily && selectedLevel === 'radicals' && (
-          <div className="radical-focus-card">
-            <button type="button" className="radical-back-btn" onClick={() => onBrowseRadical?.(null)}>
-              <ArrowLeft size={13} /> Tất cả bộ thủ
+        <div className="lib-filter">
+          <Search size={16} className="lib-filter-icon" aria-hidden />
+          <input
+            type="text"
+            className="lib-filter-input"
+            placeholder={listingRadicals ? 'Lọc bộ thủ…' : 'Lọc trong cấp này…'}
+            aria-label="Lọc danh sách chữ"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            autoComplete="off"
+            spellCheck={false}
+          />
+          {query && (
+            <button type="button" className="lib-filter-clear" onClick={() => setQuery('')} title="Xóa bộ lọc" aria-label="Xóa bộ lọc">
+              <X size={14} />
             </button>
-            <div className="radical-focus-row">
-              <span className="radical-focus-glyph" lang="zh">{activeFamily.display}</span>
-              <div className="radical-focus-meta">
-                <div className="radical-focus-name">
-                  {familyName(activeFamily)}
-                  {activeFamily.info.pinyin && <span className="radical-focus-py">{activeFamily.info.pinyin}</span>}
-                </div>
-                <div className="radical-focus-mean">Nghĩa: {activeFamily.info.meaningVi ?? '—'}</div>
-                {activeFamily.forms.length > 1 && (
-                  <div className="radical-focus-forms">
-                    Các dạng: <span lang="zh">{activeFamily.forms.join('  ')}</span>
+          )}
+        </div>
+
+        <div className="lib-bar">
+          <span className="lib-count" aria-live="polite">{countLabel}</span>
+          {!listingRadicals && (
+            <div className="lib-tools">
+              <button
+                type="button"
+                className={`lib-tool ${savedOnly ? 'on' : ''}`}
+                onClick={() => setSavedOnly((v) => !v)}
+                aria-pressed={savedOnly}
+                title={savedOnly ? 'Đang chỉ hiện chữ đã lưu' : 'Chỉ hiện chữ đã lưu'}
+              >
+                <Star size={14} fill={savedOnly ? 'currentColor' : 'none'} />
+                <span>Đã lưu</span>
+              </button>
+              <div className="lib-menu-wrap" ref={menuRef}>
+                <button
+                  ref={menuBtnRef}
+                  type="button"
+                  className={`lib-tool lib-tool-icon ${sortActive ? 'on' : ''}`}
+                  onClick={() => setMenuOpen((v) => !v)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Escape' && menuOpen) {
+                      e.stopPropagation()
+                      setMenuOpen(false)
+                    }
+                  }}
+                  title="Sắp xếp"
+                  aria-label="Sắp xếp"
+                  aria-haspopup="menu"
+                  aria-expanded={menuOpen}
+                >
+                  <ArrowUpDown size={14} />
+                </button>
+                {menuOpen && (
+                  <div
+                    className="lib-menu"
+                    role="menu"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Escape') {
+                        e.stopPropagation()
+                        setMenuOpen(false)
+                        menuBtnRef.current?.focus()
+                      }
+                    }}
+                  >
+                    <div className="label lib-menu-label">Sắp xếp</div>
+                    {SORT_OPTIONS.map((o) => (
+                      <button
+                        key={o.id}
+                        type="button"
+                        role="menuitemradio"
+                        aria-checked={sortOrder === o.id}
+                        className="lib-menu-item"
+                        autoFocus={sortOrder === o.id}
+                        onClick={() => {
+                          setSortOrder(o.id)
+                          setMenuOpen(false)
+                        }}
+                      >
+                        <span className="lib-menu-check">{sortOrder === o.id && <Check size={14} />}</span>
+                        {o.label}
+                      </button>
+                    ))}
                   </div>
                 )}
               </div>
             </div>
-            <p className="radical-focus-hint">
-              {activeFamily.count} chữ có chứa bộ này. Bấm từng chữ để xem cách ghép.
+          )}
+        </div>
+
+        {listingRadicals && !q && (
+          <details className="lib-note">
+            <summary>Bộ thủ là gì? Học thế nào?</summary>
+            <p>
+              Chữ Hán ghép từ những <strong>mảnh nhỏ</strong>. <strong>Bộ thủ</strong> là mảnh mang nghĩa chung: chữ có bộ{' '}
+              <span lang="zh">氵</span> (thủy, nước) thường liên quan đến nước, như <span lang="zh">河</span> sông,{' '}
+              <span lang="zh">海</span> biển. Bấm một bộ để xem mọi chữ có chứa nó.
+            </p>
+          </details>
+        )}
+        {listingRadicals && !q && (
+          <p className="lib-legend" title="Các dạng biến thể (氵 và 水) được gộp chung một ô">Số nhỏ ở góc ô: số chữ chứa bộ đó</p>
+        )}
+
+        {activeFamily && selectedLevel === 'radicals' && (
+          <div className="lib-focus">
+            <button type="button" className="lib-back" onClick={() => onBrowseRadical?.(null)}>
+              <ArrowLeft size={14} /> Tất cả bộ thủ
+            </button>
+            <div className="lib-focus-row">
+              <span className="lib-focus-glyph" lang="zh">{activeFamily.display}</span>
+              <div className="lib-focus-meta">
+                <div className="lib-focus-name">
+                  {familyName(activeFamily)}
+                  {activeFamily.info.pinyin && <span className="lib-focus-py">{activeFamily.info.pinyin}</span>}
+                </div>
+                <div className="lib-focus-mean">{activeFamily.info.meaningVi ?? '—'}</div>
+              </div>
+            </div>
+            <p className="lib-focus-hint">
+              {activeFamily.count} chữ có bộ này
+              {activeFamily.forms.length > 1 && (
+                <>
+                  {' · dạng: '}
+                  <span lang="zh">{activeFamily.forms.join(' ')}</span>
+                </>
+              )}
             </p>
           </div>
         )}
 
-        {!listingRadicals && searchQuery.trim() && matchedFamilies.length > 0 && (
-          <div className="radical-match-row">
-            <span className="radical-match-label">Bộ thủ:</span>
+        {!listingRadicals && q && matchedFamilies.length > 0 && (
+          <div className="lib-radmatch">
+            <span className="label">Bộ thủ</span>
             {matchedFamilies.slice(0, 3).map((f) => (
-              <button key={f.key} type="button" className="radical-chip" onClick={() => onBrowseRadical?.(f.key)}>
+              <button key={f.key} type="button" className="lib-chip" onClick={() => onBrowseRadical?.(f.key)}>
                 <span lang="zh">{f.display}</span> {familyName(f)} · {f.count}
               </button>
             ))}
@@ -368,97 +357,65 @@ export function LeftSidebar({
         )}
       </div>
 
-      {/* Character Tile Grid */}
-      <div
-        className="sidebar-tile-area"
-        ref={gridContainerRef}
-        onWheel={handleWheel}
-      >
+      <div className="lib-scroll" ref={scrollRef}>
         {itemCount === 0 ? (
-          <div className="sidebar-empty-state">
-            <p>{listingRadicals ? 'Không có bộ thủ nào phù hợp.' : 'Không có chữ nào phù hợp.'}</p>
+          <div className="lib-empty">
+            {savedOnly && !q ? (
+              <>
+                <p className="lib-empty-title">Chưa lưu chữ nào ở cấp này</p>
+                <p>Bấm ☆ hoặc phím G khi đang học một chữ để lưu lại.</p>
+              </>
+            ) : (
+              <>
+                <p className="lib-empty-title">Không có {listingRadicals ? 'bộ thủ' : 'chữ'} nào khớp “{q}”</p>
+                <p>Thử gõ pinyin, Hán Việt hoặc nghĩa tiếng Việt, ví dụ “hao”, “tốt”.</p>
+              </>
+            )}
+            {(q || savedOnly) && (
+              <button type="button" className="lib-empty-btn" onClick={clearFilters}>
+                <Eraser size={14} /> Xóa bộ lọc
+              </button>
+            )}
           </div>
         ) : listingRadicals ? (
-          <div
-            className="sidebar-tile-grid"
-            role="list"
-            style={{ gridTemplateColumns: `repeat(${gridDim.cols}, 1fr)` }}
-          >
-            {pageFamilies.map((f) => (
-              <button
-                type="button"
-                key={f.key}
-                role="listitem"
-                className="sidebar-char-tile radical-family-tile"
-                title={`${familyName(f)} · ${f.info.meaningVi ?? ''} · ${f.count} chữ`}
-                onClick={() => onBrowseRadical?.(f.key)}
-              >
-                <span className="tile-count">{f.count}</span>
-                <span className="tile-glyph" lang="zh">{f.display}</span>
-                <span className="tile-hv">{f.info.hanViet ?? '—'}</span>
-              </button>
+          <div className="lib-groups" role="list">
+            {familyGroups.map((g) => (
+              <section key={g.key} className="lib-group" role="presentation">
+                {g.title && <h3 className="label lib-group-title">{g.title}</h3>}
+                <div className="lib-grid" style={gridStyle}>
+                  {g.items.map(renderFamilyCell)}
+                </div>
+              </section>
             ))}
           </div>
         ) : (
-          <div
-            className="sidebar-tile-grid"
-            role="list"
-            style={{ gridTemplateColumns: `repeat(${gridDim.cols}, 1fr)` }}
-          >
-            {pageItems.map((item) => {
-              const isSelected = item.hanzi === activeHanzi
-              const isFav = favorites.includes(item.hanzi)
+          <div className="lib-grid" role="list" style={gridStyle}>
+            {filteredList.map((item) => {
+              const selected = item.hanzi === activeHanzi
               const primary = item.readings[0]
               return (
                 <button
                   type="button"
                   key={item.hanzi}
                   role="listitem"
-                  className={`sidebar-char-tile ${isSelected ? 'selected' : ''}`}
-                  title={`${primary?.pinyin ?? ''} · ${primary?.meaningVi ?? ''} (${item.strokeCount ? `${item.strokeCount} nét` : ''})`}
+                  aria-current={selected ? 'true' : undefined}
+                  className={`lib-cell ${selected ? 'is-selected' : ''}`}
+                  title={`${primary?.pinyin ?? ''} · ${primary?.meaningVi ?? ''}${item.strokeCount ? ` (${item.strokeCount} nét)` : ''}`}
                   onClick={() => {
                     onSelectHanzi(item.hanzi)
-                    if (onCloseMobile) onCloseMobile()
+                    onCloseMobile?.()
                   }}
                 >
-                  {isFav && <Star size={9} className="tile-fav-star" fill="currentColor" />}
-                  <span className="tile-glyph" lang="zh">{item.hanzi}</span>
-                  <span className="tile-hv">{primary?.hanViet ?? '—'}</span>
-                  {sortOrder.startsWith('stroke') && item.strokeCount && (
-                    <span className="tile-sub-badge">{item.strokeCount}n</span>
-                  )}
+                  {favSet.has(item.hanzi) && <span className="lib-saved" aria-label="Đã lưu" />}
+                  <span className="lib-glyph" lang="zh">{item.hanzi}</span>
+                  <span className="lib-hv">{primary?.hanViet ?? '—'}</span>
+                  {sortOrder.startsWith('stroke') && item.strokeCount ? <span className="lib-badge">{item.strokeCount}</span> : null}
                 </button>
               )
             })}
           </div>
         )}
       </div>
-
-      {pageCount > 1 && (
-        <div className="sidebar-pager">
-          <button
-            type="button"
-            className="pager-btn"
-            onClick={() => setPage((p) => Math.max(0, p - 1))}
-            disabled={safePage === 0}
-            aria-label="Trang trước"
-          >
-            <ChevronLeft size={16} />
-          </button>
-          <span className="pager-label">
-            {safePage + 1} / {pageCount}
-          </span>
-          <button
-            type="button"
-            className="pager-btn"
-            onClick={() => setPage((p) => Math.min(pageCount - 1, p + 1))}
-            disabled={safePage >= pageCount - 1}
-            aria-label="Trang sau"
-          >
-            <ChevronRight size={16} />
-          </button>
-        </div>
-      )}
-    </aside>
+    </div>
   )
 }

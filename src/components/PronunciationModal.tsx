@@ -4,6 +4,8 @@ import { parsePinyin, getFinalSampleSyllable } from '../utils/pinyinData'
 import { MouthShapeDiagram } from './MouthShapeDiagram'
 import { ToneContourDiagram } from './ToneContourDiagram'
 import { speakChinese } from '../utils/speech'
+import { TonePinyin } from './TonePinyin'
+import { MOUTH_LABEL } from './pinyinExamples'
 
 interface PronunciationModalProps {
   hanzi: string
@@ -30,6 +32,12 @@ export function PronunciationModal({
   }, [parsed])
 
   // ESC to close
+  // Return focus to whatever opened the modal.
+  useEffect(() => {
+    const opener = document.activeElement as HTMLElement | null
+    return () => opener?.focus?.()
+  }, [])
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -44,232 +52,102 @@ export function PronunciationModal({
     speakChinese(text)
   }
 
-  const { initial, final, phoneticFinal, initialInfo, finalInfo, toneInfo, toneVariants } = parsed
+  const { initial, final, phoneticFinal, initialInfo, finalInfo, toneVariants } = parsed
+
+  const tabs = [
+    { id: 'initial' as const, label: `Thanh mẫu${initial ? ` ${initial}` : ''}` },
+    { id: 'final' as const, label: `Vận mẫu ${phoneticFinal}` },
+    { id: 'tone' as const, label: 'Thanh điệu' },
+  ]
+  const isSymbol = hanzi === '拼' || hanzi === '音'
 
   return (
-    <div
-      className="modal-backdrop"
-      onClick={onClose}
-      onTouchStart={(e) => e.stopPropagation()}
-      onTouchEnd={(e) => e.stopPropagation()}
-      role="dialog"
-      aria-modal="true"
-    >
-      <div
-        className="modal-content pronunciation-modal-content"
-        onClick={(e) => e.stopPropagation()}
-        onTouchStart={(e) => e.stopPropagation()}
-        onTouchEnd={(e) => e.stopPropagation()}
-      >
-
-        {/* Header with Hero Character info */}
-        <div className="pronounce-modal-header">
-          <div className="pronounce-hero-profile">
-            <div className="hero-hanzi-seal" title={hanzi === '拼' || hanzi === '音' ? 'Âm tiết Pinyin' : 'Chữ Hán'}>
-              {hanzi === '拼' || hanzi === '音' ? '拼' : hanzi}
-            </div>
-
-            <div className="hero-meta-col">
-              <div className="hero-pinyin-row">
-                <span className="hero-pinyin-display">{pinyin}</span>
-                <button
-                  type="button"
-                  className="hero-listen-btn"
-                  onClick={() => handleSpeak(hanzi === '拼' || hanzi === '音' ? pinyin : hanzi)}
-                  title="Nghe phát âm chuẩn"
-                  aria-label="Phát âm"
-                >
-                  <Volume2 size={18} />
-                  <span>Phát âm</span>
-                </button>
-              </div>
-
-              <div className="hero-hanviet-sub">
-                {hanViet && <span className="hero-hanviet-tag">HÁN VIỆT: {hanViet.toUpperCase()}</span>}
-                {meaningVi && <span className="hero-meaning-text">“{meaningVi}”</span>}
-              </div>
-            </div>
+    <div className="pm-backdrop" onClick={onClose} onTouchStart={(e) => e.stopPropagation()} onTouchEnd={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label={`Phát âm ${pinyin}`}>
+      <div className="pm-dialog pn-dialog rf-dialog rf-dialog-narrow" onClick={(e) => e.stopPropagation()} onTouchStart={(e) => e.stopPropagation()} onTouchEnd={(e) => e.stopPropagation()}>
+        <div className="pm-header rf-pn-header">
+          <span className="rf-pn-han" lang="zh-Hans">{isSymbol ? '拼' : hanzi}</span>
+          <TonePinyin pinyin={pinyin} className="rf-pn-py" />
+          <button type="button" className="pm-icon-btn" onClick={() => handleSpeak(isSymbol ? pinyin : hanzi)} title="Nghe phát âm" aria-label="Phát âm">
+            <Volume2 size={16} />
+          </button>
+          <span className="rf-pn-sub">
+            {hanViet && <strong>{hanViet.toUpperCase()}</strong>}
+            {meaningVi && <span>{meaningVi}</span>}
+          </span>
+          <div className="pm-header-actions">
+            <button type="button" className="pm-icon-btn" onClick={onClose} aria-label="Đóng" title="Đóng (Esc)">
+              <X size={18} />
+            </button>
           </div>
-
-          <button
-            type="button"
-            className="icon-btn close-btn"
-            onClick={onClose}
-            aria-label="Đóng cửa sổ"
-          >
-            <X size={20} />
-          </button>
         </div>
 
-        {/* 3 Main Tab Buttons: Thanh mẫu / Vận mẫu / Thanh điệu */}
-        <div className="pronounce-tabs-nav">
-          <button
-            type="button"
-            className={`pronounce-tab-btn ${activeTab === 'initial' ? 'active' : ''}`}
-            onClick={() => setActiveTab('initial')}
-          >
-            <div className="tab-btn-text">
-              <span className="tab-main-label">Thanh Mẫu</span>
-              <span className="tab-sub-slug">
-                {initial ? `Phụ âm [ ${initial} ]` : 'Khởi âm zero'}
-              </span>
-            </div>
-          </button>
-
-          <button
-            type="button"
-            className={`pronounce-tab-btn ${activeTab === 'final' ? 'active' : ''}`}
-            onClick={() => setActiveTab('final')}
-          >
-            <div className="tab-btn-text">
-              <span className="tab-main-label">Vận Mẫu</span>
-              <span className="tab-sub-slug">
-                Nguyên âm [ {final}{phoneticFinal !== final ? ` → ${phoneticFinal}` : ''} ]
-              </span>
-            </div>
-          </button>
-
-          <button
-            type="button"
-            className={`pronounce-tab-btn ${activeTab === 'tone' ? 'active' : ''}`}
-            onClick={() => setActiveTab('tone')}
-          >
-            <div className="tab-btn-text">
-              <span className="tab-main-label">Thanh Điệu</span>
-              <span className="tab-sub-slug">{toneInfo.nameVi}</span>
-            </div>
-          </button>
+        <div className="rf-tabs" role="tablist" aria-label="Phần phát âm">
+          {tabs.map((t) => (
+            <button key={t.id} type="button" role="tab" aria-selected={activeTab === t.id} tabIndex={activeTab === t.id ? 0 : -1} className={`rf-tab${activeTab === t.id ? ' active' : ''}`} onClick={() => setActiveTab(t.id)}>
+              {t.label}
+            </button>
+          ))}
         </div>
 
-        {/* Modal Body: Switch between 3 views */}
-        <div className="pronounce-modal-body">
-          {/* TAB 1: THANH MẪU (INITIAL) */}
-          {activeTab === 'initial' && (
-            <div className="tab-pane-content">
-              {initialInfo ? (
-                <>
-                  <div className="linguistic-summary-card">
-                    <div className="summary-card-left">
-                      <span className="big-phoneme-badge">{initial}</span>
-                      <div className="phoneme-titles">
-                        <h3 className="phoneme-name">{initialInfo.name}</h3>
-                        <span className="phoneme-group-tag">
-                          {initialInfo.groupNameVi} · {initialInfo.soundType}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="summary-card-right">
-                      {initialInfo.isAspirated && (
-                        <span className="badge-aspirate-tag">Bật hơi mạnh</span>
-                      )}
-                      <button
-                        type="button"
-                        className="btn-hear-phoneme"
-                        onClick={() => handleSpeak(initial)}
-                        title="Nghe mẫu phụ âm này"
-                      >
-                        <Volume2 size={16} />
-                        <span>Nghe mẫu</span>
-                      </button>
-                    </div>
+        <div className="rf-body" role="tabpanel">
+          {activeTab === 'initial' &&
+            (initialInfo ? (
+              <>
+                <div className="rf-phoneme">
+                  <span className="rf-phoneme-sym">{initial}</span>
+                  <div className="rf-phoneme-titles">
+                    <h3>{initialInfo.name}</h3>
+                    <p>
+                      {initialInfo.groupNameVi} · {initialInfo.soundType}
+                    </p>
                   </div>
-
-                  {/* Comprehensive Text Articulation Guide */}
-                  <MouthShapeDiagram initialInfo={initialInfo} />
-                </>
-              ) : (
-                <div className="zero-initial-notice">
-                  <h3>Âm tiết này không có phụ âm đầu (Khởi âm zero)</h3>
-                  <p>
-                    Âm tiết bắt đầu trực tiếp bằng nguyên âm <strong>{final}</strong>. Hãy chuyển
-                    sang tab <strong>Vận Mẫu</strong> để xem chi tiết hướng dẫn phát âm.
-                  </p>
-                  <button
-                    type="button"
-                    className="pill-btn active"
-                    onClick={() => setActiveTab('final')}
-                  >
-                    Xem Vận Mẫu [{final}]
+                  {initialInfo.isAspirated && <span className="rf-tag">Bật hơi mạnh</span>}
+                  <button type="button" className="rf-btn" onClick={() => handleSpeak(initial)} title="Nghe mẫu phụ âm này">
+                    <Volume2 size={15} />
+                    Nghe mẫu
                   </button>
                 </div>
-              )}
-            </div>
-          )}
+                <MouthShapeDiagram initialInfo={initialInfo} />
+              </>
+            ) : (
+              <div className="rf-notice">
+                <h3>Âm tiết này không có phụ âm đầu</h3>
+                <p>
+                  Âm tiết bắt đầu trực tiếp bằng nguyên âm <strong>{final}</strong>. Chuyển sang tab Vận mẫu để xem hướng dẫn phát âm chi tiết.
+                </p>
+                <button type="button" className="rf-btn" onClick={() => setActiveTab('final')}>
+                  Xem vận mẫu {final}
+                </button>
+              </div>
+            ))}
 
-          {/* TAB 2: VẬN MẪU (FINAL) */}
-          {activeTab === 'final' && (
-            <div className="tab-pane-content">
-              {finalInfo ? (
-                <>
-                  <div className="linguistic-summary-card">
-                    <div className="summary-card-left">
-                      <span className="big-phoneme-badge final-badge">{phoneticFinal}</span>
-                      <div className="phoneme-titles">
-                        <h3 className="phoneme-name">{finalInfo.name}</h3>
-                        <span className="phoneme-group-tag">
-                          {finalInfo.groupNameVi} · Khẩu hình{' '}
-                          {finalInfo.mouthShape === 'round'
-                            ? 'Tròn môi'
-                            : finalInfo.mouthShape === 'spread'
-                              ? 'Dẹt môi'
-                              : finalInfo.mouthShape === 'unrounded'
-                                ? 'Môi dẹt, không tròn'
-                                : finalInfo.mouthShape === 'curled'
-                                  ? 'Uốn lưỡi'
-                                  : finalInfo.mouthShape === 'semi_round'
-                                    ? 'Hơi tròn môi'
-                                    : 'Mở rộng'}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="summary-card-right">
-                      <button
-                        type="button"
-                        className="btn-hear-phoneme"
-                        onClick={() => handleSpeak(getFinalSampleSyllable(phoneticFinal, parsed.tone || 1))}
-                        title="Nghe mẫu vần này"
-                      >
-                        <Volume2 size={16} />
-                        <span>Nghe vần</span>
-                      </button>
-                    </div>
+          {activeTab === 'final' &&
+            (finalInfo ? (
+              <>
+                <div className="rf-phoneme">
+                  <span className="rf-phoneme-sym">{phoneticFinal}</span>
+                  <div className="rf-phoneme-titles">
+                    <h3>{finalInfo.name}</h3>
+                    <p>
+                      {finalInfo.groupNameVi} · Khẩu hình {(MOUTH_LABEL[finalInfo.mouthShape] ?? '').toLowerCase()}
+                    </p>
                   </div>
-
-                  {/* Comprehensive Text Articulation Guide */}
-                  <MouthShapeDiagram finalInfo={finalInfo} />
-                </>
-              ) : (
-                <div className="zero-initial-notice">
-                  <p>Vận mẫu <strong>{phoneticFinal}</strong> hiện đang dùng hướng dẫn tổng quát.</p>
+                  <button type="button" className="rf-btn" onClick={() => handleSpeak(getFinalSampleSyllable(phoneticFinal, parsed.tone || 1))} title="Nghe mẫu vần này">
+                    <Volume2 size={15} />
+                    Nghe vần
+                  </button>
                 </div>
-              )}
-            </div>
-          )}
+                <MouthShapeDiagram finalInfo={finalInfo} />
+              </>
+            ) : (
+              <div className="rf-notice">
+                <p>
+                  Vận mẫu <strong>{phoneticFinal}</strong> hiện đang dùng hướng dẫn tổng quát.
+                </p>
+              </div>
+            ))}
 
-          {/* TAB 3: THANH ĐIỆU (TONE) */}
-          {activeTab === 'tone' && (
-            <div className="tab-pane-content">
-              <ToneContourDiagram
-                activeTone={selectedTone}
-                toneVariants={toneVariants}
-                onSelectTone={(t) => setSelectedTone(t)}
-              />
-            </div>
-          )}
-        </div>
-
-        {/* Footer Info */}
-        <div className="pronounce-modal-footer">
-          <div className="pronounce-footer-tip">
-            <span>
-              Luyện phát âm theo thứ tự: <strong>Thanh mẫu</strong> → <strong>Vận mẫu</strong> → <strong>Thanh điệu</strong>.
-            </span>
-          </div>
-          <button type="button" className="pill-btn primary" onClick={onClose}>
-            Đóng cửa sổ
-          </button>
+          {activeTab === 'tone' && <ToneContourDiagram activeTone={selectedTone} toneVariants={toneVariants} onSelectTone={(t) => setSelectedTone(t)} />}
         </div>
       </div>
     </div>

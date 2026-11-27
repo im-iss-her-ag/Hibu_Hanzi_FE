@@ -306,8 +306,42 @@ export function PipWidget({ characters, favorites, onCharacterChange }: PipWidge
       <canvas ref={canvasRef} width={WIDTH * SCALE} height={HEIGHT * SCALE} className="pip-offscreen" />
       <video ref={videoRef} muted playsInline className="pip-offscreen" />
 
+      <div className="pip-launch-group">
+        <a
+          className="sh-menu-item"
+          role="menuitem"
+          data-menu-close
+          href={desktopDownloadUrl()}
+          title="Tải app widget cho máy tính: không viền, luôn nổi trên màn hình"
+        >
+          <Download size={16} aria-hidden="true" />
+          <span>Tải app</span>
+        </a>
+        <button
+          type="button"
+          className="sh-menu-item"
+          role="menuitem"
+          data-menu-close
+          onClick={openPip}
+          disabled={!supported}
+          title={supported ? 'Mở widget chữ Hán luôn nổi trên màn hình' : 'Trình duyệt chưa hỗ trợ Picture-in-Picture'}
+        >
+          <PictureInPicture2 size={16} aria-hidden="true" />
+          <span>{active ? 'Đóng widget' : 'Widget'}</span>
+        </button>
+        <button
+          type="button"
+          className="sh-menu-item"
+          role="menuitem"
+          aria-expanded={showSettings}
+          onClick={() => setShowSettings((v) => !v)}
+        >
+          <Settings size={16} aria-hidden="true" />
+          <span>Cài đặt widget</span>
+        </button>
+      </div>
       {showSettings && (
-        <div className="pip-settings" role="dialog" aria-label="Cài đặt widget">
+        <div className="pip-settings" role="group" aria-label="Cài đặt widget">
           <div className="pip-settings-head">
             <span>Cài đặt widget</span>
             <button type="button" className="pip-icon-btn" onClick={() => setShowSettings(false)} aria-label="Đóng">
@@ -366,35 +400,6 @@ export function PipWidget({ characters, favorites, onCharacterChange }: PipWidge
           </div>
         </div>
       )}
-
-      <div className="pip-launch-group">
-        <a
-          className="pip-launch-btn pip-download-btn"
-          href={desktopDownloadUrl()}
-          title="Tải app widget cho máy tính: không viền, luôn nổi trên màn hình"
-        >
-          <Download size={18} />
-          <span>Tải app</span>
-        </a>
-        <button
-          type="button"
-          className="pip-launch-btn"
-          onClick={openPip}
-          disabled={!supported}
-          title={supported ? 'Mở widget chữ Hán luôn nổi trên màn hình' : 'Trình duyệt chưa hỗ trợ Picture-in-Picture'}
-        >
-          <PictureInPicture2 size={18} />
-          <span>{active ? 'Đóng widget' : 'Widget'}</span>
-        </button>
-        <button
-          type="button"
-          className="pip-launch-btn"
-          onClick={() => setShowSettings((v) => !v)}
-          aria-label="Cài đặt widget"
-        >
-          <Settings size={18} />
-        </button>
-      </div>
     </div>
   )
 }

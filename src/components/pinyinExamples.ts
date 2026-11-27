@@ -1,0 +1,81 @@
+// Example words for the pinyin reference (one per initial / final).
+export interface Example {
+  hanzi: string
+  pinyin: string
+  vi: string
+}
+
+export const INITIAL_EXAMPLES: Record<string, Example> = {
+  b: { hanzi: '爸', pinyin: 'bà', vi: 'bố' },
+  p: { hanzi: '怕', pinyin: 'pà', vi: 'sợ' },
+  m: { hanzi: '妈', pinyin: 'mā', vi: 'mẹ' },
+  f: { hanzi: '飞', pinyin: 'fēi', vi: 'bay' },
+  d: { hanzi: '大', pinyin: 'dà', vi: 'to' },
+  t: { hanzi: '他', pinyin: 'tā', vi: 'anh ấy' },
+  n: { hanzi: '你', pinyin: 'nǐ', vi: 'bạn' },
+  l: { hanzi: '来', pinyin: 'lái', vi: 'đến' },
+  g: { hanzi: '哥', pinyin: 'gē', vi: 'anh trai' },
+  k: { hanzi: '看', pinyin: 'kàn', vi: 'nhìn' },
+  h: { hanzi: '好', pinyin: 'hǎo', vi: 'tốt' },
+  j: { hanzi: '家', pinyin: 'jiā', vi: 'nhà' },
+  q: { hanzi: '去', pinyin: 'qù', vi: 'đi' },
+  x: { hanzi: '小', pinyin: 'xiǎo', vi: 'nhỏ' },
+  zh: { hanzi: '中', pinyin: 'zhōng', vi: 'giữa' },
+  ch: { hanzi: '吃', pinyin: 'chī', vi: 'ăn' },
+  sh: { hanzi: '水', pinyin: 'shuǐ', vi: 'nước' },
+  r: { hanzi: '人', pinyin: 'rén', vi: 'người' },
+  z: { hanzi: '做', pinyin: 'zuò', vi: 'làm' },
+  c: { hanzi: '菜', pinyin: 'cài', vi: 'món ăn' },
+  s: { hanzi: '三', pinyin: 'sān', vi: 'ba' },
+  y: { hanzi: '一', pinyin: 'yī', vi: 'một' },
+  w: { hanzi: '我', pinyin: 'wǒ', vi: 'tôi' },
+}
+
+export const FINAL_EXAMPLES: Record<string, Example> = {
+  a: { hanzi: '妈', pinyin: 'mā', vi: 'mẹ' },
+  o: { hanzi: '波', pinyin: 'bō', vi: 'sóng' },
+  e: { hanzi: '河', pinyin: 'hé', vi: 'sông' },
+  i: { hanzi: '米', pinyin: 'mǐ', vi: 'gạo' },
+  u: { hanzi: '书', pinyin: 'shū', vi: 'sách' },
+  'ü': { hanzi: '鱼', pinyin: 'yú', vi: 'cá' },
+  ai: { hanzi: '爱', pinyin: 'ài', vi: 'yêu' },
+  ei: { hanzi: '黑', pinyin: 'hēi', vi: 'đen' },
+  ao: { hanzi: '好', pinyin: 'hǎo', vi: 'tốt' },
+  ou: { hanzi: '手', pinyin: 'shǒu', vi: 'tay' },
+  ia: { hanzi: '家', pinyin: 'jiā', vi: 'nhà' },
+  ie: { hanzi: '谢', pinyin: 'xiè', vi: 'cảm ơn' },
+  ua: { hanzi: '花', pinyin: 'huā', vi: 'hoa' },
+  uo: { hanzi: '多', pinyin: 'duō', vi: 'nhiều' },
+  'üe': { hanzi: '月', pinyin: 'yuè', vi: 'tháng, trăng' },
+  iao: { hanzi: '小', pinyin: 'xiǎo', vi: 'nhỏ' },
+  iu: { hanzi: '六', pinyin: 'liù', vi: 'sáu' },
+  uai: { hanzi: '快', pinyin: 'kuài', vi: 'nhanh' },
+  ui: { hanzi: '水', pinyin: 'shuǐ', vi: 'nước' },
+  an: { hanzi: '山', pinyin: 'shān', vi: 'núi' },
+  en: { hanzi: '人', pinyin: 'rén', vi: 'người' },
+  in: { hanzi: '新', pinyin: 'xīn', vi: 'mới' },
+  un: { hanzi: '春', pinyin: 'chūn', vi: 'mùa xuân' },
+  'ün': { hanzi: '云', pinyin: 'yún', vi: 'mây' },
+  ian: { hanzi: '天', pinyin: 'tiān', vi: 'trời' },
+  uan: { hanzi: '船', pinyin: 'chuán', vi: 'thuyền' },
+  'üan': { hanzi: '元', pinyin: 'yuán', vi: 'đồng (tiền)' },
+  ang: { hanzi: '忙', pinyin: 'máng', vi: 'bận' },
+  eng: { hanzi: '冷', pinyin: 'lěng', vi: 'lạnh' },
+  ing: { hanzi: '星', pinyin: 'xīng', vi: 'sao' },
+  ong: { hanzi: '中', pinyin: 'zhōng', vi: 'giữa' },
+  iang: { hanzi: '想', pinyin: 'xiǎng', vi: 'nghĩ' },
+  iong: { hanzi: '穷', pinyin: 'qióng', vi: 'nghèo' },
+  uang: { hanzi: '床', pinyin: 'chuáng', vi: 'giường' },
+  ueng: { hanzi: '翁', pinyin: 'wēng', vi: 'ông lão' },
+  er: { hanzi: '二', pinyin: 'èr', vi: 'hai' },
+}
+
+export const MOUTH_LABEL: Record<string, string> = {
+  round: 'Tròn môi',
+  spread: 'Dẹt môi',
+  unrounded: 'Môi dẹt, không tròn',
+  curled: 'Uốn lưỡi',
+  semi_round: 'Hơi tròn môi',
+  open: 'Mở rộng',
+  closed: 'Khép',
+}

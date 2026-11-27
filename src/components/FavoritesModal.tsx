@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { X, Star, Trash2 } from 'lucide-react'
 import type { BundleCharacter } from '../core'
 import { RADICAL_CHARACTERS } from '../core'
+import { useModalA11y } from '../utils/useModalA11y'
+import { CharRowBody } from './CharRowBody'
 
 interface FavoritesModalProps {
   favorites: string[]
@@ -21,18 +23,27 @@ export function FavoritesModal({
   onClose,
 }: FavoritesModalProps) {
   const [confirmClear, setConfirmClear] = useState(false)
+  const dialogRef = useModalA11y<HTMLDivElement>(onClose)
 
   const favoriteChars = favorites
-    .map(
-      (f) =>
-        characters.find((c) => c.hanzi === f) ??
-        RADICAL_CHARACTERS.find((r) => r.hanzi === f),
-    )
+    .map((f) => characters.find((c) => c.hanzi === f) ?? RADICAL_CHARACTERS.find((r) => r.hanzi === f))
     .filter((c): c is BundleCharacter => Boolean(c))
+
+  // ↑/↓ move between rows; Enter/click on the row opens the character.
+  const onListKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return
+    const opens = Array.from(e.currentTarget.querySelectorAll<HTMLElement>('.fm-open'))
+    const i = opens.indexOf(document.activeElement as HTMLElement)
+    const next = opens[e.key === 'ArrowDown' ? Math.min(opens.length - 1, i + 1) : Math.max(0, i - 1)]
+    if (next) {
+      e.preventDefault()
+      next.focus()
+    }
+  }
 
   return (
     <div
-      className="modal-backdrop"
+      className="pm-backdrop"
       onClick={onClose}
       onTouchStart={(e) => e.stopPropagation()}
       onTouchEnd={(e) => e.stopPropagation()}
@@ -41,98 +52,79 @@ export function FavoritesModal({
       aria-label="Sổ tay chữ đã lưu"
     >
       <div
-        className="modal-content fav-modal-content"
+        ref={dialogRef}
+        className="pm-dialog fm-dialog"
         onClick={(e) => e.stopPropagation()}
         onTouchStart={(e) => e.stopPropagation()}
         onTouchEnd={(e) => e.stopPropagation()}
       >
-        <div className="modal-header">
-          <div className="header-info">
-            <h3 className="modal-title">Sổ tay chữ đã lưu</h3>
-            <span className="badge-tag">{favorites.length} chữ</span>
-          </div>
-          <div className="header-actions">
-            {favorites.length > 0 &&
-              (confirmClear ? (
-                <div className="confirm-clear-group">
-                  <button
-                    type="button"
-                    className="clear-all-confirm-btn"
-                    onClick={() => {
-                      onClearAll()
-                      setConfirmClear(false)
-                    }}
-                  >
-                    Xác nhận xóa
-                  </button>
-                  <button
-                    type="button"
-                    className="clear-all-cancel-btn"
-                    onClick={() => setConfirmClear(false)}
-                  >
-                    Hủy
-                  </button>
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  className="clear-all-btn"
-                  onClick={() => setConfirmClear(true)}
-                  title="Xóa toàn bộ sổ tay"
-                >
-                  <Trash2 size={16} />
-                  <span>Xóa hết</span>
-                </button>
-              ))}
-            <button type="button" className="icon-btn close-btn" onClick={onClose} aria-label="Đóng">
-              <X size={20} />
+        <div className="pm-header">
+          <h2 className="pm-title">Sổ tay</h2>
+          <span className="pm-meta">{favoriteChars.length} chữ</span>
+          <div className="pm-header-actions">
+            {favorites.length > 0 && !confirmClear && (
+              <button type="button" className="pm-btn pm-btn-ghost" onClick={() => setConfirmClear(true)} title="Xóa toàn bộ sổ tay">
+                <Trash2 size={14} /> Xóa hết
+              </button>
+            )}
+            <button type="button" className="pm-icon-btn" onClick={onClose} aria-label="Đóng" title="Đóng (Esc)">
+              <X size={18} />
             </button>
           </div>
         </div>
 
-        <div className="fav-list-body">
+        {confirmClear && (
+          <div className="fm-confirm" role="alertdialog" aria-label="Xác nhận xóa hết">
+            <span>Xóa hết {favorites.length} chữ đã lưu? Không hoàn tác được.</span>
+            <span className="fm-confirm-actions">
+              <button type="button" className="pm-btn" autoFocus onClick={() => setConfirmClear(false)}>Hủy</button>
+              <button
+                type="button"
+                className="pm-btn pm-btn-danger"
+                onClick={() => {
+                  onClearAll()
+                  setConfirmClear(false)
+                }}
+              >
+                Xóa hết
+              </button>
+            </span>
+          </div>
+        )}
+
+        <div className="pm-body fm-body">
           {favoriteChars.length === 0 ? (
-            <div className="empty-fav-state">
-              <Star size={36} className="empty-star-icon" />
-              <p>Bạn chưa lưu chữ Hán nào vào sổ tay.</p>
-              <span className="sub-hint">
-                Bấm vào biểu tượng ngôi sao trên thẻ chữ để lưu lại và ôn tập bất kỳ lúc nào!
-              </span>
+            <div className="sm-empty">
+              <Star size={24} className="fm-empty-star" />
+              <p className="sm-empty-title">Chưa có chữ nào trong sổ tay</p>
+              <p>Bấm ☆ ở chữ đang học, hoặc nhấn phím <kbd>G</kbd>, để lưu lại và ôn sau.</p>
             </div>
           ) : (
-            <div className="fav-grid">
-              {favoriteChars.map((c) => {
-                const primary = c.readings.find((r) => r.isPrimary) ?? c.readings[0]
-                return (
-                  <div key={c.hanzi} className="fav-card">
-                    <div
-                      className="fav-card-click"
-                      onClick={() => {
-                        onSelectHanzi(c.hanzi)
-                        onClose()
-                      }}
-                    >
-                      <div className="fav-glyph" lang="zh">
-                        {c.hanzi}
-                      </div>
-                      <div className="fav-meta">
-                        <div className="fav-pinyin">{primary?.pinyin}</div>
-                        <div className="fav-hv">{primary?.hanViet?.toUpperCase()}</div>
-                        <div className="fav-mean">{primary?.meaningVi}</div>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      className="fav-remove-btn"
-                      onClick={() => onRemoveFavorite(c.hanzi)}
-                      title="Bỏ lưu chữ này"
-                      aria-label="Bỏ lưu"
-                    >
-                      <X size={14} />
-                    </button>
-                  </div>
-                )
-              })}
+            <div className="fm-list" onKeyDown={onListKeyDown}>
+              {favoriteChars.map((c) => (
+                <div key={c.hanzi} className="fm-item">
+                  <button
+                    type="button"
+                    className="sm-row fm-open"
+                    onClick={() => {
+                      onSelectHanzi(c.hanzi)
+                      onClose()
+                    }}
+                  >
+                    <CharRowBody c={c} />
+                    <span className="pm-tag sm-tag">{c.hsk3Level ? `HSK ${c.hsk3Level}` : 'Bộ'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="pm-icon-btn fm-remove"
+                    onClick={() => onRemoveFavorite(c.hanzi)}
+                    title="Bỏ lưu"
+                    aria-label={`Bỏ lưu ${c.hanzi}`}
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+              ))}
             </div>
           )}
         </div>

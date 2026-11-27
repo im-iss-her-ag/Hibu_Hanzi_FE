@@ -1,51 +1,97 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import HanziWriter from 'hanzi-writer'
-import {
-  Play,
-  Pause,
-  RotateCcw,
-  PenTool,
-  CheckCircle,
-  Eye,
-  ChevronLeft,
-  ChevronRight,
-} from 'lucide-react'
+import { Play, Pause, RotateCcw, CheckCircle, ChevronLeft, ChevronRight } from 'lucide-react'
 import { inferStrokeName, type StrokeNameInfo } from '../utils/strokeNames'
+
+type Mode = 'display' | 'animate' | 'quiz'
 
 interface HanziWriterCanvasProps {
   hanzi: string
+  /** Optional fixed pixel size. By default the tianzige fills its parent (CSS var --box). */
   size?: number
   displayMode?: 'modern' | 'components'
-  defaultMode?: 'display' | 'animate' | 'quiz'
+  defaultMode?: Mode
   onCompleteQuiz?: (mistakes: number) => void
+}
+
+/** Re-renders when the <html class="dark"> flag flips so canvas colours follow the theme. */
+function useDarkFlag() {
+  const [dark, setDark] = useState(() => document.documentElement.classList.contains('dark'))
+  useEffect(() => {
+    const el = document.documentElement
+    const obs = new MutationObserver(() => setDark(el.classList.contains('dark')))
+    obs.observe(el, { attributes: true, attributeFilter: ['class'] })
+    return () => obs.disconnect()
+  }, [])
+  return dark
+}
+
+function cssVar(el: HTMLElement, name: string, fallback: string) {
+  const v = getComputedStyle(el).getPropertyValue(name).trim()
+  return v || fallback
 }
 
 export function HanziWriterCanvas({
   hanzi,
-  size = 220,
+  size,
   displayMode = 'modern',
   defaultMode = 'display',
   onCompleteQuiz,
 }: HanziWriterCanvasProps) {
+  const boxRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const writerRef = useRef<HanziWriter | null>(null)
-  const [mode, setMode] = useState<'display' | 'animate' | 'quiz'>(defaultMode)
+  const [mode, setMode] = useState<Mode>(defaultMode)
   const [isPaused, setIsPaused] = useState(false)
   const [speed, setSpeed] = useState<number>(1)
   const [quizResult, setQuizResult] = useState<{ mistakes: number } | null>(null)
+  const [boxPx, setBoxPx] = useState(size ?? 0)
 
-  // Step-by-step stroke state
   const [charData, setCharData] = useState<{ strokes: string[]; medians: number[][][] } | null>(null)
   const [currentStrokeIndex, setCurrentStrokeIndex] = useState<number>(0)
   const [strokeInfo, setStrokeInfo] = useState<StrokeNameInfo | null>(null)
 
-  const isDark = typeof document !== 'undefined' && document.documentElement.classList.contains('dark')
+  const dark = useDarkFlag()
 
-  // Update stroke naming whenever currentStrokeIndex or charData changes
+  // Some characters (e.g. rare radicals) have no stroke data: probe once per character
+  const [noData, setNoData] = useState(false)
+  useEffect(() => {
+    let alive = true
+    setNoData(false)
+    HanziWriter.loadCharacterData(hanzi)
+      .then((d) => {
+        if (alive && !d) setNoData(true)
+      })
+      .catch(() => {
+        if (alive) {
+          setNoData(true)
+          setMode('display')
+        }
+      })
+    return () => {
+      alive = false
+    }
+  }, [hanzi])
+  const showStatic = noData || (mode === 'display' && displayMode !== 'components')
+
+  // Measure the box so the writer canvas fills it exactly
+  useEffect(() => {
+    if (size) {
+      setBoxPx(size)
+      return
+    }
+    const el = boxRef.current
+    if (!el) return
+    const measure = () => setBoxPx(Math.round(el.clientWidth))
+    measure()
+    const ro = new ResizeObserver(measure)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [size])
+
   useEffect(() => {
     if (charData && charData.medians && charData.medians[currentStrokeIndex]) {
-      const info = inferStrokeName(charData.medians[currentStrokeIndex])
-      setStrokeInfo(info)
+      setStrokeInfo(inferStrokeName(charData.medians[currentStrokeIndex]))
     } else {
       setStrokeInfo(null)
     }
@@ -53,62 +99,57 @@ export function HanziWriterCanvas({
 
   // Initialize or reload HanziWriter
   useEffect(() => {
-    if (!containerRef.current) return
+    const host = containerRef.current
+    if (!host || boxPx <= 0 || noData) return
 
-    if (mode === 'display' && displayMode !== 'components') {
-      if (writerRef.current) {
-        writerRef.current = null
-      }
-      containerRef.current.innerHTML = ''
+    host.innerHTML = ''
+    if (showStatic) {
+      writerRef.current = null
       setCharData(null)
       return
     }
-
-    containerRef.current.innerHTML = ''
     setQuizResult(null)
     setIsPaused(false)
+    setCurrentStrokeIndex(0)
 
     let isSubscribed = true
+    const ink = cssVar(host, '--ink', '#1d1a16')
 
-    const writer = HanziWriter.create(containerRef.current, hanzi, {
-      width: size,
-      height: size,
-      padding: 16,
+    const writer = HanziWriter.create(host, hanzi, {
+      width: boxPx,
+      height: boxPx,
+      padding: Math.round(boxPx * 0.11),
       showOutline: true,
       strokeAnimationSpeed: speed,
       delayBetweenStrokes: 180,
-      strokeColor: isDark ? '#f87171' : '#b91c1c',
-      radicalColor: '#0284c7',
-      outlineColor: isDark ? '#262c38' : '#e7e3da',
-      drawingColor: isDark ? '#38bdf8' : '#1d4ed8',
-      highlightColor: '#10b981',
+      strokeColor: ink,
+      radicalColor: displayMode === 'components' ? cssVar(host, '--etymology', ink) : ink,
+      outlineColor: cssVar(host, '--rule-strong', '#cfc3ad'),
+      drawingColor: ink,
+      highlightColor: cssVar(host, '--seal', '#b8322a'),
       showCharacter: mode === 'animate' || displayMode === 'components',
+      onLoadCharDataError: () => {
+        if (!isSubscribed) return
+        setNoData(true)
+        setMode('display')
+      },
       onLoadCharDataSuccess: (data: any) => {
         if (!isSubscribed) return
         setCharData(data)
-        if (data.medians && data.medians[0]) {
-          setStrokeInfo(inferStrokeName(data.medians[0]))
-        }
+        if (data.medians && data.medians[0]) setStrokeInfo(inferStrokeName(data.medians[0]))
       },
     })
-
     writerRef.current = writer
 
     if (mode === 'animate') {
-      setCurrentStrokeIndex(0)
-      writer.animateCharacter({
-        onComplete: () => {
-          setIsPaused(false)
-        },
-      })
+      Promise.resolve(writer.animateCharacter({ onComplete: () => setIsPaused(false) })).catch(() => {})
     } else if (mode === 'quiz') {
       writer.quiz({
-        onCorrectStroke: (strokeData) => {
-          setCurrentStrokeIndex(strokeData.strokeNum + 1)
-        },
+        showHintAfterMisses: 3,
+        onCorrectStroke: (d) => setCurrentStrokeIndex(d.strokeNum + 1),
         onComplete: (summary) => {
           setQuizResult({ mistakes: summary.totalMistakes })
-          if (onCompleteQuiz) onCompleteQuiz(summary.totalMistakes)
+          onCompleteQuiz?.(summary.totalMistakes)
         },
       })
     }
@@ -117,40 +158,36 @@ export function HanziWriterCanvas({
       isSubscribed = false
       writerRef.current = null
     }
-  }, [hanzi, mode, speed, size, isDark, onCompleteQuiz, displayMode])
+  }, [hanzi, mode, speed, boxPx, dark, onCompleteQuiz, displayMode, showStatic, noData])
 
   const handleStartAnimate = useCallback(() => {
-    setMode('animate')
-    setQuizResult(null)
-    setIsPaused(false)
-    setCurrentStrokeIndex(0)
-    if (writerRef.current) {
+    if (mode === 'animate' && writerRef.current) {
+      setQuizResult(null)
+      setIsPaused(false)
+      setCurrentStrokeIndex(0)
       writerRef.current.showCharacter()
-      writerRef.current.animateCharacter({
-        onComplete: () => {
-          setIsPaused(false)
-        },
-      })
+      writerRef.current.animateCharacter({ onComplete: () => setIsPaused(false) })
+      return
     }
-  }, [])
+    setMode('animate')
+  }, [mode])
 
   const handleStartQuiz = useCallback(() => {
-    setMode('quiz')
-    setQuizResult(null)
-    setIsPaused(false)
-    setCurrentStrokeIndex(0)
-    if (writerRef.current) {
+    if (mode === 'quiz' && writerRef.current) {
+      setQuizResult(null)
+      setCurrentStrokeIndex(0)
       writerRef.current.quiz({
-        onCorrectStroke: (strokeData) => {
-          setCurrentStrokeIndex(strokeData.strokeNum + 1)
-        },
+        showHintAfterMisses: 3,
+        onCorrectStroke: (d) => setCurrentStrokeIndex(d.strokeNum + 1),
         onComplete: (summary) => {
           setQuizResult({ mistakes: summary.totalMistakes })
-          if (onCompleteQuiz) onCompleteQuiz(summary.totalMistakes)
+          onCompleteQuiz?.(summary.totalMistakes)
         },
       })
+      return
     }
-  }, [onCompleteQuiz])
+    setMode('quiz')
+  }, [mode, onCompleteQuiz])
 
   const handleTogglePause = useCallback(() => {
     if (!writerRef.current) return
@@ -163,193 +200,118 @@ export function HanziWriterCanvas({
     }
   }, [isPaused])
 
-  // Step-by-step: Play single stroke
-  const handlePlayStroke = useCallback((index: number) => {
-    if (!writerRef.current || !charData) return
-    const max = charData.strokes.length
-    const targetIdx = Math.max(0, Math.min(index, max - 1))
-    setCurrentStrokeIndex(targetIdx)
-    setIsPaused(false)
-    writerRef.current.animateStroke(targetIdx)
-  }, [charData])
+  const handlePlayStroke = useCallback(
+    (index: number) => {
+      if (!writerRef.current || !charData) return
+      const target = Math.max(0, Math.min(index, charData.strokes.length - 1))
+      setCurrentStrokeIndex(target)
+      setIsPaused(false)
+      writerRef.current.animateStroke(target)
+    },
+    [charData],
+  )
 
   const handleNextStroke = useCallback(() => {
     if (!charData) return
-    if (currentStrokeIndex < charData.strokes.length - 1) {
-      handlePlayStroke(currentStrokeIndex + 1)
-    } else {
-      handlePlayStroke(0)
-    }
+    handlePlayStroke(currentStrokeIndex < charData.strokes.length - 1 ? currentStrokeIndex + 1 : 0)
   }, [charData, currentStrokeIndex, handlePlayStroke])
 
   const handlePrevStroke = useCallback(() => {
     if (!charData) return
-    if (currentStrokeIndex > 0) {
-      handlePlayStroke(currentStrokeIndex - 1)
-    } else {
-      handlePlayStroke(charData.strokes.length - 1)
-    }
+    handlePlayStroke(currentStrokeIndex > 0 ? currentStrokeIndex - 1 : charData.strokes.length - 1)
   }, [charData, currentStrokeIndex, handlePlayStroke])
 
-  const toggleSpeed = () => {
-    const nextSpeed = speed === 1 ? 1.5 : speed === 1.5 ? 0.6 : 1
-    setSpeed(nextSpeed)
-  }
+  const toggleSpeed = () => setSpeed(speed === 1 ? 1.5 : speed === 1.5 ? 0.6 : 1)
 
-  const fontClass = 'font-sans-sc'
   const totalStrokes = charData?.strokes.length ?? 0
+  const boxStyle = size ? ({ ['--box' as string]: `${size}px` } as React.CSSProperties) : undefined
 
   return (
-    <div className="hanzi-writer-canvas-wrapper">
-      {/* Traditional Calligraphy Practice Card with authentic vector 米字格 (Mễ tự cách) */}
-      <div
-        className="mige-canvas-frame"
-        style={{ width: `${size + 28}px`, height: `${size + 28}px` }}
-      >
-        <svg
-          className="mige-svg-grid"
-          viewBox="0 0 100 100"
-          preserveAspectRatio="none"
-          aria-hidden="true"
-        >
-          <rect x="3" y="3" width="94" height="94" fill="none" stroke="currentColor" strokeWidth="0.8" strokeOpacity="0.22" />
-          <rect x="6" y="6" width="88" height="88" fill="none" stroke="currentColor" strokeWidth="0.5" strokeOpacity="0.14" />
-          <path d="M 12 8 L 8 8 L 8 12 M 88 8 L 92 8 L 92 12 M 12 92 L 8 92 L 8 88 M 88 92 L 92 92 L 92 88" fill="none" stroke="currentColor" strokeWidth="1" strokeOpacity="0.3" />
-          <line x1="6" y1="6" x2="94" y2="94" stroke="currentColor" strokeWidth="0.65" strokeDasharray="2,2" strokeOpacity="0.22" />
-          <line x1="94" y1="6" x2="6" y2="94" stroke="currentColor" strokeWidth="0.65" strokeDasharray="2,2" strokeOpacity="0.22" />
-          <line x1="50" y1="6" x2="50" y2="94" stroke="currentColor" strokeWidth="0.75" strokeDasharray="2.5,2.5" strokeOpacity="0.24" />
-          <line x1="6" y1="50" x2="94" y2="50" stroke="currentColor" strokeWidth="0.75" strokeDasharray="2.5,2.5" strokeOpacity="0.24" />
+    <div className="st-stage" style={boxStyle}>
+      <div className="st-tianzige" ref={boxRef}>
+        <svg className="st-tianzige-grid" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+          <line x1="0" y1="0" x2="100" y2="100" vectorEffect="non-scaling-stroke" />
+          <line x1="100" y1="0" x2="0" y2="100" vectorEffect="non-scaling-stroke" />
+          <line x1="50" y1="0" x2="50" y2="100" vectorEffect="non-scaling-stroke" />
+          <line x1="0" y1="50" x2="100" y2="50" vectorEffect="non-scaling-stroke" />
         </svg>
 
-        {/* Display mode: Large typographic glyph */}
         <div
-          className={`hanzi-static-glyph ${fontClass}`}
+          key={hanzi}
+          className="st-glyph"
           lang="zh"
           onClick={handleStartAnimate}
-          title="Bấm vào chữ để xem hoạt họa nét viết"
-          style={{ display: mode === 'display' && displayMode !== 'components' ? undefined : 'none' }}
+          title="Xem thứ tự nét"
+          hidden={!showStatic}
         >
           {hanzi}
         </div>
-        <div
-          ref={containerRef}
-          className="hanzi-writer-surface"
-          style={{ display: mode === 'display' && displayMode !== 'components' ? 'none' : undefined }}
-        />
-
-        {/* Quiz result celebration banner */}
-        {quizResult !== null && (
-          <div className="quiz-result-overlay">
-            <CheckCircle size={18} className="success-icon" />
-            <span>
-              {quizResult.mistakes === 0
-                ? 'Tuyệt vời! Viết đúng 100%'
-                : `Hoàn thành (sai ${quizResult.mistakes} nét)`}
-            </span>
-          </div>
-        )}
+        <div ref={containerRef} className={`st-writer${mode === 'animate' ? ' st-writer-align' : ''}`} hidden={showStatic} />
+        <div className={`st-controls${mode !== 'display' || noData ? ' on' : ''}`} aria-live="polite">
+          {noData && <span className="st-stroke-status st-nodata" title="Chưa có dữ liệu nét viết cho chữ này">Chưa có dữ liệu nét viết cho chữ này</span>}
+          {!noData && mode === 'animate' && (
+            <>
+              <button type="button" className="st-ctl" onClick={handlePrevStroke} title="Nét trước" aria-label="Nét trước">
+                <ChevronLeft size={16} />
+              </button>
+              <button type="button" className="st-ctl" onClick={handleTogglePause} title={isPaused ? 'Tiếp tục' : 'Tạm dừng'} aria-label={isPaused ? 'Tiếp tục' : 'Tạm dừng'}>
+                {isPaused ? <Play size={14} fill="currentColor" /> : <Pause size={14} fill="currentColor" />}
+              </button>
+              <button type="button" className="st-ctl" onClick={handleNextStroke} title="Nét tiếp" aria-label="Nét tiếp">
+                <ChevronRight size={16} />
+              </button>
+              <button type="button" className="st-ctl st-ctl-text" onClick={toggleSpeed} title="Tốc độ nét bút" aria-label={`Tốc độ ${speed}x`}>
+                {speed}x
+              </button>
+              <button type="button" className="st-ctl" onClick={handleStartAnimate} title="Phát lại" aria-label="Phát lại">
+                <RotateCcw size={14} />
+              </button>
+              <span className="st-stroke-status">
+                {totalStrokes > 0 && <b>{currentStrokeIndex + 1}/{totalStrokes}</b>}
+                {strokeInfo && <> {strokeInfo.nameVi}</>}
+              </span>
+            </>
+          )}
+          {!noData && mode === 'quiz' && (
+            <>
+              {quizResult ? (
+                <>
+                  <span className="st-stroke-status st-done">
+                    <CheckCircle size={13} className="st-ok" /> Hoàn thành
+                    {quizResult.mistakes > 0 ? ` · sai ${quizResult.mistakes}` : ''}
+                  </span>
+                  <button type="button" className="st-ctl st-ctl-text" onClick={handleStartQuiz} title="Xóa và viết lại">
+                    <RotateCcw size={13} />&nbsp;Viết lại
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button type="button" className="st-ctl" onClick={handleStartQuiz} title="Xóa và viết lại" aria-label="Viết lại">
+                    <RotateCcw size={14} />
+                  </button>
+                  <button type="button" className="st-ctl st-ctl-text" onClick={() => writerRef.current?.highlightStroke(currentStrokeIndex)} title="Gợi ý nét tiếp theo">
+                    Gợi ý
+                  </button>
+                  <span className="st-stroke-status">
+                    {totalStrokes > 0 ? <><b>Nét {Math.min(currentStrokeIndex + 1, totalStrokes)}/{totalStrokes}</b></> : 'Vẽ từng nét'}
+                  </span>
+                </>
+              )}
+            </>
+          )}
+        </div>
       </div>
 
-      {/* Stroke step info: Compact 1-liner right under canvas */}
-      {mode === 'animate' && strokeInfo && (
-        <div className="stroke-step-inline-info">
-          <span className="stroke-step-badge">Nét {currentStrokeIndex + 1}/{totalStrokes}</span>
-          <span className="stroke-step-name">{strokeInfo.nameVi}</span>
-          <span className="stroke-step-zh" lang="zh">{strokeInfo.nameZh}</span>
-        </div>
-      )}
-
-      {/* Unified Minimal Toolbar: Exactly 1 clean bar */}
-      <div className="canvas-unified-toolbar" role="toolbar" aria-label="Điều khiển chữ Hán">
-        <div className="toolbar-segment-group">
-          <button
-            type="button"
-            className={`toolbar-btn ${mode === 'display' ? 'active' : ''}`}
-            onClick={() => setMode('display')}
-            title="Chế độ chữ tĩnh chuẩn mực"
-          >
-            <Eye size={14} />
-            <span>Chữ tĩnh</span>
-          </button>
-
-          <button
-            type="button"
-            className={`toolbar-btn ${mode === 'animate' ? 'active' : ''}`}
-            onClick={handleStartAnimate}
-            title="Xem hoạt họa thứ tự từng nét bút"
-          >
-            <Play size={14} />
-            <span>Xem nét</span>
-          </button>
-
-          <button
-            type="button"
-            className={`toolbar-btn ${mode === 'quiz' ? 'active' : ''}`}
-            onClick={handleStartQuiz}
-            title="Tự tay vẽ nét chữ trực tiếp lên ô mễ tự"
-          >
-            <PenTool size={14} />
-            <span>Tập viết</span>
-          </button>
-        </div>
-
-        {/* Dynamic sub-controls integrated seamlessly on the right */}
-        {mode === 'animate' && (
-          <div className="toolbar-sub-controls">
-            <button
-              type="button"
-              className="toolbar-sub-icon-btn"
-              onClick={handlePrevStroke}
-              title="Nét trước"
-              aria-label="Nét trước"
-            >
-              <ChevronLeft size={15} />
-            </button>
-
-            <button
-              type="button"
-              className={`toolbar-sub-icon-btn ${isPaused ? 'paused' : ''}`}
-              onClick={handleTogglePause}
-              title={isPaused ? 'Tiếp tục vẽ' : 'Tạm dừng'}
-              aria-label={isPaused ? 'Tiếp tục' : 'Tạm dừng'}
-            >
-              {isPaused ? <Play size={13} fill="currentColor" /> : <Pause size={13} fill="currentColor" />}
-            </button>
-
-            <button
-              type="button"
-              className="toolbar-sub-icon-btn"
-              onClick={handleNextStroke}
-              title="Nét tiếp"
-              aria-label="Nét tiếp"
-            >
-              <ChevronRight size={15} />
-            </button>
-
-            <button
-              type="button"
-              className="toolbar-speed-badge"
-              onClick={toggleSpeed}
-              title="Tốc độ nét bút"
-            >
-              {speed}x
-            </button>
-          </div>
-        )}
-
-        {mode === 'quiz' && (
-          <div className="toolbar-sub-controls">
-            <button
-              type="button"
-              className="toolbar-sub-action-btn"
-              onClick={handleStartQuiz}
-              title="Xóa viết lại từ đầu"
-            >
-              <RotateCcw size={13} />
-              <span>Viết lại</span>
-            </button>
-          </div>
-        )}
+      <div className="st-segmented" role="group" aria-label="Chế độ chữ Hán">
+        <button type="button" className={mode === 'display' ? 'active' : ''} aria-pressed={mode === 'display'} onClick={() => setMode('display')} title="Xem chữ">
+          Chữ
+        </button>
+        <button type="button" className={mode === 'animate' ? 'active' : ''} aria-pressed={mode === 'animate'} aria-disabled={noData || undefined} disabled={noData} onClick={() => (mode === 'animate' ? setMode('animate') : handleStartAnimate())} title={noData ? 'Chưa có dữ liệu nét viết cho chữ này' : 'Xem thứ tự nét'}>
+          Nét
+        </button>
+        <button type="button" className={mode === 'quiz' ? 'active' : ''} aria-pressed={mode === 'quiz'} aria-disabled={noData || undefined} disabled={noData} onClick={() => (mode === 'quiz' ? setMode('quiz') : handleStartQuiz())} title={noData ? 'Chưa có dữ liệu nét viết cho chữ này' : 'Tập viết lên ô kẻ'}>
+          Viết
+        </button>
       </div>
     </div>
   )

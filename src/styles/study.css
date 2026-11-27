@@ -1,0 +1,285 @@
+/* study.css — the character hero (StudioCenter + HanziWriterCanvas). See DESIGN-SYSTEM.md.
+   Layout is driven by container queries on .st, so the drawer/rail never breaks it. */
+
+.st {
+  container-type: inline-size;
+  container-name: st;
+  width: 100%;
+  min-width: 0;
+}
+
+/* ---------- Meta row: one baseline ---------- */
+.st-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0 var(--space-3);
+  min-height: var(--control-h);
+  margin-bottom: var(--space-4);
+}
+.st-meta-line {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0 var(--space-2);
+  min-width: 0;
+  font-size: var(--text-sm);
+  color: var(--ink-3);
+  line-height: 1;
+  white-space: nowrap;
+}
+.st-dot { color: var(--ink-4); }
+.st-zh { font-family: var(--font-han); font-size: var(--text-md); color: var(--ink-2); margin-left: 2px; }
+.st-meta-actions { display: flex; align-items: center; gap: var(--space-2); flex: none; }
+.st-trail { display: flex; align-items: center; gap: var(--space-1); }
+
+.st-icon-btn, .st-chip, .st-sq, .st-tiny, .st-ctl, .st-segmented button {
+  font: inherit;
+  cursor: pointer;
+  transition: background var(--dur-1) var(--ease), color var(--dur-1) var(--ease), border-color var(--dur-1) var(--ease);
+}
+.st-icon-btn {
+  display: inline-grid; place-items: center;
+  width: var(--control-h); height: var(--control-h);
+  border: 0; background: transparent; color: var(--ink-3);
+  border-radius: var(--radius-md);
+}
+.st-icon-btn:hover { background: var(--hover); color: var(--ink); }
+.st-icon-btn:active, .st-chip:active, .st-sq:active, .st-tiny:active, .st-ctl:active { background: var(--press); }
+.st-star.saved { color: var(--seal); }
+.st-chip {
+  display: inline-grid; place-items: center;
+  width: var(--control-h-sm); height: var(--control-h-sm);
+  border: 1px solid var(--rule); background: transparent; color: var(--ink-2);
+  font-family: var(--font-han); font-size: 16px; line-height: 1;
+  border-radius: var(--radius-sm);
+}
+.st-chip:hover { background: var(--hover); border-color: var(--rule-strong); color: var(--ink); }
+.st-icon-btn:focus-visible, .st-chip:focus-visible, .st-sq:focus-visible, .st-tiny:focus-visible,
+.st-ctl:focus-visible, .st-segmented button:focus-visible, .st-glyph:focus-visible {
+  outline: 2px solid var(--seal); outline-offset: 2px;
+}
+
+/* ---------- Hero spread ---------- */
+.st-hero {
+  --box: min(72cqw, 300px, 46vh);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: center;
+  gap: var(--space-5);
+  text-align: center;
+}
+
+/* Stage: tianzige + switch + controls, all exactly --box wide */
+.st-stage { width: var(--box); display: flex; flex-direction: column; gap: var(--space-2); }
+
+.st-tianzige {
+  position: relative;
+  width: var(--box);
+  aspect-ratio: 1;
+  background: var(--sheet);
+  border: 1px solid var(--rule-strong);
+  border-radius: 0;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+.st-tianzige-grid { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.st-tianzige-grid line { stroke: var(--grid); stroke-width: 1; stroke-dasharray: 4 4; opacity: 0.85; }
+.st-glyph, .st-writer { position: absolute; inset: 0; }
+.st-glyph[hidden], .st-writer[hidden] { display: none; }
+.st-glyph {
+  display: grid; place-items: center;
+  font-family: var(--font-han);
+  font-weight: 400;
+  font-size: calc(var(--box) * 0.78);
+  line-height: 1;
+  color: var(--ink);
+  cursor: pointer;
+  user-select: none;
+  animation: st-in var(--dur-2) var(--ease) both;
+}
+.st-writer-align svg { transform: translateY(5.5%) scale(1.06); } /* hanzi-writer ink sits higher/smaller than the font glyph; match it (animate only: quiz input needs an unscaled svg) */
+.st-writer svg { display: block; width: 100%; height: 100%; touch-action: none; }
+
+/* Segmented switch: Chữ | Nét | Viết, same width as the box */
+.st-segmented {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  height: 32px;
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--sheet);
+}
+.st-segmented button {
+  border: 0; background: transparent; color: var(--ink-2);
+  font-size: var(--text-md); font-weight: 500;
+}
+.st-segmented button + button { border-left: 1px solid var(--rule-strong); }
+.st-segmented button:hover { background: var(--hover); }
+.st-segmented button.active { background: var(--ink); color: var(--sheet); }
+
+/* Controls row: fixed height so modes never shift layout */
+.st-controls {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 1;
+  display: flex; align-items: center; gap: 2px; padding: 0 var(--space-1);
+  height: 28px;
+  background: var(--sheet); border-top: 1px solid var(--rule);
+  visibility: hidden;
+  min-width: 0;
+  font-size: var(--text-sm); color: var(--ink-3);
+}
+.st-controls.on { visibility: visible; }
+.st-ctl {
+  flex: none;
+  display: inline-grid; place-items: center;
+  min-width: 26px; height: 26px; padding: 0;
+  border: 0; background: transparent; color: var(--ink-2);
+  border-radius: var(--radius-md);
+}
+.st-ctl:hover { background: var(--hover); color: var(--ink); }
+.st-ctl-text { font-size: var(--text-sm); font-weight: 600; padding: 0 var(--space-1); }
+.st-stroke-status {
+  flex: 1; min-width: 0; margin-left: var(--space-1);
+  overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+  text-align: right; line-height: 1;
+}
+.st-stroke-status b { color: var(--ink); font-weight: 600; }
+.st-ok { color: var(--tone-2); vertical-align: -2px; }
+
+/* ---------- Info column ---------- */
+.st-info {
+  width: 100%; max-width: 480px; min-width: 0;
+  display: flex; flex-direction: column; align-items: center; gap: var(--space-3);
+  animation: st-in var(--dur-2) var(--ease) both;
+}
+@keyframes st-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+.st-muted { color: var(--ink-3); }
+
+.st-pinyin-row { display: flex; align-items: center; justify-content: center; gap: var(--space-3); flex-wrap: wrap; }
+.st-pinyin {
+  font-size: 26px; font-weight: 500; line-height: 1.15; letter-spacing: 0.01em;
+  overflow-wrap: anywhere;
+}
+.st-audio { display: inline-flex; gap: var(--space-2); }
+.st-sq {
+  display: inline-grid; place-items: center;
+  width: 40px; height: 40px; padding: 0;
+  border: 1px solid var(--rule-strong); background: var(--sheet); color: var(--ink-2);
+  border-radius: var(--radius-md);
+}
+.st-sq:hover { background: var(--hover); color: var(--ink); }
+
+.st-hv-block { display: flex; flex-direction: column; align-items: inherit; gap: 2px; }
+/* The signature line: Hán Việt is what this app has that others don't, so it outranks pinyin. */
+.st-hv {
+  font-family: var(--font-display); font-weight: 700;
+  font-size: clamp(40px, 13cqw, 56px);
+  line-height: 1.12; letter-spacing: 0.04em; color: var(--seal);
+  padding-top: 0.06em; /* room for stacked marks on capitals (Ễ, Ẫ) */
+  overflow-wrap: anywhere;
+}
+.st-meaning {
+  margin: 0; font-size: var(--text-xl); line-height: 1.4; color: var(--ink-2);
+  min-height: 1.4em; /* one line reserved; longer meanings simply wrap */
+  text-wrap: balance;
+}
+
+.st-others { width: 100%; display: flex; flex-direction: column; gap: var(--space-2); }
+.st-others ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.st-others li {
+  display: flex; align-items: center; justify-content: center; flex-wrap: wrap;
+  gap: var(--space-1) var(--space-3);
+  padding: var(--space-2) 0; border-top: 1px solid var(--rule);
+  font-size: var(--text-md);
+}
+.st-o-py { font-size: var(--text-lg); font-weight: 500; }
+.st-o-hv { font-family: var(--font-display); font-size: var(--text-sm); letter-spacing: 0.06em; color: var(--ink); }
+.st-o-mean { color: var(--ink-2); min-width: 0; flex: 1 1 100%; text-align: center; }
+.st-tiny {
+  display: inline-grid; place-items: center; width: 28px; height: 28px; padding: 0;
+  border: 0; background: transparent; color: var(--ink-3); border-radius: var(--radius-md);
+}
+.st-tiny:hover { background: var(--hover); color: var(--ink); }
+
+/* ---------- Wide: glyph left, info right ---------- */
+@container st (min-width: 720px) {
+  .st-hero {
+    --box: clamp(220px, min(40cqw, 46vh), 360px);
+    grid-template-columns: var(--box) minmax(0, 1fr);
+    justify-items: stretch;
+    align-items: start;
+    gap: var(--space-6);
+    text-align: left;
+  }
+  .st-info {
+    max-width: none; align-items: flex-start;
+    min-height: var(--box); justify-content: center;
+    align-self: start;
+  }
+  .st-pinyin-row { justify-content: flex-start; }
+  .st-pinyin { font-size: 28px; }
+  .st-hv { font-size: clamp(48px, 7cqw, 64px); }
+  .st-hv-block { align-items: flex-start; }
+  .st-others li { justify-content: flex-start; }
+  .st-o-mean { flex: 0 1 auto; text-align: left; }
+  .st-meaning { min-height: 0; text-wrap: pretty; }
+}
+
+@container st (max-width: 460px) {
+  .st-chip:nth-of-type(n+4) { display: none; }
+}
+
+@media (pointer: coarse) {
+    .st-icon-btn { width: var(--touch); height: var(--touch); }
+  .st-chip { width: 36px; height: 36px; min-width: 0; min-height: 0; }
+  .st-sq { width: var(--touch); height: var(--touch); }
+  .st-tiny { width: var(--touch); height: var(--touch); }
+  .st-segmented { height: var(--touch); }
+  .st-ctl { min-width: 32px; height: 28px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .st-glyph, .st-info { animation: none; }
+}
+
+/* ---------- Word context banner ---------- */
+.st-word {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center;
+  gap: var(--space-4);
+  padding: 0 0 var(--space-3); margin-bottom: var(--space-3);
+  border-bottom: 1px solid var(--rule);
+  animation: st-in var(--dur-2) var(--ease) both;
+}
+.st-word-han { display: flex; gap: 2px; }
+.st-word-ch {
+  font-family: var(--font-han); font-size: 40px; line-height: 1.1; color: var(--ink-3);
+  background: transparent; border: 0; padding: 0 var(--space-1); cursor: pointer;
+  border-bottom: 2px solid transparent; border-radius: 0;
+  transition: color var(--dur-1) var(--ease), background var(--dur-1) var(--ease);
+}
+.st-word-ch:hover { background: var(--hover); color: var(--ink); }
+.st-word-ch.current { color: var(--ink); border-bottom-color: var(--seal); cursor: default; }
+.st-word-ch.current:hover { background: transparent; }
+.st-word-ch:focus-visible { outline: 2px solid var(--seal); outline-offset: 2px; }
+.st-word-info { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 var(--space-3); min-width: 0; }
+.st-word-py { font-size: var(--text-xl); font-weight: 500; }
+.st-word-hv { font-family: var(--font-display); font-size: var(--text-md); letter-spacing: 0.06em; color: var(--ink); }
+.st-word-mean { font-size: var(--text-md); color: var(--ink-2); }
+.st-word-actions { display: flex; gap: 2px; }
+.st-word-btn { color: var(--ink-3); }
+@container st (max-width: 560px) {
+  .st-word { grid-template-columns: minmax(0, 1fr) auto; }
+  .st-word-han { grid-column: 1; }
+  .st-word-actions { grid-column: 2; grid-row: 1; }
+  .st-word-info { grid-column: 1 / -1; }
+}
+
+.st-segmented button:disabled { color: var(--ink-4); cursor: not-allowed; background: transparent; }
+.st-sq:disabled { color: var(--ink-4); cursor: not-allowed; background: transparent; }
+.st-nodata { margin-left: 0; text-align: left; }
+
+.st-segmented button:disabled { color: var(--ink-4); cursor: not-allowed; background: transparent; }
+.st-sq:disabled { color: var(--ink-4); cursor: not-allowed; background: transparent; }
+.st-nodata { margin-left: 0; text-align: left; }

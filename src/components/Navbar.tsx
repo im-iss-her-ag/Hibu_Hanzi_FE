@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect } from 'react'
-import { Star, Moon, Sun, Keyboard, Search } from 'lucide-react'
+import { useState, useRef, useEffect, useCallback } from 'react'
+import { Star, Moon, Sun, Search, MoreHorizontal, Keyboard, ChevronDown, LayoutGrid } from 'lucide-react'
 
 interface NavbarProps {
   displayMode: 'modern' | 'components'
@@ -10,9 +10,29 @@ interface NavbarProps {
   onOpenFavorites: () => void
   onOpenSearch: () => void
   onOpenPinyinChart: () => void
-  // Widget launcher (PipWidget), shown in the tool row.
+  // "Danh sách" button: shown while the character list is not permanently visible (drawer / collapsed rail).
+  showListButton?: boolean
+  listOpen?: boolean
+  onOpenList?: () => void
+  // Widget launcher (PipWidget); rendered inside the overflow menu. It stays mounted while the menu is closed.
   widget?: React.ReactNode
 }
+
+const SHORTCUTS: { keys: string[]; desc: string }[] = [
+  { keys: ['Space'], desc: 'Chữ ngẫu nhiên' },
+  { keys: ['←', '→'], desc: 'Chữ trước / sau (hoặc A, D)' },
+  { keys: ['↑', '↓'], desc: 'Lên / xuống một hàng (hoặc W, S)' },
+  { keys: ['Ctrl+←', 'Ctrl+→'], desc: 'Trang trước / sau' },
+  { keys: ['Backspace'], desc: 'Quay lại chữ vừa xem' },
+  { keys: ['1', '–', '6'], desc: 'Chuyển cấp HSK' },
+  { keys: ['L'], desc: 'Mở / đóng danh sách chữ' },
+  { keys: ['B'], desc: 'Bộ thủ' },
+  { keys: ['Tab'], desc: 'Đổi Hiện đại / Thành phần' },
+  { keys: ['G'], desc: 'Lưu / bỏ lưu' },
+  { keys: ['F', 'Ctrl+K'], desc: 'Tìm kiếm' },
+  { keys: ['P'], desc: 'Bảng Pinyin' },
+  { keys: ['Esc'], desc: 'Đóng cửa sổ' },
+]
 
 export function Navbar({
   displayMode,
@@ -23,180 +43,241 @@ export function Navbar({
   onOpenFavorites,
   onOpenSearch,
   onOpenPinyinChart,
+  showListButton = false,
+  listOpen = false,
+  onOpenList,
   widget,
 }: NavbarProps) {
-  const [showShortcutsPopover, setShowShortcutsPopover] = useState(false)
-  const shortcutsRef = useRef<HTMLDivElement>(null)
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [showShortcuts, setShowShortcuts] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
+  const triggerRef = useRef<HTMLButtonElement>(null)
+  const popoverRef = useRef<HTMLDivElement>(null)
 
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (shortcutsRef.current && !shortcutsRef.current.contains(e.target as Node)) {
-        setShowShortcutsPopover(false)
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
+  const closeMenu = useCallback((returnFocus = false) => {
+    setMenuOpen(false)
+    if (returnFocus) triggerRef.current?.focus()
   }, [])
 
+  // Outside click closes the menu.
+  useEffect(() => {
+    if (!menuOpen) return
+    const onDown = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false)
+    }
+    document.addEventListener('mousedown', onDown)
+    return () => document.removeEventListener('mousedown', onDown)
+  }, [menuOpen])
+
+  // Move focus into the menu when it opens.
+  useEffect(() => {
+    if (!menuOpen) return
+    popoverRef.current?.querySelector<HTMLElement>('button:not(:disabled), a[href]')?.focus()
+  }, [menuOpen])
+
+  const focusables = () =>
+    Array.from(
+      popoverRef.current?.querySelectorAll<HTMLElement>('button:not(:disabled), a[href]') ?? [],
+    )
+
+  const onMenuKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      e.preventDefault()
+      closeMenu(true)
+    } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault()
+      const items = focusables()
+      if (items.length === 0) return
+      const i = items.indexOf(document.activeElement as HTMLElement)
+      const next = e.key === 'ArrowDown' ? (i + 1) % items.length : (i - 1 + items.length) % items.length
+      items[next].focus()
+    }
+  }
+
+  // Global shortcuts (Space, Tab...) must not hijack native button behaviour inside the header.
+  const stopGlobalKeys = (e: React.KeyboardEvent) => {
+    if (e.key === ' ' || e.key === 'Tab' || menuOpen) e.stopPropagation()
+  }
+
+  const tip = (label: string, key?: string) => (key ? `${label} (${key})` : label)
+
   return (
-    <header className="app-header">
-      <div className="header-container">
-        {/* Brand Logo */}
-        <div className="brand-group">
-          <div className="seal-logo" title="Hibu Hanzi">
-            <span>漢</span>
-          </div>
-          <div className="brand-text">
-            <h1 className="brand-name">Hibu Hanzi</h1>
-            <span className="brand-sub">Hán Việt & Chiết tự</span>
-          </div>
+    <header className="sh-header" onKeyDown={stopGlobalKeys}>
+      <div className="sh-left">
+        {showListButton && (
+          <button
+            type="button"
+            className="sh-list-btn"
+            onClick={onOpenList}
+            aria-haspopup="dialog"
+            aria-expanded={listOpen}
+            aria-controls="app-rail"
+            title={tip('Danh sách chữ', 'L')}
+          >
+            <LayoutGrid size={16} aria-hidden="true" />
+            <span>Danh sách</span>
+          </button>
+        )}
+        <div className="sh-brand" title="Hibu Hanzi">
+          <span className="sh-logo" lang="zh" aria-hidden="true">漢</span>
+          <span className="sh-brand-name">Hibu Hanzi</span>
         </div>
+      </div>
 
-        {/* Right Tools: Pinyin Chart, Search, Favorites, Font, Dark Mode */}
-        <div className="right-tools">
+      <button
+        type="button"
+        className="sh-search"
+        onClick={onOpenSearch}
+        title={tip('Tìm chữ, pinyin, Hán Việt', 'F hoặc Ctrl+K')}
+        aria-label="Tìm kiếm"
+      >
+        <Search size={16} aria-hidden="true" />
+        <span className="sh-search-text">Tìm chữ, pinyin, Hán Việt…</span>
+        <kbd className="sh-kbd">Ctrl K</kbd>
+      </button>
+
+      <div className="sh-actions">
+        <button
+          type="button"
+          className="sh-icon-btn sh-only-sm"
+          onClick={onOpenSearch}
+          title={tip('Tìm kiếm', 'F')}
+          aria-label="Tìm kiếm"
+        >
+          <Search size={18} aria-hidden="true" />
+        </button>
+
+        <button
+          type="button"
+          className="sh-icon-btn"
+          onClick={onOpenFavorites}
+          title="Sổ tay chữ đã lưu"
+          aria-label={`Sổ tay chữ đã lưu${favoritesCount > 0 ? ` (${favoritesCount})` : ''}`}
+        >
+          <Star size={18} aria-hidden="true" />
+          {favoritesCount > 0 && <span className="sh-badge">{favoritesCount > 99 ? '99+' : favoritesCount}</span>}
+        </button>
+
+        <button
+          type="button"
+          className="sh-icon-btn sh-pinyin-btn sh-hide-sm"
+          onClick={onOpenPinyinChart}
+          title={tip('Bảng Pinyin', 'P')}
+          aria-label="Bảng Pinyin"
+        >
+          <span className="sh-glyph" lang="zh" aria-hidden="true">拼</span>
+        </button>
+
+        <div className="sh-menu" ref={menuRef} onKeyDown={onMenuKeyDown}>
           <button
             type="button"
-            className="tool-btn pinyin-chart-trigger-btn"
-            onClick={onOpenPinyinChart}
-            title="Mở Bảng Pinyin Toàn Diện & Quy tắc biến điệu (P)"
-            aria-label="Bảng Pinyin"
+            ref={triggerRef}
+            className={`sh-icon-btn ${menuOpen ? 'is-open' : ''}`}
+            onClick={() => setMenuOpen((v) => !v)}
+            title="Thêm"
+            aria-label="Thêm"
+            aria-haspopup="menu"
+            aria-expanded={menuOpen}
+            aria-controls="sh-menu-popover"
           >
-            <span className="pinyin-badge-glyph" aria-hidden="true">拼</span>
-            <span className="pinyin-chart-label">Bảng Pinyin</span>
+            <MoreHorizontal size={18} aria-hidden="true" />
           </button>
 
-          <button
-            type="button"
-            className="tool-btn search-trigger-btn"
-            onClick={onOpenSearch}
-            title="Tìm kiếm chữ Hán, Pinyin, Hán Việt (F hoặc Ctrl+K)"
-            aria-label="Tìm kiếm"
+          {/* Always mounted (hidden when closed) so the PiP widget keeps running. */}
+          <div
+            id="sh-menu-popover"
+            className="sh-popover"
+            ref={popoverRef}
+            role="menu"
+            aria-label="Thêm"
+            hidden={!menuOpen}
+            onClick={(e) => {
+              // Launching an item closes the menu; interactive settings keep it open.
+              const el = (e.target as HTMLElement).closest<HTMLElement>('[data-menu-close]')
+              if (el) closeMenu()
+            }}
           >
-            <Search size={16} />
-            <span className="search-shortcut">Tìm kiếm</span>
-          </button>
-
-          <button
-            type="button"
-            className={`tool-btn fav-trigger-btn ${favoritesCount > 0 ? 'has-favs' : ''}`}
-            onClick={onOpenFavorites}
-            title="Sổ tay chữ đã lưu"
-          >
-            <Star size={18} />
-            {favoritesCount > 0 && <span className="fav-badge">{favoritesCount}</span>}
-          </button>
-
-          {/* Toggle Chế độ hiển thị: Hiện đại ↔ Thành phần */}
-          <button
-            type="button"
-            className={`tool-btn display-mode-toggle-btn ${displayMode === 'components' ? 'mode-components' : 'mode-modern'}`}
-            onClick={onToggleDisplayMode}
-            title={displayMode === 'modern' ? 'Chế độ: Hiện đại (Chạm để xem tách Thành phần)' : 'Chế độ: Thành phần (Chạm để xem Hiện đại)'}
-            aria-label="Đổi chế độ hiển thị chữ"
-          >
-            {displayMode === 'components' ? (
-              <span className="comp-dots-badge" aria-hidden="true">
-                <span className="dot dot-blue" />
-                <span className="dot dot-red" />
-              </span>
-            ) : (
-              <span className="font-toggle-sample font-sans-sc" lang="zh" aria-hidden="true">
-                字
-              </span>
-            )}
-            <span className="pinyin-chart-label">
-              {displayMode === 'components' ? 'Thành phần' : 'Hiện đại'}
-            </span>
-          </button>
-
-          {widget}
-
-          {/* Keyboard Shortcuts Helper */}
-          <div className="shortcuts-trigger-wrapper" ref={shortcutsRef}>
-            <button
-              type="button"
-              className={`tool-btn shortcuts-btn ${showShortcutsPopover ? 'active' : ''}`}
-              onClick={() => setShowShortcutsPopover(!showShortcutsPopover)}
-              title="Phím tắt thao tác nhanh"
-              aria-label="Phím tắt"
-            >
-              <Keyboard size={18} />
-            </button>
-
-            {showShortcutsPopover && (
-              <div className="shortcuts-popover-dropdown">
-                <div className="shortcuts-popover-header">
-                  <Keyboard size={15} />
-                  <span>Phím tắt bàn phím</span>
-                </div>
-                <div className="shortcuts-list">
-                  <div className="shortcut-row">
-                    <div className="sc-kbd-group"><kbd className="sc-kbd">W</kbd><kbd className="sc-kbd">A</kbd><kbd className="sc-kbd">S</kbd><kbd className="sc-kbd">D</kbd></div>
-                    <span className="sc-desc">Lên / trái / xuống / phải (như mũi tên)</span>
-                  </div>
-                  <div className="shortcut-row">
-                    <div className="sc-kbd-group"><kbd className="sc-kbd">↑</kbd><kbd className="sc-kbd">←</kbd><kbd className="sc-kbd">↓</kbd><kbd className="sc-kbd">→</kbd></div>
-                    <span className="sc-desc">Di chuyển giữa các chữ</span>
-                  </div>
-                  <div className="shortcut-row">
-                    <div className="sc-kbd-group"><kbd className="sc-kbd">Backspace</kbd></div>
-                    <span className="sc-desc">Quay lại chữ vừa xem</span>
-                  </div>
-                  <div className="shortcut-row">
-                    <div className="sc-kbd-group"><kbd className="sc-kbd">Ctrl+←</kbd><kbd className="sc-kbd">Ctrl+→</kbd></div>
-                    <span className="sc-desc">Trang trước / sau</span>
-                  </div>
-                  <div className="shortcut-row">
-                    <div className="sc-kbd-group"><kbd className="sc-kbd">1</kbd><span className="sc-desc">–</span><kbd className="sc-kbd">6</kbd></div>
-                    <span className="sc-desc">Chuyển cấp HSK</span>
-                  </div>
-                  <div className="shortcut-row">
-                    <div className="sc-kbd-group"><kbd className="sc-kbd">B</kbd></div>
-                    <span className="sc-desc">Tab Bộ thủ</span>
-                  </div>
-                  <div className="shortcut-row">
-                    <div className="sc-kbd-group"><kbd className="sc-kbd">Tab</kbd></div>
-                    <span className="sc-desc">Đổi Hiện đại / Thành phần</span>
-                  </div>
-                  <div className="shortcut-row">
-                    <div className="sc-kbd-group"><kbd className="sc-kbd">F</kbd></div>
-                    <span className="sc-desc">Tìm kiếm</span>
-                  </div>
-                  <div className="shortcut-row">
-                    <div className="sc-kbd-group"><kbd className="sc-kbd">G</kbd></div>
-                    <span className="sc-desc">Lưu / bỏ lưu (ngôi sao)</span>
-                  </div>
-                  <div className="shortcut-row">
-                    <div className="sc-kbd-group"><kbd className="sc-kbd">Space</kbd></div>
-                    <span className="sc-desc">Chữ ngẫu nhiên</span>
-                  </div>
-                  <div className="shortcut-row">
-                    <div className="sc-kbd-group"><kbd className="sc-kbd">P</kbd></div>
-                    <span className="sc-desc">Bảng Pinyin</span>
-                  </div>
-                  <div className="shortcut-row">
-                    <div className="sc-kbd-group"><kbd className="sc-kbd">Ctrl+K</kbd></div>
-                    <span className="sc-desc">Tìm kiếm</span>
-                  </div>
-                  <div className="shortcut-row">
-                    <div className="sc-kbd-group"><kbd className="sc-kbd">Esc</kbd></div>
-                    <span className="sc-desc">Đóng cửa sổ bật lên</span>
-                  </div>
-                </div>
+            <div className="sh-menu-section">
+              <span className="sh-menu-label">Chế độ hiển thị</span>
+              <div className="sh-segmented" role="group" aria-label="Chế độ hiển thị chữ">
+                <button
+                  type="button"
+                  title="Hiện đại: chữ in rõ nét, gọn gàng"
+                  className={displayMode === 'modern' ? 'active' : ''}
+                  aria-pressed={displayMode === 'modern'}
+                  onClick={() => displayMode !== 'modern' && onToggleDisplayMode()}
+                >
+                  Hiện đại
+                </button>
+                <button
+                  type="button"
+                  title="Thành phần: tô màu bộ thủ trong chữ, chiết tự dùng nét bút lông"
+                  className={displayMode === 'components' ? 'active' : ''}
+                  aria-pressed={displayMode === 'components'}
+                  onClick={() => displayMode !== 'components' && onToggleDisplayMode()}
+                >
+                  Thành phần
+                </button>
               </div>
-            )}
-          </div>
+              <p className="sh-menu-hint">
+                {displayMode === 'components'
+                  ? 'Thành phần: tô màu bộ thủ trong chữ, chiết tự dùng nét bút lông.'
+                  : 'Hiện đại: chữ in rõ nét. Chọn "Thành phần" để tô màu bộ thủ.'}
+              </p>
+            </div>
 
-          <button
-            type="button"
-            className="tool-btn theme-toggle-btn"
-            onClick={onToggleDarkMode}
-            title={isDarkMode ? 'Chuyển giao diện Sáng' : 'Chuyển giao diện Tối'}
-            aria-label="Đổi giao diện sáng/tối"
-          >
-            {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
-          </button>
+            <div className="sh-menu-section sh-only-sm">
+              <button type="button" className="sh-menu-item" role="menuitem" data-menu-close onClick={onOpenPinyinChart}>
+                <span className="sh-glyph" lang="zh" aria-hidden="true">拼</span>
+                <span>Bảng Pinyin</span>
+              </button>
+              <button type="button" className="sh-menu-item" role="menuitem" data-menu-close onClick={onToggleDarkMode}>
+                {isDarkMode ? <Sun size={16} aria-hidden="true" /> : <Moon size={16} aria-hidden="true" />}
+                <span>{isDarkMode ? 'Giao diện sáng' : 'Giao diện tối'}</span>
+              </button>
+            </div>
+
+            {widget && <div className="sh-menu-section sh-menu-widget">{widget}</div>}
+
+            <div className="sh-menu-section sh-menu-shortcuts">
+              <button
+                type="button"
+                className="sh-menu-item"
+                role="menuitem"
+                aria-expanded={showShortcuts}
+                onClick={() => setShowShortcuts((v) => !v)}
+              >
+                <Keyboard size={16} aria-hidden="true" />
+                <span>Phím tắt</span>
+                <ChevronDown size={14} className={`sh-chevron ${showShortcuts ? 'is-open' : ''}`} aria-hidden="true" />
+              </button>
+              {showShortcuts && (
+                <ul className="sh-shortcuts">
+                  {SHORTCUTS.map((s) => (
+                    <li key={s.desc}>
+                      <span className="sh-keys">
+                        {s.keys.map((k) => (
+                          <kbd key={k} className="sh-kbd">{k}</kbd>
+                        ))}
+                      </span>
+                      <span className="sh-desc">{s.desc}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
         </div>
+
+        <button
+          type="button"
+          className="sh-icon-btn sh-hide-sm"
+          onClick={onToggleDarkMode}
+          title={isDarkMode ? 'Giao diện sáng' : 'Giao diện tối'}
+          aria-label="Đổi giao diện sáng/tối"
+        >
+          {isDarkMode ? <Sun size={18} aria-hidden="true" /> : <Moon size={18} aria-hidden="true" />}
+        </button>
       </div>
     </header>
   )

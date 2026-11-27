@@ -1,0 +1,211 @@
+/* ==========================================================================
+   Hibu Hanzi — "Mực & Giấy" design tokens. Source of truth: FE/DESIGN-SYSTEM.md
+   Loaded FIRST. Legacy variable names at the bottom are aliases so old rules follow the new palette.
+   ========================================================================== */
+
+:root {
+  /* Paper (light) */
+  --paper: #f5f0e6;          /* app background: warm rice paper */
+  --paper-2: #efe8da;        /* sunken areas: rails, wells */
+  --sheet: #fffcf5;          /* raised surface: the study sheet, modals */
+  --ink: #1d1a16;            /* primary text, the glyph itself */
+  --ink-2: #4a443b;          /* secondary text */
+  --ink-3: #736b5e;          /* meta, labels (≥4.5:1 on paper) */
+  --ink-4: #b4ab9b;          /* disabled, placeholders */
+  --rule: #e2d9c7;           /* hairlines */
+  --rule-strong: #cfc3ad;    /* input borders, tianzige frame */
+  --grid: #e7b8a8;           /* tianzige guide lines (faint vermilion, like printed practice paper) */
+  --hover: rgba(29, 26, 22, 0.05);
+  --press: rgba(29, 26, 22, 0.09);
+
+  /* Vermilion seal: brand + the ONE primary action per view + selection */
+  --seal: #b8322a;
+  --seal-ink: #fffaf2;       /* text on seal */
+  --seal-soft: rgba(184, 50, 42, 0.09);
+  --seal-line: rgba(184, 50, 42, 0.35);
+
+  /* Tone colours: used ONLY to colour pinyin syllables (and tone dots). Muted, readable on paper. */
+  --tone-1: #2f6db5;  /* ā  high level  — blue   */
+  --tone-2: #237a4b;  /* á  rising      — green  */
+  --tone-3: #94600c;  /* ǎ  dip         — amber  */
+  --tone-4: #8a4bc0;  /* à  falling     — violet */
+  --tone-5: #756d60;  /* neutral        — grey   */
+
+  /* Semantic labels (small marks only, never big fills) */
+  --etymology: #2f6db5;   /* "Nguồn gốc" — real origin */
+  --mnemonic: #94600c;    /* "Mẹo nhớ"  — folk mnemonic */
+
+  /* Type */
+  --font-ui: 'Be Vietnam Pro', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-display: 'Noto Serif', 'Noto Serif SC', Georgia, serif;     /* Hán Việt, headings with character */
+  --font-han: 'Noto Serif SC', 'Songti SC', 'SimSun', serif;          /* Chinese glyphs (default "Khải") */
+  --font-han-brush: 'Ma Shan Zheng', 'Noto Serif SC', serif;
+
+  --text-xs: 11px;   /* labels (uppercase, tracked) */
+  --text-sm: 12.5px; /* meta */
+  --text-md: 14px;   /* UI default, body */
+  --text-lg: 16px;   /* reading text (mnemonics) */
+  --text-xl: 20px;   /* meaning */
+  --text-2xl: 28px;  /* section display */
+  --text-3xl: 40px;  /* Hán Việt display */
+  --leading: 1.55;
+  --tracking-label: 0.08em;
+
+  /* Space (4px grid) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+
+  /* Shape: sharp. 0 for structure (panels, sheet, tianzige), 3px for controls. No pills. */
+  --radius-0: 0;
+  --radius-sm: 2px;
+  --radius-md: 3px;
+  --radius-lg: 4px;
+  --radius-full: 3px;      /* legacy alias: pills are banned */
+  --radius-round: 50%;     /* only true dots */
+
+  --control-h: 36px;
+  --control-h-sm: 30px;
+  --touch: 44px;           /* minimum touch target on coarse pointers */
+
+  /* Depth: paper sits flat. Only floating things (popover, modal, drawer) cast a shadow. */
+  --shadow-float: 0 1px 0 rgba(29, 26, 22, 0.04), 0 12px 32px -8px rgba(29, 26, 22, 0.22);
+  --shadow-sheet: 0 1px 0 rgba(29, 26, 22, 0.05), 0 1px 3px rgba(29, 26, 22, 0.06);
+  --scrim: rgba(29, 26, 22, 0.38);
+
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+  --dur-1: 120ms;
+  --dur-2: 200ms;
+  --dur-3: 320ms;
+
+  /* Layout */
+  --header-h: 56px;
+  --rail-w: 300px;
+  --content-max: 980px;
+  --nav-h: 64px;
+
+  color-scheme: light;
+}
+
+html.dark {
+  /* Ink stone (dark) — warm, not blue-black */
+  --paper: #14120f;
+  --paper-2: #0f0d0b;
+  --sheet: #1c1915;
+  --ink: #f1ebdf;
+  --ink-2: #c9c0b0;
+  --ink-3: #8f8676;
+  --ink-4: #5d564b;
+  --rule: #2c2822;
+  --rule-strong: #3d372f;
+  --grid: #5a3530;
+  --hover: rgba(241, 235, 223, 0.06);
+  --press: rgba(241, 235, 223, 0.1);
+
+  --seal: #e0574c;
+  --seal-ink: #1a0f0d;
+  --seal-soft: rgba(224, 87, 76, 0.13);
+  --seal-line: rgba(224, 87, 76, 0.45);
+
+  --tone-1: #6ea8ec;
+  --tone-2: #5fc08a;
+  --tone-3: #e0aa52;
+  --tone-4: #b98ae6;
+  --tone-5: #8f8676;
+  --etymology: #6ea8ec;
+  --mnemonic: #e0aa52;
+
+  --shadow-float: 0 1px 0 rgba(0, 0, 0, 0.3), 0 16px 40px -8px rgba(0, 0, 0, 0.7);
+  --shadow-sheet: 0 1px 0 rgba(0, 0, 0, 0.3);
+  --scrim: rgba(0, 0, 0, 0.6);
+  color-scheme: dark;
+}
+
+/* ---- Legacy aliases (old rules in style.css keep working; new code must use the names above) ---- */
+:root,
+html.dark {
+  --bg-main: var(--paper);
+  --bg-elevated: var(--sheet);
+  --bg-card: var(--sheet);
+  --bg-glass: var(--paper);
+  --fg-main: var(--ink);
+  --fg-muted: var(--ink-2);
+  --fg-subtle: var(--ink-3);
+  --border-line: var(--rule);
+  --border-light: var(--rule);
+  --accent-seal: var(--seal);
+  --accent-seal-hover: var(--seal);
+  --accent-gold: var(--mnemonic);
+  --accent-blue: var(--tone-1);
+  --accent-jade: var(--tone-2);
+  --shadow-sm: none;
+  --shadow-md: var(--shadow-float);
+  --shadow-lg: var(--shadow-float);
+}
+
+/* ---- Base ---- */
+html,
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: var(--text-md);
+  line-height: var(--leading);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: var(--seal-soft);
+  color: var(--ink);
+}
+
+:focus-visible {
+  outline: 2px solid var(--seal);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Utility: the small uppercase label used for every section/group heading */
+.label {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+/* Utility: tone-coloured pinyin syllables — <span class="py t3">hǎo</span> */
+.py.t1 { color: var(--tone-1); }
+.py.t2 { color: var(--tone-2); }
+.py.t3 { color: var(--tone-3); }
+.py.t4 { color: var(--tone-4); }
+.py.t5 { color: var(--tone-5); }
+
+/* Utility: keyboard hint */
+kbd,
+.kbd {
+  font-family: var(--font-ui);
+  font-size: 10.5px;
+  font-weight: 600;
+  line-height: 1;
+  padding: 3px 5px;
+  border: 1px solid var(--rule-strong);
+  border-bottom-width: 2px;
+  border-radius: var(--radius-sm);
+  color: var(--ink-3);
+  background: var(--sheet);
+}

@@ -1,59 +1,13 @@
-import { useState, useEffect, useRef } from 'react'
+import { Fragment, useEffect, useMemo, useState } from 'react'
 import { Volume2 } from 'lucide-react'
-import HanziWriter from 'hanzi-writer'
-import type { BundleCharacter, CharacterDetail, PartInfo, PartKind, RadicalFamily } from '../core'
-import { findFamily, partPinyin } from '../core'
+import type { BundleCharacter, CharacterDetail, PartInfo, RadicalFamily, Word } from '../core'
+import { charactersWithRadical, findFamily, partPinyin } from '../core'
 import { speakChinese } from '../utils/speech'
+import { pinyinSyllables } from '../utils/tone'
 
-function LegoResultHanzi({ hanzi, isComponents }: { hanzi: string; isComponents: boolean }) {
-  const containerRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (!containerRef.current) return
-    containerRef.current.innerHTML = ''
-
-    if (!isComponents) {
-      containerRef.current.innerHTML = `<span class="lego-glyph main-result font-sans-sc" lang="zh">${hanzi}</span>`
-      return
-    }
-
-    const isDark = document.documentElement.classList.contains('dark')
-    let isSubscribed = true
-
-    HanziWriter.create(containerRef.current, hanzi, {
-      width: 30,
-      height: 30,
-      padding: 1,
-      showOutline: false,
-      strokeColor: isDark ? '#f87171' : '#dc2626',
-      radicalColor: isDark ? '#38bdf8' : '#0284c7',
-      showCharacter: true,
-      onLoadCharDataError: () => {
-        if (isSubscribed && containerRef.current) {
-          containerRef.current.innerHTML = `<span class="lego-glyph main-result font-sans-sc">${hanzi}</span>`
-        }
-      },
-    })
-
-    return () => {
-      isSubscribed = false
-      if (containerRef.current) {
-        containerRef.current.innerHTML = ''
-      }
-    }
-  }, [hanzi, isComponents])
-
-  return (
-    <div
-      ref={containerRef}
-      className="lego-result-writer-box"
-      style={{ width: 30, height: 30, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
-    />
-  )
-}
-
-const KIND_LABEL: Record<PartKind, string> = { radical: 'Bộ thủ', character: 'Chữ', component: 'Thành phần' }
-const WORDS_PREVIEW = 12
+const WORDS_PREVIEW = 8
+const FAMILY_PREVIEW = 24
+const HAN_RUN = /([㐀-鿿豈-﫿]+)/
 
 interface RightBreakdownProps {
   detail: CharacterDetail | null
@@ -64,41 +18,78 @@ interface RightBreakdownProps {
   characters?: readonly BundleCharacter[]
   families?: readonly RadicalFamily[]
   onBrowseRadical?: (form: string) => void
+  // Every word in the bundle; the breakdown picks the ones containing this character (the API detail has none).
+  allWords?: readonly Word[]
+  // Called when a Từ ghép row is clicked (not on its character buttons or speaker).
+  onSelectWord?: (word: string) => void
 }
 
-function PartRow({ part, pinyin, isComponents, onSelect }: {
-  part: PartInfo
-  pinyin: string | null
-  isComponents: boolean
-  onSelect: (hanzi: string) => void
-}) {
+function Py({ text }: { text: string }) {
   return (
-    <button
-      type="button"
-      className={`part-row kind-${part.kind}`}
-      onClick={() => onSelect(part.part)}
-      title={`Bấm để tra "${part.part}"`}
-    >
-      <span className={`part-glyph ${isComponents ? 'font-calligraphy' : 'font-sans-sc'}`} lang="zh">
-        {part.part}
-      </span>
-      <span className="part-info">
-        <span className="part-head">
-          <span className="part-hv">{part.hanViet ? part.hanViet.toUpperCase() : '—'}</span>
-          {pinyin && <span className="part-py">{pinyin}</span>}
-          <span className={`part-kind-tag kind-${part.kind}`}>{part.label ?? KIND_LABEL[part.kind]}</span>
-        </span>
-        <span className="part-mean">{part.meaningVi ?? '—'}</span>
-      </span>
-    </button>
+    <span className="anat-py">
+      {pinyinSyllables(text).map((s, i) => (
+        <span key={i} className={`py t${s.tone}`}>{s.text}{' '}</span>
+      ))}
+    </span>
   )
 }
 
-function SectionHeader({ title, badge }: { title: string; badge?: string }) {
+// Han runs inside prose are set in the Han face so component glyphs read as glyphs.
+function Prose({ text }: { text: string }) {
   return (
-    <div className="bd-section-header">
-      <h3 className="bd-section-title">{title}</h3>
-      {badge && <span className="bd-section-sub">{badge}</span>}
+    <>
+      {text.split(HAN_RUN).map((chunk, i) =>
+        i % 2 === 1 ? <span key={i} className="anat-han" lang="zh">{chunk}</span> : <Fragment key={i}>{chunk}</Fragment>,
+      )}
+    </>
+  )
+}
+
+function TileText({ hanViet, pinyin, meaning }: { hanViet: string | null; pinyin: string | null; meaning: string | null }) {
+  return (
+    <span className="anat-tile-text">
+      <span className="anat-hv">{hanViet ?? '—'}</span>
+      {pinyin ? <Py text={pinyin} /> : <span className="anat-py" />}
+      <span className="anat-mean" title={meaning ?? undefined}>{meaning ?? ''}</span>
+    </span>
+  )
+}
+
+function Skeleton() {
+  return (
+    <div className="anat anat-skel" aria-busy="true" aria-label="Đang tải chiết tự">
+      <section className="anat-sec">
+        <div className="anat-head"><span className="label">Chiết tự</span></div>
+        <div className="anat-skel-bars">
+          <span className="skel-line" style={{ width: '60%', height: 14 }} />
+          <span className="skel-line" style={{ width: '85%', height: 14 }} />
+          <span className="skel-line" style={{ width: '40%', height: 14 }} />
+        </div>
+      </section>
+      <div className="anat-cols">
+        {[0, 1].map((i) => (
+          <div key={i} className="anat-col">
+            <span className="skel-line" style={{ width: 88 }} />
+            <span className="skel-line" style={{ width: '100%', height: 14 }} />
+            <span className="skel-line" style={{ width: '92%', height: 14 }} />
+            <span className="skel-line" style={{ width: '60%', height: 14 }} />
+          </div>
+        ))}
+      </div>
+      <section className="anat-sec">
+        <div className="anat-head"><span className="label">Từ ghép</span></div>
+        <div className="anat-words">
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className="anat-word">
+              <span className="skel-line" style={{ width: 56, height: 22 }} />
+              <span className="anat-word-body">
+                <span className="skel-line" style={{ width: '45%' }} />
+                <span className="skel-line" style={{ width: '75%' }} />
+              </span>
+            </div>
+          ))}
+        </div>
+      </section>
     </div>
   )
 }
@@ -111,154 +102,200 @@ export function RightBreakdown({
   characters,
   families = [],
   onBrowseRadical,
+  allWords,
+  onSelectWord,
 }: RightBreakdownProps) {
   const isComponents = displayMode === 'components'
   const [showAllWords, setShowAllWords] = useState(false)
+  const [showAllFamily, setShowAllFamily] = useState(false)
   const hanzi = detail?.character.hanzi
-  useEffect(() => setShowAllWords(false), [hanzi])
+  useEffect(() => { setShowAllWords(false); setShowAllFamily(false) }, [hanzi])
 
-  const shell = (content: React.ReactNode) => (
-    <aside className="studio-sidebar-right">
-      <div className="right-panel-scroll">
-        <div className="breakdown-panel-header">
-          <h2 className="breakdown-title">Chiết Tự & Hán Việt</h2>
-        </div>
-        {content}
-      </div>
-    </aside>
+  const words = useMemo(() => {
+    if (!hanzi) return []
+    const own = detail?.words ?? []
+    const pool = own.length > 0 ? own : (allWords ?? []).filter((w) => w.word.includes(hanzi))
+    return pool
+      .filter((w) => w.word !== hanzi).sort(
+      (a, b) =>
+        (a.hsk2Level ?? a.hsk3Level ?? 99) - (b.hsk2Level ?? b.hsk3Level ?? 99) ||
+        a.word.length - b.word.length ||
+        a.id - b.id,
+    )
+  }, [detail, allWords, hanzi])
+
+  const ownFamily = useMemo(() => (hanzi ? findFamily(families, hanzi) : null), [families, hanzi])
+  const familyChars = useMemo(
+    () => (ownFamily && characters ? charactersWithRadical(characters, ownFamily) : []),
+    [ownFamily, characters],
   )
 
-  if (isLoading) {
-    return shell(
-      <div className="breakdown-loading">
-        <div className="spinner-ring-mini" />
-        <span>Đang tải thông tin…</span>
-      </div>,
-    )
-  }
+  if (isLoading) return <Skeleton />
+  if (!detail) return null
 
-  if (!detail) {
-    return shell(
-      <div className="breakdown-empty-placeholder">
-        <div className="placeholder-watermark" aria-hidden="true">字</div>
-        <p className="placeholder-title">Chưa chọn chữ Hán</p>
-        <p className="placeholder-desc">
-          Chọn một chữ từ danh mục bên trái hoặc đổi bộ lọc cấp độ để xem chiết tự và cầu nối Hán Việt.
-        </p>
-      </div>,
-    )
-  }
-
-  const { character, radical, parts = [], words = [] } = detail
+  const { character, radical, parts = [] } = detail
   const pinyinOf = (p: PartInfo) => p.pinyin ?? partPinyin(p.part, characters)
+  const primary = character.readings.find((r) => r.isPrimary) ?? character.readings[0]
+  const decomposed = parts.length > 0
   // An undecomposed character still shows which radical it is filed under.
-  const shownParts = parts.length > 0 ? parts : radical && radical.part !== character.hanzi ? [radical] : []
-  const shownWords = showAllWords ? words : words.slice(0, WORDS_PREVIEW)
-  const kinds = new Set(shownParts.map((p) => p.kind))
-  // Radicals in this character that can be browsed, each family once (亻 and 人 are one family).
+  const shownParts = decomposed ? parts : radical && radical.part !== character.hanzi ? [radical] : []
+  const many = parts.length >= 4
   const browsable = shownParts
     .filter((p) => p.kind === 'radical')
     .map((p) => findFamily(families, p.part))
     .filter((f, i, all): f is RadicalFamily => f !== null && f.count > 1 && all.findIndex((g) => g?.key === f.key) === i)
 
-  return shell(
-    <div className="bd-unified">
-      <section className="bd-section">
-        <SectionHeader
-          title="Cấu tạo"
-          badge={parts.length > 0 ? `${parts.length} thành phần` : 'chữ độc thể'}
-        />
-        <div className="breakdown-card decomposition-card">
-          {parts.length === 0 && (
-            <p className="bd-note">
-              Chữ này là một khối, không tách nhỏ hơn
-              {shownParts.length > 0 ? '; xếp vào bộ:' : '.'}
-            </p>
-          )}
-          <div className="part-stack">
-            {shownParts.map((p, idx) => (
-              <div key={idx} className="part-step">
-                {idx > 0 && <span className="part-plus" aria-hidden="true">+</span>}
-                <PartRow part={p} pinyin={pinyinOf(p)} isComponents={isComponents} onSelect={onSelectHanzi} />
-              </div>
+  // chietTuType says what the chietTu text is: a real origin, or a folk memory aid.
+  const chietTuIsMnemonic = character.chietTuType === 'mnemonic'
+  const origin = chietTuIsMnemonic ? null : character.chietTu
+  const mnemonics = [character.mnemonicVi, chietTuIsMnemonic ? character.chietTu : null].filter(
+    (t, i, all): t is string => !!t && all.indexOf(t) === i,
+  )
+
+  const shownWords = showAllWords ? words : words.slice(0, WORDS_PREVIEW)
+  const glyphFont = isComponents ? 'font-calligraphy' : ''
+  const shownFamily = showAllFamily ? familyChars : familyChars.slice(0, FAMILY_PREVIEW)
+
+  return (
+    <div className="anat" key={character.hanzi}>
+      {shownParts.length > 0 && (
+        <section className="anat-sec" aria-labelledby="anat-h-parts">
+          <div className="anat-head">
+            <h2 id="anat-h-parts" className="label">Chiết tự</h2>
+          </div>
+          {!decomposed && <p className="anat-note">Chữ độc thể, không tách nhỏ hơn. Thuộc bộ:</p>}
+          <div className={`anat-eq${many ? ' many' : ''}`}>
+            {shownParts.map((p, i) => (
+              <span key={i} className="anat-step">
+                {decomposed && i > 0 && <span className="anat-op" aria-hidden="true">+</span>}
+                <button
+                  type="button"
+                  className={`anat-item anat-part kind-${p.kind}`}
+                  onClick={() => onSelectHanzi(p.part)}
+                  title={`Tra "${p.part}"`}
+                >
+                  <span className="anat-tile">
+                    <span className={`anat-glyph ${glyphFont}`} lang="zh">{p.part}</span>
+                    {p.kind === 'radical' && <span className="anat-tag">Bộ</span>}
+                  </span>
+                  <TileText hanViet={p.hanViet} pinyin={pinyinOf(p)} meaning={p.meaningVi} />
+                </button>
+              </span>
             ))}
-            {parts.length > 0 && (
-              <div className="part-result-line">
-                <span className="part-equals" aria-hidden="true">=</span>
-                <div className="lego-result-chip" onClick={() => onSelectHanzi(character.hanzi)} title={`Chữ "${character.hanzi}"`}>
-                  <LegoResultHanzi hanzi={character.hanzi} isComponents={isComponents} />
-                </div>
-              </div>
+            {decomposed && (
+              <span className="anat-step">
+                <span className="anat-op" aria-hidden="true">=</span>
+                <span className="anat-item anat-result" aria-label={`Kết quả ${character.hanzi}`}>
+                  <span className="anat-tile">
+                    <span className={`anat-glyph ${glyphFont}`} lang="zh">{character.hanzi}</span>
+                  </span>
+                  <TileText hanViet={primary?.hanViet ?? null} pinyin={primary?.pinyin ?? null} meaning={primary?.meaningVi ?? null} />
+                </span>
+              </span>
             )}
           </div>
           {browsable.length > 0 && onBrowseRadical && (
-            <div className="part-browse">
+            <div className="anat-browse">
               {browsable.map((f) => (
-                <button key={f.key} type="button" className="radical-chip" onClick={() => onBrowseRadical(f.key)}>
-                  Xem {f.count} chữ cùng bộ <span lang="zh">{f.display}</span> ({f.info.hanViet ?? f.key}) →
+                <button key={f.key} type="button" className="anat-link" onClick={() => onBrowseRadical(f.key)}>
+                  {f.count} chữ cùng bộ <span lang="zh" className="anat-han">{f.display}</span> ({f.info.hanViet ?? f.key})
                 </button>
               ))}
             </div>
           )}
-          {kinds.size > 0 && (
-            <div className="part-legend">
-              {(['radical', 'character', 'component'] as const).filter((k) => kinds.has(k)).map((k) => (
-                <span key={k} className={`part-legend-item kind-${k}`}>{KIND_LABEL[k]}</span>
+        </section>
+      )}
+
+      {ownFamily && familyChars.length > 0 && (
+        <section className="anat-sec" aria-labelledby="anat-h-family">
+          <div className="anat-head">
+            <h2 id="anat-h-family" className="label">
+              Chữ thuộc bộ <span className="anat-han" lang="zh">{ownFamily.key}</span>
+            </h2>
+            <span className="anat-count">{familyChars.length}</span>
+          </div>
+          <div className="anat-family">
+            {shownFamily.map((c) => {
+              const r = c.readings.find((x) => x.isPrimary) ?? c.readings[0]
+              return (
+                <button key={c.hanzi} type="button" className="anat-fcell" onClick={() => onSelectHanzi(c.hanzi)} title={r ? `${c.hanzi} · ${r.pinyin}` : c.hanzi}>
+                  <span className="anat-fglyph" lang="zh">{c.hanzi}</span>
+                  <span className="anat-fhv">{r?.hanViet ?? ''}</span>
+                </button>
+              )
+            })}
+          </div>
+          {familyChars.length > FAMILY_PREVIEW && (
+            <button type="button" className="anat-link anat-more" onClick={() => setShowAllFamily((v) => !v)}>
+              {showAllFamily ? 'Thu gọn' : `Xem thêm ${familyChars.length - FAMILY_PREVIEW} chữ`}
+            </button>
+          )}
+        </section>
+      )}
+
+      {(origin || mnemonics.length > 0) && (
+        <div className="anat-cols">
+          {origin && (
+            <section className="anat-col" aria-labelledby="anat-h-origin">
+              <h2 id="anat-h-origin" className="label anat-col-label">
+                <i className="anat-dot" style={{ background: 'var(--etymology)' }} />Nguồn gốc
+              </h2>
+              <p className="anat-text"><Prose text={origin} /></p>
+            </section>
+          )}
+          {mnemonics.length > 0 && (
+            <section className="anat-col" aria-labelledby="anat-h-mnemonic">
+              <h2 id="anat-h-mnemonic" className="label anat-col-label">
+                <i className="anat-dot" style={{ background: 'var(--mnemonic)' }} />Mẹo nhớ
+              </h2>
+              {mnemonics.map((t, i) => (
+                <p key={i} className="anat-text"><Prose text={t} /></p>
               ))}
-            </div>
+            </section>
           )}
         </div>
-      </section>
-
-      <section className="bd-section">
-        <SectionHeader title="Nguồn gốc chữ Hán" />
-        <div className="breakdown-card origin-card">
-          {character.chietTu ? (
-            <p className="mnemonic-narrative-text">{character.chietTu}</p>
-          ) : (
-            <p className="bd-note">Chưa có nguồn gốc cho chữ này.</p>
-          )}
-        </div>
-      </section>
-
-      <section className="bd-section">
-        <SectionHeader title="Mẹo nhớ nhanh" />
-        <div className="breakdown-card mnemonic-card">
-          {character.mnemonicVi ? (
-            <p className="mnemonic-narrative-text">{character.mnemonicVi}</p>
-          ) : (
-            <p className="bd-note">Chưa có mẹo nhớ cho chữ này.</p>
-          )}
-        </div>
-      </section>
+      )}
 
       {words.length > 0 && (
-        <section className="bd-section">
-          <SectionHeader title="Từ ghép" badge={`${words.length} từ`} />
-          <div className="bd-words-flow">
-            {shownWords.map((w) => (
-              <div key={w.id} className="compound-word-row" title={w.meaningVi}>
-                <div className="word-glyph-line">
-                  <span className="word-chinese-text font-sans-sc" lang="zh" onClick={() => speakChinese(w.word)} title="Nghe phát âm từ">
-                    {w.word}
-                  </span>
-                  <button type="button" className="word-audio-btn" onClick={() => speakChinese(w.word)} title="Phát âm tiếng Trung" aria-label="Phát âm">
-                    <Volume2 size={14} />
-                  </button>
-                  <span className="word-pinyin-label">{w.pinyin}</span>
-                  <span className="word-seal-hv">{w.hanViet ? w.hanViet.toUpperCase() : '—'}</span>
-                </div>
-                <div className="word-meaning-line">{w.meaningVi}</div>
-              </div>
-            ))}
+        <section className="anat-sec" aria-labelledby="anat-h-words">
+          <div className="anat-head">
+            <h2 id="anat-h-words" className="label">Từ ghép</h2>
+            <span className="anat-count">{words.length}</span>
           </div>
+          <ul className="anat-words">
+            {shownWords.map((w) => (
+              <li key={w.id} className={`anat-word${onSelectWord ? ' is-link' : ''}`} title={w.meaningVi} onClick={onSelectWord ? () => onSelectWord(w.word) : undefined}>
+                <span className="anat-word-zh" lang="zh">
+                  {Array.from(w.word).map((ch, i) =>
+                    ch === character.hanzi ? (
+                      <span key={i} className="anat-wc is-current">{ch}</span>
+                    ) : (
+                      <button key={i} type="button" className="anat-wc" onClick={(e) => { e.stopPropagation(); onSelectHanzi(ch) }} aria-label={`Tra chữ ${ch}`}>
+                        {ch}
+                      </button>
+                    ),
+                  )}
+                </span>
+                <span className="anat-word-body">
+                  <span className="anat-word-head">
+                    <Py text={w.pinyin} />
+                    {w.hanViet && <span className="anat-hv">{w.hanViet}</span>}
+                  </span>
+                  <span className="anat-word-mean">{w.meaningVi}</span>
+                </span>
+                <button type="button" className="anat-speak" onClick={(e) => { e.stopPropagation(); speakChinese(w.word, 1, w.pinyin) }} title="Nghe phát âm" aria-label={`Phát âm ${w.word}`}>
+                  <Volume2 size={16} />
+                </button>
+              </li>
+            ))}
+          </ul>
           {words.length > WORDS_PREVIEW && (
-            <button type="button" className="bd-more-btn" onClick={() => setShowAllWords((v) => !v)}>
+            <button type="button" className="anat-link anat-more" onClick={() => setShowAllWords((v) => !v)}>
               {showAllWords ? 'Thu gọn' : `Xem thêm ${words.length - WORDS_PREVIEW} từ`}
             </button>
           )}
         </section>
       )}
-    </div>,
+    </div>
   )
 }

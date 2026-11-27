@@ -6,6 +6,7 @@ import { pickRandom } from '../core'
 import { Pin, PinOff, Minus, X, Volume2 } from 'lucide-react'
 import { api } from '../api'
 import { speakChinese } from '../utils/speech'
+import { TonePinyin } from '../components/TonePinyin'
 
 // Frameless, always-on-top widget page for the Electron shell in desktop/.
 // There is no visible chrome: drag the card to move it, double-click for the next character,
@@ -45,9 +46,9 @@ const FAVORITES_KEY = 'hibu_hanzi_favs'
 const LEVELS: HskLevel[] = [1, 2, 3, 4, 5, 6]
 const INTERVALS = [10, 30, 60, 120, 300]
 const SIZES: Record<Size, { label: string; width: number; height: number }> = {
-  s: { label: 'Nhỏ', width: 200, height: 250 },
-  m: { label: 'Vừa', width: 260, height: 320 },
-  l: { label: 'Lớn', width: 340, height: 410 },
+  s: { label: 'Nhỏ', width: 280, height: 160 },
+  m: { label: 'Vừa', width: 320, height: 200 },
+  l: { label: 'Lớn', width: 420, height: 260 },
 }
 const THEMES: Record<Theme, string> = { auto: 'Theo máy', light: 'Sáng', dark: 'Tối' }
 // Writing mode: still glyph before the strokes are drawn, and after they finish.
@@ -194,8 +195,6 @@ export function DesktopWidget() {
   }
 
   const primary = current?.readings.find((r) => r.isPrimary) ?? current?.readings[0]
-  const { width, height } = SIZES[settings.size]
-  const glyphSize = Math.max(80, Math.min(width - 40, height - 120))
 
   return (
     <div
@@ -347,20 +346,20 @@ export function DesktopWidget() {
           )}
           {current ? (
             <div className="dw-content">
-              {settings.write ? (
-                <WritingGlyph
-                  key={current.hanzi}
-                  hanzi={current.hanzi}
-                  size={glyphSize}
-                  paused={showSettings}
-                  onDone={random}
-                />
-              ) : (
-                <PartsGlyph hanzi={current.hanzi} size={glyphSize} />
-              )}
-              <div className="dw-pinyin">{primary?.pinyin}</div>
-              {primary?.hanViet && <div className="dw-hanviet">{primary.hanViet}</div>}
-              <div className="dw-meaning">{primary?.meaningVi}</div>
+              <GlyphBox>
+                {(size) =>
+                  settings.write ? (
+                    <WritingGlyph key={current.hanzi} hanzi={current.hanzi} size={size} paused={showSettings} onDone={random} />
+                  ) : (
+                    <PartsGlyph hanzi={current.hanzi} size={size} />
+                  )
+                }
+              </GlyphBox>
+              <div className="dw-info">
+                <TonePinyin pinyin={primary?.pinyin ?? ''} className="dw-pinyin" />
+                {primary?.hanViet && <div className="dw-hanviet">{primary.hanViet}</div>}
+                <div className="dw-meaning">{primary?.meaningVi}</div>
+              </div>
             </div>
           ) : (
             <div className="dw-content dw-empty">
@@ -373,6 +372,25 @@ export function DesktopWidget() {
           )}
         </>
       )}
+    </div>
+  )
+}
+
+// Square box that fills the available height; children get its pixel size (HanziWriter needs numbers).
+function GlyphBox({ children }: { children: (size: number) => React.ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null)
+  const [size, setSize] = useState(0)
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const ro = new ResizeObserver(() => setSize(Math.floor(Math.min(el.clientWidth, el.clientHeight))))
+    ro.observe(el)
+    setSize(Math.floor(Math.min(el.clientWidth, el.clientHeight)))
+    return () => ro.disconnect()
+  }, [])
+  return (
+    <div className="dw-glyph-box" ref={ref}>
+      {size > 8 && children(size - 2)}
     </div>
   )
 }
@@ -399,7 +417,7 @@ function PartsGlyph({ hanzi, size }: { hanzi: string; size: number }) {
 
   if (failed) {
     return (
-      <div className="dw-glyph font-serif-sc" style={{ width: size, height: size, fontSize: size * 0.85 }}>
+      <div className="dw-glyph dw-glyph-fallback" style={{ width: size, height: size, fontSize: size * 0.8 }}>
         {hanzi}
       </div>
     )
@@ -439,6 +457,7 @@ function WritingGlyph({
     if (!el || paused) return
     el.innerHTML = ''
     const dark = document.documentElement.classList.contains('dark')
+    const css = (name: string, fallback: string) => getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback
     let timer = 0
     let cancelled = false
     const writer = HanziWriter.create(el, hanzi, {
@@ -446,9 +465,9 @@ function WritingGlyph({
       height: size,
       padding: 4,
       showOutline: true,
-      outlineColor: dark ? '#262c38' : '#e7e3da',
-      strokeColor: dark ? '#f87171' : '#b91c1c',
-      radicalColor: dark ? '#38bdf8' : '#0284c7',
+      outlineColor: css('--rule-strong', dark ? '#3d372f' : '#cfc3ad'),
+      strokeColor: css('--ink', dark ? '#f1ebdf' : '#1d1a16'),
+      radicalColor: css('--seal', dark ? '#e0574c' : '#b8322a'),
       delayBetweenStrokes: 200,
       onLoadCharDataError: () => {
         if (!cancelled) timer = window.setTimeout(() => onDoneRef.current(), WRITE_HOLD_MS)

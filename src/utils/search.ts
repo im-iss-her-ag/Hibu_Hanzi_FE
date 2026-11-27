@@ -32,6 +32,9 @@ export function scoreCharacterMatch(c: BundleCharacter, rawQuery: string): numbe
   const q = rawQuery.trim().toLowerCase()
   if (!q) return 1
   const qFold = normalizeFolded(q).replace(/v/g, 'u')
+  // A verbatim match only outranks a folded one when the user actually typed tone marks/diacritics;
+  // "hao" should treat hảo (好) and hao (耗) alike and let the HSK level decide.
+  const exactScore = q === normalizeFolded(q) ? 90 : 95
 
   if (c.hanzi === q || c.traditional === q) return 100
   if (c.hanzi.includes(q) || (c.traditional && c.traditional.includes(q))) return 85
@@ -45,7 +48,7 @@ export function scoreCharacterMatch(c: BundleCharacter, rawQuery: string): numbe
     const meanRaw = r.meaningVi.toLowerCase()
     const meanFold = normalizeFolded(meanRaw)
 
-    if (pyRaw === q || hvRaw === q) best = Math.max(best, 95)
+    if (pyRaw === q || hvRaw === q) best = Math.max(best, exactScore)
     else if (pyFold === qFold || (hvFold && hvFold === qFold)) best = Math.max(best, 90)
     else if (pyFold.startsWith(qFold) || (hvFold && hvFold.startsWith(qFold))) best = Math.max(best, 75)
     else if (pyRaw.includes(q) || hvRaw.includes(q)) best = Math.max(best, 60)
@@ -55,6 +58,11 @@ export function scoreCharacterMatch(c: BundleCharacter, rawQuery: string): numbe
   }
 
   return best
+}
+
+/** Lowest HSK level across both standards; unlevelled items (bộ thủ, components) go last. */
+function levelRank(item: { hsk2Level?: number | null; hsk3Level?: number | null }): number {
+  return Math.min(item.hsk3Level ?? 99, item.hsk2Level ?? 99)
 }
 
 export function filterAndSortCharacters(
@@ -67,7 +75,8 @@ export function filterAndSortCharacters(
   return characters
     .map((char) => ({ char, score: scoreCharacterMatch(char, q) }))
     .filter((entry) => entry.score > 0)
-    .sort((a, b) => b.score - a.score)
+    // Same match quality: easier (lower HSK) first, so "hao" shows 好 before 耗.
+    .sort((a, b) => b.score - a.score || levelRank(a.char) - levelRank(b.char))
     .map((entry) => entry.char)
 }
 
@@ -100,5 +109,7 @@ export function filterAndSortWords(words: readonly Word[], rawQuery: string): Wo
     if (score > 0) scored.push({ word: w, score })
   }
 
-  return scored.sort((a, b) => b.score - a.score).map((entry) => entry.word)
+  return scored
+    .sort((a, b) => b.score - a.score || levelRank(a.word) - levelRank(b.word))
+    .map((entry) => entry.word)
 }

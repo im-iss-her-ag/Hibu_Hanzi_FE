@@ -1,9 +1,11 @@
-import { useState, useMemo, useEffect } from 'react'
-import { Search, X, Volume2 } from 'lucide-react'
+import { useState, useMemo, useEffect, useRef } from 'react'
+import { Search, X, Volume2, History } from 'lucide-react'
 import type { BundleCharacter, RadicalFamily, Word } from '../core'
 import { RADICAL_CHARACTERS } from '../core'
 import { speakChinese } from '../utils/speech'
 import { filterAndSortCharacters, filterAndSortWords } from '../utils/search'
+import { useModalA11y } from '../utils/useModalA11y'
+import { CharRowBody, TonePinyin, highlight } from './CharRowBody'
 
 interface SearchModalProps {
   characters: readonly BundleCharacter[]
@@ -12,6 +14,10 @@ interface SearchModalProps {
   onClose: () => void
   families?: readonly RadicalFamily[]
   onBrowseRadical?: (form: string) => void
+  /** Recently viewed characters (most recent first); shown when the query is empty. */
+  recent?: readonly string[]
+  /** When given, picking a word result calls this instead of opening its first character. */
+  onSelectWord?: (word: string) => void
 }
 
 // What a beginner can type, each with a tappable example.
@@ -30,9 +36,14 @@ export function SearchModal({
   onClose,
   families = [],
   onBrowseRadical,
+  recent = [],
+  onSelectWord,
 }: SearchModalProps) {
+  const dialogRef = useModalA11y<HTMLDivElement>(onClose)
   const [query, setQuery] = useState('')
   const [tab, setTab] = useState<'chars' | 'words'>('chars')
+  const [cursor, setCursor] = useState(0)
+  const listRef = useRef<HTMLDivElement>(null)
 
   // Merge HSK characters with standalone radicals so searching "mịch", "trảo", "氵" also works
   const searchableCharacters = useMemo(() => {
@@ -73,208 +84,232 @@ export function SearchModal({
     }
   }, [filteredChars.length, filteredWords.length, tab])
 
+  const shownChars = filteredChars.slice(0, 60)
+  const shownWords = filteredWords.slice(0, 60)
+  const recentChars = useMemo(() => {
+    const byHanzi = new Map(searchableCharacters.map((c) => [c.hanzi, c]))
+    return recent.map((h) => byHanzi.get(h)).filter((c): c is BundleCharacter => Boolean(c)).slice(0, 8)
+  }, [recent, searchableCharacters])
+  const hasQuery = query.trim().length > 0
+  const rowCount = !hasQuery ? 0 : tab === 'chars' ? shownChars.length : shownWords.length
+
+  useEffect(() => setCursor(0), [query, tab])
+
+  useEffect(() => {
+    listRef.current?.querySelector('[data-active="true"]')?.scrollIntoView({ block: 'nearest' })
+  }, [cursor, query, tab])
+
+  const pickChar = (hanzi: string) => {
+    onSelectHanzi(hanzi)
+    onClose()
+  }
+  const pickWord = (w: Word) => {
+    if (onSelectWord) {
+      onSelectWord(w.word)
+      onClose()
+      return
+    }
+    const first = Array.from(w.word)[0]
+    if (first) onSelectHanzi(first)
+    onClose()
+  }
+
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      e.preventDefault()
+      onClose()
+    } else if (e.key === 'ArrowDown' && rowCount > 0) {
+      e.preventDefault()
+      setCursor((c) => Math.min(rowCount - 1, c + 1))
+    } else if (e.key === 'ArrowUp' && rowCount > 0) {
+      e.preventDefault()
+      setCursor((c) => Math.max(0, c - 1))
+    } else if (e.key === 'Enter' && rowCount > 0) {
+      e.preventDefault()
+      if (tab === 'chars') pickChar(shownChars[cursor].hanzi)
+      else pickWord(shownWords[cursor])
+    } else if (e.key === 'Tab' && query.trim() && filteredChars.length > 0 && filteredWords.length > 0) {
+      e.preventDefault()
+      setTab((t) => (t === 'chars' ? 'words' : 'chars'))
+    }
+  }
+
+  const levelTag = (l: number | null | undefined) => (l ? `HSK ${l}` : null)
+
   return (
     <div
-      className="modal-backdrop search-modal-backdrop"
+      className="pm-backdrop sm-backdrop"
       onClick={onClose}
+      onKeyDown={onKeyDown}
       onTouchStart={(e) => e.stopPropagation()}
       onTouchEnd={(e) => e.stopPropagation()}
       role="dialog"
       aria-modal="true"
-      aria-label="Tra cứu Hán tự và Từ ghép"
+      aria-label="Tra cứu chữ Hán và từ ghép"
     >
       <div
-        className="modal-content search-modal-content"
+        ref={dialogRef}
+        className="pm-dialog sm-dialog"
         onClick={(e) => e.stopPropagation()}
         onTouchStart={(e) => e.stopPropagation()}
         onTouchEnd={(e) => e.stopPropagation()}
       >
-        {/* Search Input Bar */}
-        <div className="search-bar-wrap">
-          <Search size={18} className="search-icon-inside" />
+        <div className="sm-head">
+          <Search size={20} className="sm-search-icon" aria-hidden />
           <input
             id="global-hanzi-search"
             name="global-hanzi-search"
             type="text"
-            className="search-input-field"
-            placeholder="Tra chữ Hán, Pinyin (vd: hao), Hán Việt, nghĩa..."
-            aria-label="Tra cứu chữ Hán, Pinyin, Hán Việt hoặc nghĩa tiếng Việt"
+            className="sm-input"
+            placeholder="Tìm chữ, pinyin, Hán Việt, nghĩa…"
+            aria-label="Tra cứu chữ Hán, pinyin, Hán Việt hoặc nghĩa tiếng Việt"
+            role="combobox"
+            aria-expanded={rowCount > 0}
+            aria-controls="sm-listbox"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             autoFocus
+            autoComplete="off"
+            spellCheck={false}
           />
           {query && (
-            <button
-              type="button"
-              className="search-clear-pill"
-              onClick={() => setQuery('')}
-              aria-label="Xóa từ khóa"
-            >
-              Xóa
+            <button type="button" className="pm-icon-btn sm-clear" tabIndex={-1} onClick={() => setQuery('')} aria-label="Xóa nội dung" title="Xóa">
+              <X size={16} />
             </button>
           )}
-          <button type="button" className="icon-btn close-btn" onClick={onClose} aria-label="Đóng">
-            <X size={20} />
+          <kbd className="sm-esc">Esc</kbd>
+          <button type="button" className="pm-icon-btn sm-close" onClick={onClose} aria-label="Đóng" title="Đóng (Esc)">
+            <X size={18} />
           </button>
         </div>
 
-        {/* Tabs: Chữ đơn & Từ ghép */}
-        <div className="search-filter-row">
-          <div className="tab-pill-group">
-            <button
-              type="button"
-              className={`filter-pill ${tab === 'chars' ? 'active' : ''}`}
-              onClick={() => setTab('chars')}
-            >
-              Chữ đơn & Bộ thủ {query.trim() ? `(${filteredChars.length})` : ''}
-            </button>
-            <button
-              type="button"
-              className={`filter-pill ${tab === 'words' ? 'active' : ''}`}
-              onClick={() => setTab('words')}
-            >
-              Từ ghép {query.trim() ? `(${filteredWords.length})` : ''}
-            </button>
-          </div>
-        </div>
-
-        {matchedFamilies.length > 0 && onBrowseRadical && (
-          <div className="radical-match-row search-radical-row">
-            <span className="radical-match-label">Bộ thủ phù hợp:</span>
-            {matchedFamilies.slice(0, 6).map((f) => (
-              <button key={f.key} type="button" className="radical-chip" onClick={() => onBrowseRadical(f.key)}>
-                <span lang="zh">{f.display}</span> {f.info.nameVi ?? f.info.hanViet} · {f.info.meaningVi} · xem {f.count} chữ →
+        {hasQuery && (
+          <div className="sm-tabs">
+            <div className="sm-tablist" role="tablist">
+              <button type="button" role="tab" tabIndex={-1} aria-selected={tab === 'chars'} className={`sm-tab ${tab === 'chars' ? 'active' : ''}`} onClick={() => setTab('chars')}>
+                Chữ <span className="sm-tab-n">{filteredChars.length}</span>
               </button>
-            ))}
+              <button type="button" role="tab" tabIndex={-1} aria-selected={tab === 'words'} className={`sm-tab ${tab === 'words' ? 'active' : ''}`} onClick={() => setTab('words')}>
+                Từ ghép <span className="sm-tab-n">{filteredWords.length}</span>
+              </button>
+            </div>
+            {tab === 'chars' && matchedFamilies.length > 0 && onBrowseRadical && (
+              <div className="sm-radicals">
+                <span className="label">Bộ thủ</span>
+                {matchedFamilies.slice(0, 3).map((f) => (
+                  <button key={f.key} type="button" tabIndex={-1} className="sm-chip" onClick={() => onBrowseRadical(f.key)} title={`Xem ${f.count} chữ`}>
+                    <span lang="zh">{f.display}</span> {f.info.nameVi ?? f.info.hanViet}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         )}
-        {/* Results List */}
-        <div className="search-results-box">
-          {!query.trim() ? (
-            <div className="search-empty-prompt">
-              <div className="prompt-icon-circle">
-                <Search size={28} />
-              </div>
-              <h4 className="prompt-title">Chưa biết gì cũng tra được</h4>
-              <p className="prompt-desc">
-                Gõ bất cứ thứ gì bạn biết về chữ (chữ Hán, Pinyin không dấu/có dấu, Hán Việt, nghĩa hoặc tên bộ). Bấm vào ví dụ để thử:
-              </p>
-              <ul className="search-example-list">
-                {SEARCH_EXAMPLES.map(({ label, example }) => (
-                  <li key={example}>
-                    <span>{label}</span>
-                    <button type="button" className="quick-tag-chip" onClick={() => setQuery(example)}>
-                      {example}
-                    </button>
-                  </li>
-                ))}
-              </ul>
+
+        <div className="sm-results" ref={listRef} role="listbox" id="sm-listbox">
+          {!hasQuery ? (
+            <div className="sm-start">
+              {recentChars.length > 0 && (
+                <section>
+                  <h3 className="label sm-start-title"><History size={12} aria-hidden /> Gần đây</h3>
+                  <div className="sm-recent">
+                    {recentChars.map((c) => (
+                      <button key={c.hanzi} type="button" tabIndex={-1} className="sm-recent-cell" onClick={() => pickChar(c.hanzi)} title={c.readings[0]?.meaningVi}>
+                        <span lang="zh">{c.hanzi}</span>
+                      </button>
+                    ))}
+                  </div>
+                </section>
+              )}
+              <section>
+                <h3 className="label sm-start-title">Bạn có thể gõ</h3>
+                <ul className="sm-tips">
+                  {SEARCH_EXAMPLES.map(({ label, example }) => (
+                    <li key={example}>
+                      <button type="button" tabIndex={-1} className="sm-example" onClick={() => setQuery(example)}>{example}</button>
+                      <span>{label}</span>
+                    </li>
+                  ))}
+                </ul>
+              </section>
             </div>
           ) : tab === 'chars' ? (
-            filteredChars.length === 0 ? (
-              <div className="empty-search-state">
-                Không tìm thấy chữ Hán nào phù hợp với từ khóa &quot;{query}&quot;.
+            shownChars.length === 0 ? (
+              <div className="sm-empty">
+                <p className="sm-empty-title">Không có chữ nào khớp “{query.trim()}”</p>
+                <p>Thử pinyin không dấu (“hao”), âm Hán Việt (“hảo”) hoặc nghĩa (“tốt”).</p>
               </div>
             ) : (
-              <div className="char-results-grid">
-                {filteredChars.slice(0, 60).map((c) => {
-                  const primary = c.readings.find((r) => r.isPrimary) ?? c.readings[0]
-                  return (
-                    <button
-                      type="button"
-                      key={c.hanzi}
-                      className="char-result-card"
-                      onClick={() => {
-                        onSelectHanzi(c.hanzi)
-                        onClose()
-                      }}
-                    >
-                      <div className="char-badge-small" lang="zh">
-                        {c.hanzi}
-                      </div>
-                      <div className="char-result-info">
-                        <div className="pinyin-line">
-                          <span className="pinyin">{primary?.pinyin}</span>
-                          <span className="hsk-tag">
-                            {c.hsk3Level ? `HSK ${c.hsk3Level}` : 'Bộ thủ'}
-                          </span>
-                        </div>
-                        <div className="hanviet-line">
-                          {primary?.hanViet ? primary.hanViet.toUpperCase() : '—'}
-                        </div>
-                        <div className="meaning-line">{primary?.meaningVi}</div>
-                      </div>
-                    </button>
-                  )
-                })}
-              </div>
+              shownChars.map((c, i) => {
+                const active = i === cursor
+                const tag = levelTag(c.hsk3Level)
+                return (
+                  <button
+                    type="button"
+                    key={c.hanzi}
+                    role="option"
+                    aria-selected={active}
+                    data-active={active}
+                    tabIndex={-1}
+                    className={`sm-row ${active ? 'active' : ''}`}
+                    onMouseMove={() => active || setCursor(i)}
+                    onClick={() => pickChar(c.hanzi)}
+                  >
+                    <CharRowBody c={c} query={query} />
+                    <span className="pm-tag sm-tag">{tag ?? 'Bộ'}</span>
+                  </button>
+                )
+              })
             )
-          ) : filteredWords.length === 0 ? (
-            <div className="empty-search-state">
-              Không tìm thấy từ ghép nào phù hợp với từ khóa &quot;{query}&quot;.
+          ) : shownWords.length === 0 ? (
+            <div className="sm-empty">
+              <p className="sm-empty-title">Không có từ ghép nào khớp “{query.trim()}”</p>
+              <p>Thử gõ cả từ (“你好”) hoặc pinyin liền (“nihao”).</p>
             </div>
           ) : (
-            <div className="word-results-grid">
-              {filteredWords.slice(0, 60).map((w) => {
-                const chars = Array.from(w.word)
-                return (
-                  <div
-                    key={w.id}
-                    className="word-result-card"
-                    onClick={() => {
-                      const firstChar = chars[0]
-                      if (firstChar) onSelectHanzi(firstChar)
-                      onClose()
-                    }}
-                  >
-                    <div className="word-glyph-line">
-                      <span className="word-text" lang="zh">
-                        {w.word}
-                      </span>
-                      <button
-                        type="button"
-                        className="word-speak-mini"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          speakChinese(w.word)
-                        }}
-                        title="Phát âm"
-                        aria-label={`Phát âm ${w.word}`}
-                      >
-                        <Volume2 size={14} />
-                      </button>
-                      <span className="word-pinyin">{w.pinyin}</span>
-                    </div>
-                    <div className="word-info-line">
-                      <span className="word-hv">{w.hanViet?.toUpperCase()}</span>
-                      <span className="word-mean">{w.meaningVi}</span>
-                    </div>
-                    {chars.length > 1 && (
-                      <div className="word-char-jumps">
-                        <span className="word-jump-label">Xem chữ:</span>
-                        {chars.map((ch, idx) => (
-                          <button
-                            key={`${ch}-${idx}`}
-                            type="button"
-                            className="word-jump-chip"
-                            lang="zh"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              onSelectHanzi(ch)
-                              onClose()
-                            }}
-                            title={`Mở chữ ${ch}`}
-                          >
-                            {ch}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
+            shownWords.map((w, i) => {
+              const active = i === cursor
+              const tag = levelTag(w.hsk3Level)
+              return (
+                <div
+                  key={w.id}
+                  role="option"
+                  aria-selected={active}
+                  data-active={active}
+                  className={`sm-row sm-row-word ${active ? 'active' : ''}`}
+                  onMouseMove={() => active || setCursor(i)}
+                  onClick={() => pickWord(w)}
+                >
+                  <span className={`sm-glyph ${Array.from(w.word).length > 2 ? 'sm-glyph-long' : ''}`} lang="zh">{w.word}</span>
+                  <span className="sm-py-col"><TonePinyin pinyin={w.pinyin} /></span>
+                  <span className="sm-hv">{w.hanViet ? highlight(w.hanViet.toUpperCase(), query) : ''}</span>
+                  <span className="sm-mean">{highlight(w.meaningVi, query)}</span>
+                  <span className="sm-end">
+                    {tag && <span className="pm-tag sm-tag">{tag}</span>}
+                    <button
+                      type="button"
+                      className="pm-icon-btn sm-speak"
+                      tabIndex={-1}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        speakChinese(w.word)
+                      }}
+                      title="Phát âm"
+                      aria-label={`Phát âm ${w.word}`}
+                    >
+                      <Volume2 size={14} />
+                    </button>
+                  </span>
+                </div>
+              )
+            })
           )}
+        </div>
+        <div className="sm-footer">
+          <span><kbd>↑</kbd><kbd>↓</kbd> chọn</span>
+          <span><kbd>Enter</kbd> mở</span>
+          {hasQuery && <span><kbd>Tab</kbd> đổi loại</span>}
+          <span><kbd>Esc</kbd> đóng</span>
         </div>
       </div>
     </div>
