@@ -29,7 +29,7 @@
   line-height: 1;
   white-space: nowrap;
 }
-.st-dot { color: var(--ink-4); }
+.st-dot { color: var(--ink-3); }
 .st-zh { font-family: var(--font-han); font-size: var(--text-md); color: var(--ink-2); margin-left: 2px; }
 .st-meta-actions { display: flex; align-items: center; gap: var(--space-2); flex: none; }
 .st-trail { display: flex; align-items: center; gap: var(--space-1); }
@@ -283,3 +283,13 @@
 .st-segmented button:disabled { color: var(--ink-4); cursor: not-allowed; background: transparent; }
 .st-sq:disabled { color: var(--ink-4); cursor: not-allowed; background: transparent; }
 .st-nodata { margin-left: 0; text-align: left; }
+
+/* Space hint on the random button: keep legible */
+.sn-btn.sn-random kbd { font-size: 11px; }
+
+/* Mobile: tabs and audio buttons reach 44px touch height */
+@media (max-width: 767px) {
+  .st-segmented { height: var(--touch); }
+  .st-segmented button { min-height: var(--touch); }
+  .st-icon-btn, .st-sq, .st-tiny { width: var(--touch); height: var(--touch); min-width: var(--touch); }
+}

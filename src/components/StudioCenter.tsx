@@ -1,10 +1,13 @@
-import { useMemo } from 'react'
-import { Volume2, Star, ArrowLeft, X } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { Volume2, Star, ArrowLeft, X, Mic } from 'lucide-react'
 import type { BundleCharacter, CharacterDetail, LevelFilter } from '../core'
 import type { HistoryEntry } from '../App'
 import { HanziWriterCanvas } from './HanziWriterCanvas'
+import { LearnActions } from './LearnActions'
 import { speakChinese } from '../utils/speech'
 import { pinyinSyllables } from '../utils/tone'
+import { HomophonePanel } from './HomophonePanel'
+import { findHomophones } from '../utils/homophones'
 
 function TurtleIcon({ size = 20 }: { size?: number }) {
   return (
@@ -58,6 +61,11 @@ interface StudioCenterProps {
   wordInfo?: { word: string; pinyin: string; hanViet: string | null; meaningVi: string } | null
   onSelectWordChar?: (hanzi: string) => void
   onDismissWord?: () => void
+  /** Full character list + navigation, for the "Đồng âm" panel. */
+  allCharacters?: BundleCharacter[]
+  onSelectHomophone?: (hanzi: string) => void
+  /** Opens the tone trainer ("Nói thử") for the current character / word. */
+  onOpenToneTrainer?: () => void
 }
 
 const norm = (s?: string | null) => (s ?? '').trim().toLowerCase()
@@ -78,9 +86,23 @@ export function StudioCenter({
   wordInfo,
   onSelectWordChar,
   onDismissWord,
+  allCharacters,
+  onSelectHomophone,
+  onOpenToneTrainer,
 }: StudioCenterProps) {
   const readings = character.readings || []
   const primary = readings.find((r) => r.isPrimary) ?? readings[0]
+  // Keyed by hanzi so the panel closes when the character changes.
+  const [homophoneFor, setHomophoneFor] = useState<string | null>(null)
+  const showHomophones = homophoneFor === character.hanzi
+  const setShowHomophones = (f: boolean | ((v: boolean) => boolean)) => {
+    const next = typeof f === 'function' ? f(showHomophones) : f
+    setHomophoneFor(next ? character.hanzi : null)
+  }
+  const homophoneCount = useMemo(
+    () => (allCharacters && onSelectHomophone ? (['hv', 'hvLoose', 'py'] as const).map((m) => findHomophones(allCharacters, character, m).length).find((n) => n > 0) ?? 0 : 0),
+    [allCharacters, onSelectHomophone, character],
+  )
 
   // Other readings: skip the primary and anything that would repeat what is already shown
   const others = useMemo(() => {
@@ -198,6 +220,7 @@ export function StudioCenter({
           >
             <Star size={17} fill={isFavorite ? 'currentColor' : 'none'} />
           </button>
+          <LearnActions hanzi={character.hanzi} />
         </div>
       </div>
 
@@ -211,6 +234,29 @@ export function StudioCenter({
             <span className="st-hv">
               {primary?.hanViet ? primary.hanViet.toUpperCase() : <span className="st-muted">—</span>}
             </span>
+            {homophoneCount > 0 && (
+              <button
+                type="button"
+                className="hp-trigger"
+                aria-expanded={showHomophones}
+                aria-haspopup="dialog"
+                onClick={() => setShowHomophones((v) => !v)}
+                title="Chữ cùng âm Hán Việt / pinyin"
+              >
+                Đồng âm ({homophoneCount})
+              </button>
+            )}
+            {showHomophones && allCharacters && onSelectHomophone && (
+              <HomophonePanel
+                characters={allCharacters}
+                character={character}
+                onClose={() => setShowHomophones(false)}
+                onSelect={(h) => {
+                  setShowHomophones(false)
+                  onSelectHomophone(h)
+                }}
+              />
+            )}
           </div>
 
           <div className="st-pinyin-row">
@@ -224,6 +270,11 @@ export function StudioCenter({
               <button type="button" className="st-sq" disabled={!canSpeak} onClick={() => speakChinese(speakText, 0.65)} title={canSpeak ? 'Đọc chậm' : 'Chưa có phiên âm'} aria-label="Đọc chậm">
                 <TurtleIcon size={18} />
               </button>
+              {onOpenToneTrainer && (
+                <button type="button" className="st-sq" disabled={!canSpeak} onClick={onOpenToneTrainer} title={canSpeak ? 'Nói thử: luyện thanh điệu (V)' : 'Chưa có phiên âm'} aria-label="Nói thử thanh điệu">
+                  <Mic size={18} />
+                </button>
+              )}
             </span>
           </div>
 

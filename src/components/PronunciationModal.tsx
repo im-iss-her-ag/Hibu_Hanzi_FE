@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react'
-import { X, Volume2 } from 'lucide-react'
+import { X, Volume2, Mic } from 'lucide-react'
 import { parsePinyin, getFinalSampleSyllable } from '../utils/pinyinData'
 import { MouthShapeDiagram } from './MouthShapeDiagram'
 import { ToneContourDiagram } from './ToneContourDiagram'
@@ -13,6 +13,8 @@ interface PronunciationModalProps {
   hanViet?: string | null
   meaningVi?: string | null
   onClose: () => void
+  /** Opens the tone trainer for this syllable. */
+  onPractice?: () => void
 }
 
 export function PronunciationModal({
@@ -21,6 +23,7 @@ export function PronunciationModal({
   hanViet,
   meaningVi,
   onClose,
+  onPractice,
 }: PronunciationModalProps) {
   const [activeTab, setActiveTab] = useState<'initial' | 'final' | 'tone'>('initial')
 
@@ -148,6 +151,11 @@ export function PronunciationModal({
             ))}
 
           {activeTab === 'tone' && <ToneContourDiagram activeTone={selectedTone} toneVariants={toneVariants} onSelectTone={(t) => setSelectedTone(t)} />}
+          {activeTab === 'tone' && onPractice && (
+            <button type="button" className="pm-btn" style={{ marginTop: 'var(--space-3)' }} onClick={onPractice}>
+              <Mic size={14} aria-hidden="true" /> Nói thử thanh điệu
+            </button>
+          )}
         </div>
       </div>
     </div>

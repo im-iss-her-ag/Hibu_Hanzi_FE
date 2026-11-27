@@ -3,6 +3,8 @@ import { Search, X, ArrowLeft, ArrowUpDown, Star, Check, Eraser } from 'lucide-r
 import type { BundleCharacter, LevelFilter, RadicalFamily } from '../core'
 import { searchCharacters, searchRadicals } from '../core'
 import { orderRadicalFamilies } from '../utils/radicalOrder'
+import { isKnown, useLearnData } from '../learn/srs'
+import { KnownBulkBar } from './KnownBulkBar'
 
 interface LeftSidebarProps {
   characters: BundleCharacter[]
@@ -27,6 +29,13 @@ const familyName = (f: RadicalFamily) => f.info.nameVi ?? `Bộ ${f.info.hanViet
 /** Minimum cell width in px; columns = floor(width / MIN_CELL), so cells land between 56 and ~68px. */
 const MIN_CELL = 56
 const LEVELS = [1, 2, 3, 4, 5, 6] as const
+
+type KnownFilter = 'all' | 'unknown' | 'known'
+const KNOWN_OPTIONS: { id: KnownFilter; label: string }[] = [
+  { id: 'all', label: 'Tất cả' },
+  { id: 'unknown', label: 'Chưa thuộc' },
+  { id: 'known', label: 'Đã thuộc' },
+]
 
 export type SortOrder = 'default' | 'strokeAsc' | 'strokeDesc' | 'pinyinAsc'
 
@@ -53,6 +62,8 @@ export function LeftSidebar({
 }: LeftSidebarProps) {
   const [query, setQuery] = useState('')
   const [savedOnly, setSavedOnly] = useState(false)
+  const [knownFilter, setKnownFilter] = useState<KnownFilter>('all')
+  const learn = useLearnData()
   const [sortOrder, setSortOrder] = useState<SortOrder>('default')
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
@@ -96,13 +107,20 @@ export function LeftSidebar({
           : []
         : characters.filter((c) => c.hsk3Level === selectedLevel)
     if (savedOnly) list = list.filter((c) => favSet.has(c.hanzi))
+    if (knownFilter !== 'all') list = list.filter((c) => isKnown(c.hanzi, learn) === (knownFilter === 'known'))
     if (q) list = searchCharacters(list, query) as BundleCharacter[]
     if (sortOrder === 'strokeAsc') list = [...list].sort((a, b) => (a.strokeCount ?? 99) - (b.strokeCount ?? 99))
     else if (sortOrder === 'strokeDesc') list = [...list].sort((a, b) => (b.strokeCount ?? 0) - (a.strokeCount ?? 0))
     else if (sortOrder === 'pinyinAsc')
       list = [...list].sort((a, b) => (a.readings[0]?.pinyin ?? '').localeCompare(b.readings[0]?.pinyin ?? ''))
     return list
-  }, [characters, radicalCharacters, savedOnly, favSet, selectedLevel, q, query, sortOrder])
+  }, [characters, radicalCharacters, savedOnly, favSet, knownFilter, learn, selectedLevel, q, query, sortOrder])
+
+  const levelHanzi = useMemo(
+    () => (typeof selectedLevel === 'number' ? characters.filter((c) => c.hsk3Level === selectedLevel).map((c) => c.hanzi) : []),
+    [characters, selectedLevel],
+  )
+  const levelKnown = levelHanzi.filter((h) => isKnown(h, learn)).length
 
   const itemCount = listingRadicals ? familyList.length : filteredList.length
   const countLabel = listingRadicals ? `${itemCount} bộ (gộp biến thể)` : `${itemCount} chữ`
@@ -161,6 +179,7 @@ export function LeftSidebar({
   const clearFilters = () => {
     setQuery('')
     setSavedOnly(false)
+    setKnownFilter('all')
   }
   const gridStyle = { gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }
   const sortActive = sortOrder !== 'default'
@@ -236,6 +255,9 @@ export function LeftSidebar({
 
         <div className="lib-bar">
           <span className="lib-count" aria-live="polite">{countLabel}</span>
+          {typeof selectedLevel === 'number' && levelHanzi.length > 0 && (
+            <span className="kn-progress">{levelKnown}/{levelHanzi.length} đã thuộc</span>
+          )}
           {!listingRadicals && (
             <div className="lib-tools">
               <button
@@ -304,6 +326,21 @@ export function LeftSidebar({
           )}
         </div>
 
+        {typeof selectedLevel === 'number' && (
+          <>
+            <div className="kn-row">
+              <div className="kn-seg" role="group" aria-label="Lọc theo đã thuộc">
+                {KNOWN_OPTIONS.map((o) => (
+                  <button key={o.id} type="button" className="kn-seg-btn" aria-pressed={knownFilter === o.id} onClick={() => setKnownFilter(o.id)}>
+                    {o.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <KnownBulkBar level={selectedLevel} hanzi={levelHanzi} />
+          </>
+        )}
+
         {listingRadicals && !q && (
           <details className="lib-note">
             <summary>Bộ thủ là gì? Học thế nào?</summary>
@@ -360,7 +397,11 @@ export function LeftSidebar({
       <div className="lib-scroll" ref={scrollRef}>
         {itemCount === 0 ? (
           <div className="lib-empty">
-            {savedOnly && !q ? (
+            {knownFilter !== 'all' && !q && !savedOnly ? (
+              <>
+                <p className="lib-empty-title">{knownFilter === 'known' ? 'Chưa có chữ nào đã thuộc ở cấp này' : 'Đã thuộc hết các chữ ở cấp này'}</p>
+              </>
+            ) : savedOnly && !q ? (
               <>
                 <p className="lib-empty-title">Chưa lưu chữ nào ở cấp này</p>
                 <p>Bấm ☆ hoặc phím G khi đang học một chữ để lưu lại.</p>
@@ -371,7 +412,7 @@ export function LeftSidebar({
                 <p>Thử gõ pinyin, Hán Việt hoặc nghĩa tiếng Việt, ví dụ “hao”, “tốt”.</p>
               </>
             )}
-            {(q || savedOnly) && (
+            {(q || savedOnly || knownFilter !== 'all') && (
               <button type="button" className="lib-empty-btn" onClick={clearFilters}>
                 <Eraser size={14} /> Xóa bộ lọc
               </button>
@@ -407,6 +448,7 @@ export function LeftSidebar({
                   }}
                 >
                   {favSet.has(item.hanzi) && <span className="lib-saved" aria-label="Đã lưu" />}
+                  {isKnown(item.hanzi, learn) && <span className="kn-mark" role="img" aria-label="Đã thuộc" />}
                   <span className="lib-glyph" lang="zh">{item.hanzi}</span>
                   <span className="lib-hv">{primary?.hanViet ?? '—'}</span>
                   {sortOrder.startsWith('stroke') && item.strokeCount ? <span className="lib-badge">{item.strokeCount}</span> : null}

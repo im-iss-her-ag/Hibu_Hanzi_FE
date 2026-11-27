@@ -9,13 +9,14 @@ interface RailProps {
   onClose: () => void
   onCollapse: () => void
   children: React.ReactNode
+  headExtra?: React.ReactNode
 }
 
 const FOCUSABLE = 'button:not(:disabled), a[href], input:not(:disabled), select, textarea, [tabindex]:not([tabindex="-1"])'
 
 // The character list container. Same content everywhere; only the frame changes:
 // permanent rail (>=1200), left drawer (768-1199), bottom sheet (<768).
-export function Rail({ mode, open, collapsed, onClose, onCollapse, children }: RailProps) {
+export function Rail({ mode, open, collapsed, onClose, onCollapse, children, headExtra }: RailProps) {
   const overlay = mode !== 'rail'
   const hidden = overlay ? !open : collapsed
   const ref = useRef<HTMLElement>(null)
@@ -113,6 +114,7 @@ export function Rail({ mode, open, collapsed, onClose, onCollapse, children }: R
           )}
           <div className="rail-head">
             <span className="label">Danh sách chữ</span>
+            {headExtra}
             {overlay ? (
               <button type="button" className="sh-icon-btn rail-close" onClick={onClose} aria-label="Đóng danh sách (Esc)" title="Đóng (Esc)">
                 <X size={18} aria-hidden="true" />

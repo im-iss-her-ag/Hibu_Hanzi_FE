@@ -14,7 +14,7 @@
 .anat-head { display: flex; align-items: center; gap: var(--space-3); }
 .anat-head .label { margin: 0; }
 .anat-head::after { content: ''; flex: 1; height: 1px; background: var(--rule); }
-.anat-count { font-size: var(--text-xs); font-weight: 600; color: var(--ink-4); }
+.anat-count { font-size: var(--text-sm); font-weight: 600; color: var(--ink-3); }
 .anat-note { margin: calc(var(--space-2) * -1) 0 0; font-size: var(--text-sm); color: var(--ink-3); }
 
 /* ---- Equation ---- */
@@ -90,14 +90,14 @@ button.anat-part:focus-visible .anat-tile { border-color: var(--seal); outline: 
   position: absolute;
   top: -1px;
   left: -1px;
-  height: 16px;
+  height: 18px;
   padding: 0 5px;
   display: inline-flex;
   align-items: center;
   border-radius: 0 0 var(--radius-sm) 0;
   background: var(--seal-soft);
   color: var(--seal);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 600;
   line-height: 1;
 }
@@ -109,9 +109,9 @@ button.anat-part:focus-visible .anat-tile { border-color: var(--seal); outline: 
 .anat-tile-text { display: flex; flex-direction: column; gap: 2px; width: 100%; min-width: 0; }
 .anat-hv {
   font-family: var(--font-display);
-  font-size: var(--text-xs);
+  font-size: 13.5px;
   font-weight: 600;
-  letter-spacing: .08em;
+  letter-spacing: .04em;
   text-transform: uppercase;
   color: var(--ink);
   line-height: 1.5;
@@ -173,7 +173,7 @@ button.anat-part:focus-visible .anat-tile { border-color: var(--seal); outline: 
 /* ---- Nguồn gốc / Mẹo nhớ ---- */
 .anat-cols { display: grid; grid-template-columns: 1fr; gap: var(--space-6); }
 .anat-col { display: flex; flex-direction: column; gap: var(--space-3); min-width: 0; }
-.anat-col-label { display: flex; align-items: center; gap: var(--space-2); margin: 0; }
+.anat-col-label { font-size: var(--text-sm); display: flex; align-items: center; gap: var(--space-2); margin: 0; }
 .anat-dot { width: 8px; height: 8px; flex: none; }
 .anat-text { margin: 0; font-size: var(--text-lg); line-height: 1.65; color: var(--ink); white-space: pre-line; overflow-wrap: break-word; }
 .anat-text + .anat-text { color: var(--ink-2); }
@@ -201,7 +201,7 @@ button.anat-wc:hover { color: var(--seal); }
 .anat-wc.is-current { color: var(--ink-3); }
 .anat-word-body { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
 .anat-word-head { display: flex; align-items: baseline; flex-wrap: wrap; gap: 0 var(--space-2); font-size: var(--text-sm); }
-.anat-word-head .anat-hv { color: var(--ink-2); overflow: visible; }
+.anat-word-head .anat-hv { color: var(--ink); overflow: visible; white-space: normal; overflow-wrap: anywhere; font-size: 14px; }
 .anat-word-mean {
   font-size: var(--text-sm);
   line-height: 1.4;
@@ -258,7 +258,7 @@ button.anat-wc:hover { color: var(--seal); }
 .anat-fcell:focus-visible { outline: 2px solid var(--seal); outline-offset: -2px; }
 .anat-fglyph { font-family: var(--font-han); font-size: var(--text-2xl); line-height: 1.2; }
 .anat-fhv {
-  max-width: 100%; font-family: var(--font-display); font-size: 10px; font-weight: 600; letter-spacing: .06em;
+  max-width: 100%; font-family: var(--font-display); font-size: 12px; font-weight: 600; letter-spacing: .02em;
   text-transform: uppercase; line-height: 1.5; color: var(--ink-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .anat-word.is-link { cursor: pointer; }

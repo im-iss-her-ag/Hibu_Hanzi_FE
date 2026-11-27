@@ -23,6 +23,11 @@ import './styles/study.css'
 import './styles/anatomy.css'
 import './styles/library.css'
 import './styles/reference.css'
+import './styles/learn-known.css'
+import './styles/learn-review.css'
+import './styles/learn-backup.css'
+import './styles/learn.css'
+import './styles/homophones.css'
 
 // Dictionary data changes rarely, so cached answers stay fresh for the whole session.
 const queryClient = new QueryClient({

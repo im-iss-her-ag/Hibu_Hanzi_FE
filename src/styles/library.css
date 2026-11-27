@@ -252,10 +252,10 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 10px;
+  font-size: var(--text-sm);
   line-height: 1.45; /* room for stacked Vietnamese marks (HẢO, TIẾN) inside overflow:hidden */
   padding-top: 1px;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.01em;
   text-transform: uppercase;
   color: var(--ink-3);
 }
@@ -273,17 +273,17 @@
   position: absolute;
   top: 3px;
   left: 4px;
-  font-size: 9px;
+  font-size: 11px;
   line-height: 1;
   color: var(--ink-3);
   font-variant-numeric: tabular-nums;
 }
 
-.lib-legend { margin: calc(var(--space-1) * -1) 0 var(--space-2); font-size: var(--text-xs); color: var(--ink-3); }
+.lib-legend { margin: calc(var(--space-1) * -1) 0 var(--space-2); font-size: var(--text-sm); color: var(--ink-3); }
 .lib-group-title {
   margin: 0;
   padding: var(--space-3) var(--space-3) var(--space-2);
-  font-size: var(--text-xs);
+  font-size: 12px;
 }
 .lib-group + .lib-group .lib-grid { border-top: 1px solid var(--rule); }
 
@@ -585,7 +585,7 @@
 
 .sm-footer { flex: none; display: flex; gap: var(--space-4); padding: var(--space-2) var(--space-4); border-top: 1px solid var(--rule); background: var(--paper-2); font-size: var(--text-xs); color: var(--ink-3); }
 .sm-footer span { display: inline-flex; align-items: center; gap: 4px; }
-.sm-footer kbd { font-size: 10px; padding: 2px 4px; }
+.sm-footer kbd { font-size: var(--text-xs); padding: 2px 4px; }
 
 @media (max-width: 767px) {
   .pm-backdrop.sm-backdrop { padding: 0; }
@@ -642,3 +642,6 @@
 @media (max-width: 767px) {
   .fm-item .fm-open { grid-template-columns: 48px auto minmax(0, 1fr) auto; }
 }
+
+/* Section labels in the library: 12px (global .label is 11px) */
+.lib-levels .label { font-size: 12px; }

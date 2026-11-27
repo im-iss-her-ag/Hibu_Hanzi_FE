@@ -1,0 +1,15 @@
+.kn-seg { display: inline-flex; border: 1px solid var(--rule-strong); border-radius: var(--radius-sm); overflow: hidden; }
+.kn-seg-btn { height: var(--control-h-sm); padding: 0 var(--space-2); font: inherit; font-size: var(--text-sm); color: var(--ink-3); background: transparent; border: 0; border-left: 1px solid var(--rule); cursor: pointer; }
+.kn-seg-btn:first-child { border-left: 0; }
+.kn-seg-btn:hover { background: var(--hover); color: var(--ink); }
+.kn-seg-btn[aria-pressed='true'] { color: var(--seal); background: var(--seal-soft); }
+.kn-row { display: flex; align-items: center; padding-bottom: var(--space-1); }
+.kn-progress { font-size: var(--text-sm); color: var(--ink-3); font-variant-numeric: tabular-nums; margin-left: auto; }
+.kn-mark { position: absolute; left: 4px; bottom: 4px; width: 5px; height: 5px; border-radius: var(--radius-round); background: var(--tone-2); }
+.kn-bulk { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); padding-bottom: var(--space-2); font-size: var(--text-sm); color: var(--ink-2); }
+.kn-bulk-done { color: var(--ink-3); }
+.kn-bulk-btn { height: var(--control-h-sm); padding: 0 var(--space-2); font: inherit; font-size: var(--text-sm); color: var(--ink-2); background: transparent; border: 1px solid var(--rule-strong); border-radius: var(--radius-sm); cursor: pointer; }
+.kn-bulk-btn:hover { background: var(--hover); color: var(--ink); }
+.kn-bulk-ok { color: var(--seal-ink); background: var(--seal); border-color: var(--seal); }
+.kn-bulk-ok:hover { background: var(--seal); color: var(--seal-ink); filter: brightness(1.08); }
+@media (pointer: coarse) { .kn-seg-btn, .kn-bulk-btn { height: 40px; } }

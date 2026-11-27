@@ -526,7 +526,11 @@
 .rf-mouth { display: grid; grid-template-columns: minmax(280px, 340px) minmax(0, 1fr); gap: var(--space-5); align-items: start; }
 .rf-mouth-fig { margin: 0; padding: var(--space-4); border: 1px solid var(--rule); background: var(--sheet); }
 .rf-mouth-views { display: grid; grid-template-columns: minmax(0, 1fr) 88px; gap: var(--space-3); align-items: end; }
-.rf-mouth-views .label { display: block; margin-top: var(--space-1); font-size: 10px; }
+.rf-mouth-views .label { display: block; margin-top: var(--space-1); font-size: var(--text-xs); }
+
+/* Search modal minimum sizes (override library.css, which sets kbd to 10px) */
+.sm-dialog .sm-footer kbd { font-size: var(--text-xs); }
+.sm-dialog .pm-tag { font-size: var(--text-xs); }
 .rf-mouth-svg { display: block; width: 100%; height: auto; }
 .rf-ink { fill: none; stroke: var(--ink); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
 .rf-teeth { fill: var(--sheet); }

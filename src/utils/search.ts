@@ -72,6 +72,17 @@ export function filterAndSortCharacters(
   const q = rawQuery.trim()
   if (!q) return [...characters]
 
+  // A multi-character Hanzi query (e.g. "你好") also lists each distinct character it contains, in query order.
+  const queryHan = Array.from(new Set(Array.from(q).filter((ch) => /\p{Script=Han}/u.test(ch))))
+  if (queryHan.length > 1) {
+    const hanIndex = new Map(queryHan.map((ch, i) => [ch, i]))
+    const found = characters
+      .filter((c) => hanIndex.has(c.hanzi))
+      .sort((a, b) => (hanIndex.get(a.hanzi) ?? 0) - (hanIndex.get(b.hanzi) ?? 0))
+    const rest = characters.filter((c) => !hanIndex.has(c.hanzi) && scoreCharacterMatch(c, q) > 0)
+    return [...found, ...rest]
+  }
+
   return characters
     .map((char) => ({ char, score: scoreCharacterMatch(char, q) }))
     .filter((entry) => entry.score > 0)

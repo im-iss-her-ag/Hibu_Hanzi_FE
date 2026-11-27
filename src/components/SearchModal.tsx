@@ -4,6 +4,7 @@ import type { BundleCharacter, RadicalFamily, Word } from '../core'
 import { RADICAL_CHARACTERS } from '../core'
 import { speakChinese } from '../utils/speech'
 import { filterAndSortCharacters, filterAndSortWords } from '../utils/search'
+import { charsByHanViet } from '../utils/homophones'
 import { useModalA11y } from '../utils/useModalA11y'
 import { CharRowBody, TonePinyin, highlight } from './CharRowBody'
 
@@ -91,6 +92,8 @@ export function SearchModal({
     return recent.map((h) => byHanzi.get(h)).filter((c): c is BundleCharacter => Boolean(c)).slice(0, 8)
   }, [recent, searchableCharacters])
   const hasQuery = query.trim().length > 0
+  // A bare Hán Việt syllable ("an", "hảo"): show every same-reading character at a glance.
+  const homophones = useMemo(() => charsByHanViet(characters, query), [characters, query])
   const rowCount = !hasQuery ? 0 : tab === 'chars' ? shownChars.length : shownWords.length
 
   useEffect(() => setCursor(0), [query, tab])
@@ -206,6 +209,20 @@ export function SearchModal({
           </div>
         )}
 
+        {hasQuery && tab === 'chars' && homophones.length > 1 && (
+          <div className="sm-homophone">
+            <span>
+              Đồng âm: <strong>{query.trim().toUpperCase()}</strong> ({homophones.length})
+            </span>
+            <span className="sm-homophone-glyphs">
+              {homophones.slice(0, 40).map((c) => (
+                <button key={c.hanzi} type="button" tabIndex={-1} lang="zh" onClick={() => pickChar(c.hanzi)} title={c.readings.map((r) => r.hanViet).filter(Boolean).join(', ') + ' — ' + (c.readings[0]?.meaningVi ?? '')}>
+                  {c.hanzi}
+                </button>
+              ))}
+            </span>
+          </div>
+        )}
         <div className="sm-results" ref={listRef} role="listbox" id="sm-listbox">
           {!hasQuery ? (
             <div className="sm-start">
@@ -264,7 +281,7 @@ export function SearchModal({
           ) : shownWords.length === 0 ? (
             <div className="sm-empty">
               <p className="sm-empty-title">Không có từ ghép nào khớp “{query.trim()}”</p>
-              <p>Thử gõ cả từ (“你好”) hoặc pinyin liền (“nihao”).</p>
+              <p>Thử gõ cả từ (“你好”), pinyin liền (“nihao”), âm Hán Việt (“nhĩ hảo”) hoặc nghĩa (“xin chào”). Nếu từ chưa có trong dữ liệu, hãy tra từng chữ ở tab “Chữ”.</p>
             </div>
           ) : (
             shownWords.map((w, i) => {
@@ -282,8 +299,8 @@ export function SearchModal({
                 >
                   <span className={`sm-glyph ${Array.from(w.word).length > 2 ? 'sm-glyph-long' : ''}`} lang="zh">{w.word}</span>
                   <span className="sm-py-col"><TonePinyin pinyin={w.pinyin} /></span>
-                  <span className="sm-hv">{w.hanViet ? highlight(w.hanViet.toUpperCase(), query) : ''}</span>
-                  <span className="sm-mean">{highlight(w.meaningVi, query)}</span>
+                  <span className="sm-hv" title={w.hanViet ?? undefined}>{w.hanViet ? highlight(w.hanViet.toUpperCase(), query) : ''}</span>
+                  <span className="sm-mean" title={w.meaningVi}>{highlight(w.meaningVi, query)}</span>
                   <span className="sm-end">
                     {tag && <span className="pm-tag sm-tag">{tag}</span>}
                     <button

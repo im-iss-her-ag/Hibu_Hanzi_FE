@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { Star, Moon, Sun, Search, MoreHorizontal, Keyboard, ChevronDown, LayoutGrid } from 'lucide-react'
+import { ReviewEntry } from './ReviewEntry'
+import { Star, DatabaseBackup, Moon, Sun, Search, MoreHorizontal, Keyboard, ChevronDown, LayoutGrid } from 'lucide-react'
 
 interface NavbarProps {
   displayMode: 'modern' | 'components'
@@ -10,6 +11,10 @@ interface NavbarProps {
   onOpenFavorites: () => void
   onOpenSearch: () => void
   onOpenPinyinChart: () => void
+  onOpenReview?: () => void
+  onOpenBackup?: () => void
+  onOpenQuiz?: () => void
+  onOpenToneTrainer?: () => void
   // "Danh sách" button: shown while the character list is not permanently visible (drawer / collapsed rail).
   showListButton?: boolean
   listOpen?: boolean
@@ -27,10 +32,13 @@ const SHORTCUTS: { keys: string[]; desc: string }[] = [
   { keys: ['1', '–', '6'], desc: 'Chuyển cấp HSK' },
   { keys: ['L'], desc: 'Mở / đóng danh sách chữ' },
   { keys: ['B'], desc: 'Bộ thủ' },
-  { keys: ['Tab'], desc: 'Đổi Hiện đại / Thành phần' },
+  { keys: ['M'], desc: 'Đổi Hiện đại / Thành phần' },
   { keys: ['G'], desc: 'Lưu / bỏ lưu' },
+  { keys: ['K'], desc: 'Đánh dấu đã thuộc / chưa thuộc' },
+  { keys: ['R'], desc: 'Ôn tập' },
   { keys: ['F', 'Ctrl+K'], desc: 'Tìm kiếm' },
   { keys: ['P'], desc: 'Bảng Pinyin' },
+  { keys: ['V'], desc: 'Nói thử thanh điệu' },
   { keys: ['Esc'], desc: 'Đóng cửa sổ' },
 ]
 
@@ -43,6 +51,10 @@ export function Navbar({
   onOpenFavorites,
   onOpenSearch,
   onOpenPinyinChart,
+  onOpenReview,
+  onOpenQuiz,
+  onOpenToneTrainer,
+  onOpenBackup,
   showListButton = false,
   listOpen = false,
   onOpenList,
@@ -147,6 +159,8 @@ export function Navbar({
           <Search size={18} aria-hidden="true" />
         </button>
 
+        {onOpenReview && <ReviewEntry onOpen={onOpenReview} />}
+
         <button
           type="button"
           className="sh-icon-btn"
@@ -226,6 +240,21 @@ export function Navbar({
               </p>
             </div>
 
+            {onOpenQuiz && (
+              <div className="sh-menu-section">
+                <button type="button" className="sh-menu-item" role="menuitem" data-menu-close onClick={onOpenQuiz}>
+                  <span className="sh-glyph" lang="zh" aria-hidden="true">漢</span>
+                  <span>Đoán nghĩa qua Hán Việt</span>
+                </button>
+                {onOpenToneTrainer && (
+                  <button type="button" className="sh-menu-item" role="menuitem" data-menu-close onClick={onOpenToneTrainer}>
+                    <span className="sh-glyph" lang="zh" aria-hidden="true">聲</span>
+                    <span>Luyện thanh điệu (nói thử)</span>
+                  </button>
+                )}
+              </div>
+            )}
+
             <div className="sh-menu-section sh-only-sm">
               <button type="button" className="sh-menu-item" role="menuitem" data-menu-close onClick={onOpenPinyinChart}>
                 <span className="sh-glyph" lang="zh" aria-hidden="true">拼</span>
@@ -236,6 +265,15 @@ export function Navbar({
                 <span>{isDarkMode ? 'Giao diện sáng' : 'Giao diện tối'}</span>
               </button>
             </div>
+
+            {onOpenBackup && (
+              <div className="sh-menu-section">
+                <button type="button" className="sh-menu-item" role="menuitem" data-menu-close onClick={onOpenBackup}>
+                  <DatabaseBackup size={16} aria-hidden="true" />
+                  <span>Sao lưu / khôi phục dữ liệu</span>
+                </button>
+              </div>
+            )}
 
             {widget && <div className="sh-menu-section sh-menu-widget">{widget}</div>}
 

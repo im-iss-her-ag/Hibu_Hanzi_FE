@@ -1,0 +1,107 @@
+/* learn-review.css — ReviewSession (rv-*). Sits inside the pm-* modal shell; tokens only. */
+.rv-dialog { max-width: 520px; max-height: 92vh; min-height: 480px; }
+.rv-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--space-5) var(--space-4);
+  text-align: center;
+}
+.rv-han {
+  font-family: var(--font-han);
+  font-size: clamp(96px, 28vw, 150px);
+  line-height: 1.1;
+  color: var(--ink);
+  margin: var(--space-3) 0;
+}
+.rv-answer { display: flex; flex-direction: column; align-items: center; gap: var(--space-2); width: 100%; margin-top: var(--space-2); }
+.rv-hv {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 56px;
+  line-height: 1.1;
+  letter-spacing: 0.04em;
+  color: var(--seal);
+}
+.rv-py { display: flex; align-items: center; gap: var(--space-1); font-size: var(--text-xl); font-weight: 600; }
+.rv-mean { font-size: var(--text-lg); color: var(--ink-2); max-width: 36ch; }
+.rv-leech {
+  width: 100%;
+  margin-top: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--rule-strong);
+  border-left: 3px solid var(--mnemonic);
+  border-radius: var(--radius-sm);
+  text-align: left;
+  font-size: var(--text-sm);
+  color: var(--ink-2);
+}
+.rv-leech p { margin: var(--space-1) 0 0; }
+.rv-link {
+  border: 0;
+  background: none;
+  padding: var(--space-1);
+  font: inherit;
+  font-size: var(--text-sm);
+  color: var(--ink-3);
+  text-decoration: underline;
+  cursor: pointer;
+}
+.rv-link:hover { color: var(--ink); }
+.rv-actions {
+  flex: none;
+  display: flex;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-top: 1px solid var(--rule);
+}
+.rv-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  height: var(--touch);
+  padding: 0 var(--space-4);
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--radius-md);
+  background: var(--sheet);
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--text-lg);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color var(--dur-1) var(--ease);
+}
+.rv-btn:hover { background: var(--hover); }
+.rv-btn:active { background: var(--press); }
+.rv-btn-primary { background: var(--seal); border-color: var(--seal); color: var(--seal-ink); }
+.rv-btn-primary:hover { background: var(--seal); filter: brightness(1.08); }
+.rv-btn-wide { flex: 1 1 100%; }
+.rv-kbd {
+  font-family: var(--font-ui);
+  font-size: var(--text-xs);
+  padding: 1px 6px;
+  border: 1px solid currentColor;
+  border-radius: var(--radius-sm);
+  opacity: 0.7;
+}
+.rv-btn:focus-visible, .rv-link:focus-visible { outline-offset: 2px; }
+.rv-summary { justify-content: center; gap: var(--space-3); }
+.rv-summary .rv-btn { flex: none; min-width: 160px; margin-top: var(--space-2); }
+.rv-lead { margin: 0; font-family: var(--font-display); font-size: var(--text-2xl); font-weight: 700; }
+.rv-note { margin: 0; color: var(--ink-2); max-width: 36ch; }
+.rv-counts { display: flex; gap: var(--space-6); }
+.rv-count { display: flex; flex-direction: column; align-items: center; gap: var(--space-1); }
+.rv-count-n { font-size: var(--text-3xl); font-weight: 700; }
+
+@media (max-width: 767px) {
+  .rv-dialog { max-width: none; max-height: none; min-height: 0; }
+  .rv-actions { padding-bottom: calc(var(--space-3) + env(safe-area-inset-bottom, 0px)); }
+  .rv-btn { height: 56px; }
+  .rv-hv { font-size: 44px; }
+  .rv-kbd { display: none; }
+}

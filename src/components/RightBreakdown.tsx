@@ -22,6 +22,8 @@ interface RightBreakdownProps {
   allWords?: readonly Word[]
   // Called when a Từ ghép row is clicked (not on its character buttons or speaker).
   onSelectWord?: (word: string) => void
+  // Opens the Hán Việt quiz on words containing this character.
+  onQuizWords?: (hanzi: string) => void
 }
 
 function Py({ text }: { text: string }) {
@@ -104,6 +106,7 @@ export function RightBreakdown({
   onBrowseRadical,
   allWords,
   onSelectWord,
+  onQuizWords,
 }: RightBreakdownProps) {
   const isComponents = displayMode === 'components'
   const [showAllWords, setShowAllWords] = useState(false)
@@ -261,6 +264,9 @@ export function RightBreakdown({
           <div className="anat-head">
             <h2 id="anat-h-words" className="label">Từ ghép</h2>
             <span className="anat-count">{words.length}</span>
+            {onQuizWords && words.length >= 4 && (
+              <button type="button" className="hq-entry" onClick={() => onQuizWords(character.hanzi)}>Đoán nghĩa</button>
+            )}
           </div>
           <ul className="anat-words">
             {shownWords.map((w) => (

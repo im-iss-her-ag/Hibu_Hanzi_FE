@@ -16,12 +16,18 @@ import { LeftSidebar } from './components/LeftSidebar'
 import { StudioCenter } from './components/StudioCenter'
 import { RightBreakdown } from './components/RightBreakdown'
 import { SearchModal } from './components/SearchModal'
+import { HanVietQuiz } from './components/HanVietQuiz'
+import type { QuizScope } from './learn/hanVietQuiz'
 import { FavoritesModal } from './components/FavoritesModal'
 import { PinyinChartModal } from './components/PinyinChartModal'
 import { PronunciationModal } from './components/PronunciationModal'
+import { ToneTrainer } from './components/ToneTrainer'
 import { normalizeFolded } from './utils/search'
 import { PipWidget } from './components/PipWidget'
 import { Rail } from './components/Rail'
+import { ReviewSession } from './components/ReviewSession'
+import { BackupModal } from './components/BackupModal'
+import { toggleKnown } from './learn/srs'
 import { StudyNav } from './components/StudyNav'
 import { EmptyState, ErrorState, RailSkeleton, SheetSkeleton } from './components/ShellStates'
 import { useShellMode } from './components/useShellMode'
@@ -105,6 +111,20 @@ export function App() {
   const [showSearch, setShowSearch] = useState<boolean>(false)
   const [showFavorites, setShowFavorites] = useState<boolean>(false)
   const [showPinyinChart, setShowPinyinChart] = useState<boolean>(false)
+  const [showReview, setShowReviewState] = useState<boolean>(
+    () => typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('mode') === 'review',
+  )
+  const [showBackup, setShowBackup] = useState<boolean>(false)
+  /** Tone trainer: explicit target (word / pinyin chart) or null fields = follow the active character. */
+  const [toneTrainer, setToneTrainer] = useState<{ mode: 'char' | 'free'; hanzi?: string; pinyin?: string; hanViet?: string | null } | null>(null)
+  // ?mode=review deep-links straight into a review session.
+  const setShowReview = useCallback((open: boolean) => {
+    setShowReviewState(open)
+    const url = new URL(window.location.href)
+    if (open) url.searchParams.set('mode', 'review')
+    else url.searchParams.delete('mode')
+    window.history.replaceState(window.history.state, '', url)
+  }, [])
   const [pronounceTarget, setPronounceTarget] = useState<string | null>(null)
 
   // Character list: a permanent rail (>=1200, collapsible), a drawer (768-1199) or a bottom sheet (<768).
@@ -578,7 +598,8 @@ export function App() {
     return { hanzi: '', pinyin: pronounceTarget, hanViet: null, meaningVi: null }
   }, [pronounceTarget, allCharacters])
 
-  const modalOpen = showSearch || showFavorites || showPinyinChart || pronounceTarget !== null
+  const [quizScope, setQuizScope] = useState<QuizScope | null>(null)
+  const modalOpen = quizScope !== null || showSearch || showFavorites || showPinyinChart || pronounceTarget !== null || showReview || showBackup || toneTrainer !== null
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -598,7 +619,7 @@ export function App() {
 
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault()
-        setShowSearch(true)
+        if (!modalOpen) setShowSearch(true)
         return
       }
 
@@ -629,17 +650,24 @@ export function App() {
         ArrowUp: () => handleRow(-1),
         w: () => handleRow(-1),
         ' ': pickNextRandom,
-        Tab: toggleDisplayMode,
+        m: toggleDisplayMode,
         f: () => setShowSearch(true),
         g: handleToggleFavorite,
+        k: () => activeChar && toggleKnown(activeChar.hanzi),
+        r: () => setShowReview(true),
         b: () => changeLevel('radicals'),
         p: () => setShowPinyinChart((prev) => !prev),
         l: toggleList,
+        v: () => setToneTrainer({ mode: 'char' }),
       }
       for (const n of [1, 2, 3, 4, 5, 6] as const) actions[String(n)] = () => changeLevel(n)
 
       const action = actions[key]
       if (!action || (key === 'Tab' && e.shiftKey)) return
+      // Không chiếm Tab/Space khi đang focus vào control: giữ điều hướng bàn phím chuẩn
+      const focused = document.activeElement
+      const onControl = focused && focused !== document.body && focused.closest('button, a, [role="button"], [role="tab"], [tabindex]')
+      if (onControl && (key === 'Tab' || key === ' ')) return
       e.preventDefault()
       action()
     }
@@ -659,6 +687,8 @@ export function App() {
     toggleDisplayMode,
     changeLevel,
     toggleList,
+    activeChar,
+    setShowReview,
   ])
 
   // A new character starts at the top of the page.
@@ -669,7 +699,7 @@ export function App() {
 
   // Check if any modal or overlay is currently active
   const isModalActive = Boolean(
-    showSearch || showFavorites || showPinyinChart || pronounceTarget !== null || (overlayList && listOpen),
+    showSearch || showFavorites || showPinyinChart || pronounceTarget !== null || showReview || showBackup || (overlayList && listOpen),
   )
 
   // Mobile horizontal swipe gestures: restricted to the hero card
@@ -730,6 +760,10 @@ export function App() {
         onOpenFavorites={() => setShowFavorites(true)}
         onOpenSearch={() => setShowSearch(true)}
         onOpenPinyinChart={() => setShowPinyinChart(true)}
+        onOpenReview={() => setShowReview(true)}
+        onOpenBackup={() => setShowBackup(true)}
+        onOpenToneTrainer={() => setToneTrainer({ mode: 'free' })}
+        onOpenQuiz={() => setQuizScope(typeof selectedLevel === 'number' ? { kind: 'level', level: selectedLevel } : { kind: 'learned', maxLevel: 6 })}
         showListButton={shellMode === 'drawer' || (shellMode === 'rail' && railCollapsed)}
         listOpen={overlayList ? listOpen : !railCollapsed}
         onOpenList={openList}
@@ -811,6 +845,15 @@ export function App() {
                   wordInfo={wordInfo}
                   onSelectWordChar={handleSelectWordChar}
                   onDismissWord={handleDismissWord}
+                  allCharacters={allCharacters}
+                  onSelectHomophone={handleSelectHanzi}
+                  onOpenToneTrainer={() =>
+                    setToneTrainer(
+                      wordInfo && wordInfo.word.length > 1
+                        ? { mode: 'char', hanzi: wordInfo.word, pinyin: wordInfo.pinyin, hanViet: wordInfo.hanViet }
+                        : { mode: 'char' },
+                    )
+                  }
                 />
                 <RightBreakdown
                   detail={detailQuery.data ?? null}
@@ -822,6 +865,7 @@ export function App() {
                   families={families}
                   onBrowseRadical={browseRadical}
                   allWords={allWords}
+                  onQuizWords={(hanzi) => setQuizScope({ kind: 'char', hanzi })}
                 />
               </div>
             ) : (
@@ -873,6 +917,20 @@ export function App() {
         />
       )}
 
+      {showReview && loaded && (
+        <ReviewSession
+          characters={allCharacters}
+          onClose={() => setShowReview(false)}
+          onOpenCharacter={(h) => {
+            setShowReview(false)
+            handleSelectHanzi(h)
+          }}
+        />
+      )}
+      {showBackup && (
+        <BackupModal favorites={favorites} onFavoritesChange={setFavorites} onClose={() => setShowBackup(false)} />
+      )}
+
       {/* Favorites Modal */}
       {showFavorites && (
         <FavoritesModal
@@ -901,6 +959,18 @@ export function App() {
         />
       )}
 
+      {quizScope && (
+        <HanVietQuiz
+          words={allWords}
+          characters={allCharacters}
+          initialScope={quizScope}
+          selectedLevel={typeof selectedLevel === 'number' ? selectedLevel : null}
+          favorites={favorites}
+          onSelectWord={handleSelectWord}
+          onClose={() => setQuizScope(null)}
+        />
+      )}
+
       {/* Pronunciation guide for a syllable picked in the pinyin chart */}
       {pronounceTarget !== null && pronounceExample && (
         <PronunciationModal
@@ -909,8 +979,28 @@ export function App() {
           hanViet={pronounceExample.hanViet}
           meaningVi={pronounceExample.meaningVi}
           onClose={() => setPronounceTarget(null)}
+          onPractice={() => {
+            setToneTrainer({ mode: 'char', hanzi: pronounceExample.hanzi, pinyin: pronounceExample.pinyin, hanViet: pronounceExample.hanViet })
+            setPronounceTarget(null)
+          }}
         />
       )}
+
+      {toneTrainer && (() => {
+        const primary = activeChar ? (activeChar.readings?.find((r) => r.isPrimary) ?? activeChar.readings?.[0]) : undefined
+        const explicit = toneTrainer.pinyin !== undefined
+        return (
+          <ToneTrainer
+            key={explicit ? `x:${toneTrainer.hanzi}:${toneTrainer.pinyin}` : 'active'}
+            hanzi={explicit ? (toneTrainer.hanzi ?? '') : (activeChar?.hanzi ?? '')}
+            pinyin={explicit ? (toneTrainer.pinyin ?? '') : (primary?.pinyin ?? '')}
+            hanViet={explicit ? toneTrainer.hanViet : primary?.hanViet}
+            initialMode={toneTrainer.mode}
+            onNextChar={explicit ? undefined : handleNext}
+            onClose={() => setToneTrainer(null)}
+          />
+        )
+      })()}
     </div>
   )
 }
