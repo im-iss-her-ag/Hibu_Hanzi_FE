@@ -124,8 +124,8 @@ export function LearnStep({ queue, characters, onClose, onFinished, onOpenCharac
   const dueNow = done ? buildQueue(getLearnData()).length : 0
 
   return (
-    <div className="pm-backdrop ls-backdrop">
-      <div ref={dialogRef} {...dialogProps} className="pm-dialog ls-dialog" data-testid="learn-step">
+    <div className="pm-backdrop">
+      <div ref={dialogRef} {...dialogProps} className="pm-dialog pm-md ls-dialog" data-testid="learn-step">
         <div className="pm-header">
           <h2 id={titleId} className="pm-title">{done ? 'Xong phần học mới' : 'Học chữ mới'}</h2>
           {!done && totalShown > 0 && (
@@ -134,14 +134,15 @@ export function LearnStep({ queue, characters, onClose, onFinished, onOpenCharac
             </span>
           )}
           <div className="pm-header-actions">
-            <button type="button" className="pm-icon-btn" onClick={onClose} aria-label="Đóng" title="Đóng (Esc)">
+            <button type="button" className="pm-icon-btn pm-close" onClick={onClose} aria-label="Đóng" title="Đóng (Esc)">
               <X size={18} />
             </button>
           </div>
         </div>
 
         {done ? (
-          <div className="ls-body ls-summary">
+          <>
+          <div className="pm-body ls-body ls-summary">
             <p className="ls-lead">
               {learned.length > 0 ? `Bạn vừa học ${learned.length} chữ mới` : knownCount > 0 ? 'Đã ghi nhận các chữ bạn đã thuộc' : 'Chưa có chữ mới nào'}
             </p>
@@ -166,21 +167,22 @@ export function LearnStep({ queue, characters, onClose, onFinished, onOpenCharac
                 ? 'Ôn ngay khi còn nhớ sẽ giúp chữ ở lại lâu hơn.'
                 : 'Những chữ bạn nhớ rồi sẽ được nhắc lại vào ngày mai.'}
             </p>
-            <div className="ls-summary-actions">
-              {dueNow > 0 ? (
-                <button type="button" ref={finishRef} className="ls-btn ls-btn-primary" onClick={onFinished} data-testid="learn-finish">
-                  Ôn ngay ({dueNow})
-                </button>
-              ) : (
-                <button type="button" ref={finishRef} className="ls-btn ls-btn-primary" onClick={onClose} data-testid="learn-finish">
-                  Xong
-                </button>
-              )}
-            </div>
           </div>
+          <div className="pm-foot pm-foot-answers">
+            {dueNow > 0 ? (
+              <button type="button" ref={finishRef} className="pm-btn pm-btn-primary" onClick={onFinished} data-testid="learn-finish">
+                Ôn ngay ({dueNow})
+              </button>
+            ) : (
+              <button type="button" ref={finishRef} className="pm-btn pm-btn-primary" onClick={onClose} data-testid="learn-finish">
+                Xong
+              </button>
+            )}
+          </div>
+          </>
         ) : (
           <>
-            <div className="ls-body">
+            <div className="pm-body ls-body">
               <div className="ls-info">
                 <div className="ls-glyph" lang="zh" data-testid="learn-char">{hanzi}</div>
                 <div className="ls-text">
@@ -195,31 +197,29 @@ export function LearnStep({ queue, characters, onClose, onFinished, onOpenCharac
                   )}
                   {reading?.meaningVi && <div className="ls-mean">{reading.meaningVi}</div>}
                   {!reading && <div className="ls-mean">Chưa có dữ liệu cho chữ này.</div>}
+                  <button type="button" className="pm-btn pm-btn-ghost ls-known" onClick={markKnown} data-testid="learn-known">
+                    Đã thuộc từ trước
+                  </button>
                 </div>
               </div>
               <div className="ls-stroke">
-                <span className="td-label ls-stroke-label">Thứ tự nét</span>
+                <span className="label ls-stroke-label">Thứ tự nét</span>
                 <HanziWriterCanvas key={hanzi} hanzi={hanzi!} defaultMode="animate" />
               </div>
             </div>
 
-            <div className="ls-actions">
-              <div className="ls-answers">
-                <button type="button" ref={addRef} className="ls-btn ls-btn-primary" onClick={() => answer(false)} data-testid="learn-add">
-                  <span className="ls-btn-main">
-                    Thêm vào ôn <kbd className="ls-kbd">1</kbd>
-                  </span>
-                  <span className="ls-btn-sub">ôn lại ngay hôm nay</span>
-                </button>
-                <button type="button" className="ls-btn" onClick={() => answer(true)} data-testid="learn-remembered">
-                  <span className="ls-btn-main">
-                    Đã nhớ <kbd className="ls-kbd">2</kbd>
-                  </span>
-                  <span className="ls-btn-sub">ôn lại ngày mai</span>
-                </button>
-              </div>
-              <button type="button" className="ls-known" onClick={markKnown} data-testid="learn-known">
-                Đã thuộc từ trước
+            <div className="pm-foot pm-foot-answers">
+              <button type="button" ref={addRef} className="pm-btn pm-btn-primary ls-answer" onClick={() => answer(false)} data-testid="learn-add">
+                <span className="ls-answer-main">
+                  Thêm vào ôn <kbd>1</kbd>
+                </span>
+                <span className="ls-answer-sub">ôn lại ngay hôm nay</span>
+              </button>
+              <button type="button" className="pm-btn ls-answer" onClick={() => answer(true)} data-testid="learn-remembered">
+                <span className="ls-answer-main">
+                  Đã nhớ <kbd>2</kbd>
+                </span>
+                <span className="ls-answer-sub">ôn lại ngày mai</span>
               </button>
             </div>
           </>

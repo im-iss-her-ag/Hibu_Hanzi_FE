@@ -185,19 +185,19 @@ export function HanVietQuiz({
   return (
     <div className="pm-backdrop" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
       <div
-        className="pm-dialog hq-dialog"
+        className={`pm-dialog pm-md hq-dialog${session ? ' hq-playing' : ''}`}
         {...dialogProps}
         ref={dialogRef}
       >
         <div className="pm-header">
           <h2 className="pm-title" id={titleId}>Đoán nghĩa qua Hán Việt</h2>
           {q && (
-            <span className="pm-meta hq-count">
+            <span className="pm-meta">
               {index + 1}/{total}
             </span>
           )}
           <div className="pm-header-actions">
-            <button type="button" className="pm-icon-btn" onClick={onClose} aria-label="Đóng" title="Đóng (Esc)">
+            <button type="button" className="pm-icon-btn pm-close" onClick={onClose} aria-label="Đóng" title="Đóng (Esc)">
               <X size={18} />
             </button>
           </div>
@@ -207,32 +207,31 @@ export function HanVietQuiz({
           <div className="hq-live" role="status" aria-live="polite">{liveText}</div>
 
           {!session && (
-            <div className="hq-start">
-              <p className="hq-desc">
+            <div className="pm-stack">
+              <p className="pm-note">
                 Nhìn âm Hán Việt của từng chữ rồi đoán nghĩa của cả từ. Có từ gần như đọc là hiểu, có từ nghĩa đã lệch đi, và vài từ dễ gây hiểu nhầm.
               </p>
-              <div className="hq-label label" id="hq-scope-label">Phạm vi</div>
-              <div className="hq-seg" role="radiogroup" aria-labelledby="hq-scope-label">
-                {scopes.map((s) => (
-                  <button
-                    key={s.key}
-                    type="button"
-                    role="radio"
-                    aria-checked={scopeKey === s.key}
-                    disabled={s.disabled}
-                    className={`hq-seg-btn${scopeKey === s.key ? ' is-active' : ''}`}
-                    onClick={() => setScopeKey(s.key)}
-                  >
-                    {s.label}
-                  </button>
-                ))}
+              <div className="pm-section">
+                <div className="pm-section-title" id="hq-scope-label">Phạm vi</div>
+                <div className="pm-seg hq-scope" role="radiogroup" aria-labelledby="hq-scope-label">
+                  {scopes.map((sc) => (
+                    <button
+                      key={sc.key}
+                      type="button"
+                      role="radio"
+                      aria-checked={scopeKey === sc.key}
+                      disabled={sc.disabled}
+                      className="pm-seg-btn"
+                      onClick={() => setScopeKey(sc.key)}
+                    >
+                      {sc.label}
+                    </button>
+                  ))}
+                </div>
+                <p className="pm-note hq-scope-count">
+                  {count > 0 ? `${count} từ trong phạm vi này.` : 'Chưa có từ nào phù hợp trong phạm vi này. Hãy thử phạm vi khác.'}
+                </p>
               </div>
-              <p className="hq-scope-count">
-                {count > 0 ? `${count} từ trong phạm vi này.` : 'Chưa có từ nào phù hợp trong phạm vi này. Hãy thử phạm vi khác.'}
-              </p>
-              <button type="button" className="hq-btn hq-primary" onClick={start} disabled={count === 0}>
-                Bắt đầu <span className="kbd">Enter</span>
-              </button>
             </div>
           )}
 
@@ -254,7 +253,7 @@ export function HanVietQuiz({
 
               <button
                 type="button"
-                className="hq-btn hq-hint"
+                className="pm-btn hq-hint"
                 aria-pressed={hint}
                 onClick={() => setHint((v) => !v)}
               >
@@ -328,18 +327,12 @@ export function HanVietQuiz({
                       )}
                     </div>
                   ) : q.cls === 'mot-phan' ? (
-                    <p className="hq-note">Một phần âm Hán Việt gợi ra nghĩa; phần còn lại cần nhớ.</p>
+                    <p className="pm-note hq-note">Một phần âm Hán Việt gợi ra nghĩa; phần còn lại cần nhớ.</p>
                   ) : q.cls === 'can-nho' ? (
-                    <p className="hq-note">Âm Hán Việt ít gợi ra nghĩa trong tiếng Việt hiện nay, nên hãy nhớ nghĩa của cả từ.</p>
+                    <p className="pm-note hq-note">Âm Hán Việt ít gợi ra nghĩa trong tiếng Việt hiện nay, nên hãy nhớ nghĩa của cả từ.</p>
                   ) : (
-                    <p className="hq-note">Âm Hán Việt gần như chính là nghĩa.</p>
+                    <p className="pm-note hq-note">Âm Hán Việt gần như chính là nghĩa.</p>
                   )}
-
-                  <div className="hq-actions">
-                    <button ref={nextRef} type="button" className="hq-btn hq-primary" onClick={next}>
-                      {index + 1 >= total ? 'Xem kết quả' : 'Tiếp'} <span className="kbd">Enter</span>
-                    </button>
-                  </div>
                 </div>
               )}
             </div>
@@ -350,7 +343,7 @@ export function HanVietQuiz({
               <div className="hq-score">Đúng {correctCount}/{total}</div>
               {mistakes.length > 0 ? (
                 <>
-                  <div className="hq-label label">Các từ cần xem lại</div>
+                  <div className="pm-section-title hq-mistakes-title">Các từ cần xem lại</div>
                   <ul className="hq-mistakes">
                     {mistakes.map((m) => (
                       <li key={m.word.id}>
@@ -371,15 +364,32 @@ export function HanVietQuiz({
                   </ul>
                 </>
               ) : (
-                <p className="hq-note">Bạn đã nhớ hết các từ trong lượt này.</p>
+                <p className="pm-note">Bạn đã nhớ hết các từ trong lượt này.</p>
               )}
-              <div className="hq-actions">
-                <button type="button" className="hq-btn hq-primary" onClick={start}>Làm lượt mới</button>
-                <button type="button" className="hq-btn" onClick={onClose}>Đóng</button>
-              </div>
             </div>
           )}
         </div>
+
+        {!session && (
+          <div className="pm-foot">
+            <button type="button" className="pm-btn pm-btn-primary" onClick={start} disabled={count === 0}>
+              Bắt đầu <span className="kbd">Enter</span>
+            </button>
+          </div>
+        )}
+        {q && (
+          <div className="pm-foot">
+            <button ref={nextRef} type="button" className="pm-btn pm-btn-primary" onClick={next} disabled={!answered}>
+              {index + 1 >= total ? 'Xem kết quả' : 'Tiếp'} <span className="kbd">Enter</span>
+            </button>
+          </div>
+        )}
+        {done && (
+          <div className="pm-foot">
+            <button type="button" className="pm-btn" onClick={onClose}>Đóng</button>
+            <button type="button" className="pm-btn pm-btn-primary" onClick={start}>Làm lượt mới</button>
+          </div>
+        )}
       </div>
     </div>
   )

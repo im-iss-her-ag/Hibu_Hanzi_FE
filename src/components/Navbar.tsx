@@ -140,7 +140,7 @@ export function Navbar({
             aria-controls="app-rail"
             title={tip('Danh sách chữ', 'L')}
           >
-            <LayoutGrid size={16} aria-hidden="true" />
+            <LayoutGrid size={18} aria-hidden="true" />
             <span>Danh sách</span>
           </button>
         )}
@@ -157,7 +157,7 @@ export function Navbar({
         title={tip('Tìm chữ, pinyin, Hán Việt', 'F hoặc Ctrl+K')}
         aria-label="Tìm kiếm"
       >
-        <Search size={16} aria-hidden="true" />
+        <Search size={18} aria-hidden="true" />
         <span className="sh-search-text">Tìm chữ, pinyin, Hán Việt…</span>
         <kbd className="sh-kbd">Ctrl K</kbd>
       </button>
@@ -186,8 +186,8 @@ export function Navbar({
         >
           {/* A book, not a star: the star on the study sheet is the "Lưu" action, this opens the notebook. */}
           <BookMarked size={18} aria-hidden="true" />
-          <span className="rv-entry-label sh-notebook-label" aria-hidden="true">Sổ tay</span>
-          {favoritesCount > 0 && <span className="sh-badge">{favoritesCount > 99 ? '99+' : favoritesCount}</span>}
+          <span className="rv-entry-label" aria-hidden="true">Sổ tay</span>
+          {favoritesCount > 0 && <span className="rv-entry-count" aria-hidden="true">{favoritesCount > 99 ? '99+' : favoritesCount}</span>}
         </button>
 
         <button

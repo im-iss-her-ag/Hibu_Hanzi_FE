@@ -1,30 +1,36 @@
-/* Learn entry points: "Ôn tập (n)" button, known / review toggles in the study sheet. */
-.rv-entry {
-  width: auto; gap: var(--space-1); padding: 0 var(--space-2);
-  font-size: var(--text-sm); color: var(--ink-2); position: relative;
+/* Header entries (Hôm nay / Ôn tập / Sổ tay): one component look. Labelled: icon + word + inline tinted
+   count chip. Icon-only (collapsed): the SAME count as a solid corner superscript, never over text.
+   The three collapse together below 1200px (where the permanent rail takes over); phones keep "Hôm nay" labelled (today.css). */
+.sh-icon-btn.rv-entry {
+  width: auto; gap: var(--space-2); padding: 0 var(--space-2);
+  font-size: var(--text-sm); color: var(--ink-2);
 }
 .rv-entry-count {
-  font-variant-numeric: tabular-nums; font-size: var(--text-xs); font-weight: 600;
-  padding: 0 4px; min-width: 16px; line-height: 16px; text-align: center;
-  background: var(--seal-soft); color: var(--seal); border-radius: 2px;
+  flex: none; box-sizing: border-box; min-width: 16px; height: 16px; padding: 0 var(--space-1);
+  font-variant-numeric: tabular-nums; font-size: var(--text-xs); font-weight: 600; line-height: 16px; text-align: center;
+  background: var(--seal-soft); color: var(--seal); border-radius: var(--radius-sm);
 }
-.rail-head .rv-entry-rail { margin-left: auto; margin-right: var(--space-1); }
-@media (max-width: 767px) { .sh-bar .rv-entry .rv-entry-label { display: none; } }
+@media (max-width: 1199px) {
+  .sh-icon-btn.rv-entry { width: var(--control-h); padding: 0; }
+  .rv-entry .rv-entry-label { display: none; }
+  /* 36px buttons: the badge sits on the corner (half outside) so it does not cover the 18px icon. */
+  .rv-entry .rv-entry-count { position: absolute; top: calc(var(--space-1) * -1); right: calc(var(--space-1) * -1); background: var(--seal); color: var(--seal-ink); box-shadow: 0 0 0 1px var(--paper); }
+}
+@media (max-width: 767px) {
+  .sh-icon-btn.rv-entry { width: var(--touch); }
+  .rv-entry .rv-entry-count { top: 2px; right: 0; }
+}
 .kn-toggle.on { color: var(--tone-2); }
 .rv-add.on { color: var(--tone-1); }
 
-/* Labelled study actions (Lưu / Đã thuộc / Ôn tập): icon + word inline when the sheet is wide,
-   icon over a small word when narrow, so the meta row still fits on one line at 360px. */
-.la-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; width: auto; padding: 0 var(--space-2); }
-.la-label { font-size: var(--text-sm); white-space: nowrap; }
-@container st (max-width: 560px) {
-  .st-icon-btn.la-btn { flex-direction: column; gap: 2px; width: auto; min-width: var(--touch); height: var(--touch); padding: 0 4px; }
-  .la-btn .la-label { font-size: 10.5px; line-height: 1; }
-  .st-meta-actions { gap: 0; }
-}
+/* Labelled study actions (Lưu / Đã thuộc / Ôn tập / Từ HSK): ghost buttons, 16px icon + 12.5px label inline at
+   every width. Height is the shared --h; the row layout (spread vs. right-aligned) lives in study.css (.st-actions). */
+.la-btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-1); width: auto; padding: 0 var(--space-2); }
+.la-btn > svg { flex: none; }
+.la-label { font-size: var(--text-sm); font-weight: 500; line-height: 1; white-space: nowrap; }
 .la-toast { position: fixed; left: 50%; bottom: calc(var(--study-nav-h, 64px) + 16px + env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 70; pointer-events: none; width: max-content; max-width: calc(100vw - 32px); }
 .la-toast span {
-  display: block; padding: 10px 14px; border-radius: var(--radius-sm);
+  display: block; padding: var(--space-2) var(--space-3); border-radius: var(--radius-md);
   background: var(--ink); color: var(--paper); font-size: var(--text-sm); line-height: 1.4;
   box-shadow: var(--shadow-float); text-align: center;
   animation: la-toast-in var(--dur-2, 180ms) var(--ease, ease-out);
@@ -34,8 +40,8 @@
 
 /* Word review: search-row toggle, status line, review-card word text. */
 .sm-review.on { color: var(--tone-1); }
-.sm-note { flex: none; min-height: 0; padding: 0 var(--space-4); font-size: var(--text-sm); color: var(--ink-2); background: var(--paper-2); }
-.sm-note:not(:empty) { padding-top: var(--space-2); }
+.sm-note { flex: none; min-height: 0; padding: 0 var(--dlg-pad); font-size: var(--text-sm); color: var(--ink-2); }
+.sm-note:not(:empty) { padding-block: var(--space-2); border-top: 1px solid var(--rule); }
 .rv-han-word { font-size: clamp(64px, 20vw, 110px); line-height: 1.15; overflow-wrap: anywhere; }
 .rv-han-word.rv-han-long { font-size: clamp(44px, 14vw, 80px); }
 .rv-hv-word { font-size: clamp(28px, 9vw, 44px); }

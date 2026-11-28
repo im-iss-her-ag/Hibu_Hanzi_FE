@@ -1,8 +1,5 @@
-/* Onboarding modal ("Hôm nay" first visit). Uses the pm-* shell; phones get the full-screen sheet from library.css. */
-.pm-backdrop.ob-backdrop { z-index: 110; }
-@media (min-width: 768px) { .pm-backdrop.ob-backdrop { align-items: center; padding-top: var(--space-4); } }
-.pm-backdrop .ob-dialog { max-width: 520px; max-height: min(680px, 92vh); }
-.ob-header { justify-content: space-between; }
+/* Onboarding modal ("Hôm nay" first visit) on the pm-* shell (pm-sm, top-anchored like every dialog). */
+.pm-backdrop.ob-backdrop { z-index: 110; }   /* stays above every other dialog / popover */
 .ob-progress { display: flex; align-items: center; gap: var(--space-3); }
 .ob-count { font-size: var(--text-sm); font-weight: 600; color: var(--ink-3); font-variant-numeric: tabular-nums; }
 .ob-dots { display: flex; gap: 6px; }
@@ -10,7 +7,7 @@
 .ob-dot.past { background: var(--ink-3); }
 .ob-dot.on { background: var(--seal); }
 
-.ob-body { padding: var(--space-5) var(--space-4) var(--space-4); display: flex; flex-direction: column; gap: var(--space-4); }
+.ob-body { display: flex; flex-direction: column; gap: var(--space-4); min-height: min(384px, calc(100dvh - 260px)); }   /* the three steps share one height */
 .ob-title {
   margin: 0;
   font-family: var(--font-display);
@@ -20,6 +17,7 @@
   color: var(--ink);
   outline: none;
 }
+.ob-title:focus-visible { outline: none; }   /* programmatic focus target for screen readers, not a control */
 .ob-note { margin: 0; font-size: var(--text-sm); color: var(--ink-3); }
 
 /* Big tappable radio cards */
@@ -58,24 +56,9 @@
 .ob-opt-title { font-size: var(--text-lg); font-weight: 600; line-height: 1.3; }
 .ob-opt-hint { font-size: var(--text-sm); color: var(--ink-2); line-height: 1.4; }
 
-/* HSK level picker */
+/* HSK level picker: .pm-seg, tightened so six short labels fit a 360px phone. */
 .ob-level { display: flex; flex-direction: column; gap: var(--space-2); }
-.ob-seg { display: grid; grid-template-columns: repeat(6, 1fr); border: 1px solid var(--rule-strong); border-radius: var(--radius-md); overflow: hidden; }
-.ob-seg .ob-opt {
-  min-height: 40px;
-  padding: 0 2px;
-  justify-content: center;
-  border: 0;
-  border-radius: 0;
-  box-shadow: none;
-  font-size: var(--text-sm);
-  font-weight: 600;
-  text-align: center;
-  white-space: nowrap;
-}
-.ob-seg .ob-opt + .ob-opt { border-left: 1px solid var(--rule-strong); }
-.ob-seg .ob-opt.on { background: var(--ink); color: var(--sheet); box-shadow: none; }
-.ob-seg .ob-opt:focus-visible { outline-offset: -2px; }
+.ob-seg .pm-seg-btn { padding: 0 2px; font-size: var(--text-sm); }
 
 /* Icon legend */
 .ob-legend { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr; gap: 2px var(--space-4); }
@@ -95,39 +78,18 @@
 .ob-legend-text { display: flex; flex-direction: column; min-width: 0; font-size: var(--text-sm); line-height: 1.35; color: var(--ink-2); }
 .ob-legend-text b { color: var(--ink); font-size: var(--text-md); font-weight: 600; }
 
-/* Footer is pinned: Back / Next are always visible, only the body scrolls */
-.ob-footer {
-  flex: none;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
-  padding: var(--space-3) var(--space-4);
-  border-top: 1px solid var(--rule);
-  background: var(--sheet);
-}
-.ob-footer .pm-btn { height: 40px; padding: 0 var(--space-4); font-size: var(--text-md); justify-content: center; }
-.ob-footer .ob-primary { background: var(--seal); border-color: var(--seal); color: var(--seal-ink); min-width: 140px; margin-left: auto; }
-.ob-footer .ob-primary:hover { background: var(--seal); filter: brightness(1.08); }
-.ob-footer .ob-back:disabled { opacity: 0; pointer-events: none; }
-.ob-skip { color: var(--ink-2); }
+.ob-back:disabled { opacity: 0; pointer-events: none; }   /* keeps the footer layout on step 1 */
+/* "Bỏ qua" sits where the close button usually is (last header control, 8px from the right edge). */
+.ob-skip { height: var(--control-h); color: var(--ink-2); }
 
 @media (min-width: 560px) {
   .ob-legend { grid-template-columns: 1fr 1fr; }
-  .ob-legend-row { border-bottom: 1px solid var(--rule); }
 }
 
 @media (max-width: 767px) {
-  .pm-backdrop.ob-backdrop { align-items: stretch; padding: 0; }
-  .pm-backdrop .ob-dialog { max-height: none; }
-  .ob-body { padding-top: var(--space-4); gap: var(--space-3); }
+  .ob-body { min-height: 0; gap: var(--space-3); }
   .ob-opt { min-height: 60px; }
-  .ob-footer { padding-bottom: calc(var(--space-3) + env(safe-area-inset-bottom, 0px)); }
-  .ob-footer .pm-btn { height: var(--touch); }
   .ob-skip { height: var(--touch); }
-}
-@media (pointer: coarse) {
-  .ob-seg .ob-opt { min-height: var(--touch); }
 }
 @media (max-width: 380px), (max-height: 680px) {
   .ob-opt { min-height: 54px; padding-top: var(--space-2); padding-bottom: var(--space-2); }

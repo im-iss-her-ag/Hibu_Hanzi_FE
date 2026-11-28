@@ -1,19 +1,25 @@
-/* learn-review.css — ReviewSession (rv-*). Sits inside the pm-* modal shell; tokens only. */
-/* The backdrop pads 8vh on top and --space-4 below; never let min-height push the action bar off a
-   short screen (landscape phones are ≥768 wide, so the phone rule below does not apply to them). */
-.rv-dialog {
-  max-width: 520px;
-  max-height: min(92vh, calc(100dvh - 8vh - var(--space-4)));
-  min-height: min(480px, calc(100dvh - 8vh - var(--space-4)));
+/* learn-review.css — ReviewSession (rv-*) on the pm-* shell, plus the shared answer bar (.pm-foot-answers) that
+   Review and the Learn step both use. Tokens only. */
+
+/* Answer bar: equal-width big buttons, ONE height system (44 desktop / 56 phone) in every Review and Learn state. */
+.pm-foot.pm-foot-answers .pm-btn {
+  height: var(--touch);
+  padding: 0 var(--space-3);
+  font-size: var(--text-lg);
+  line-height: 1.2;
+  white-space: normal;
 }
+.pm-foot-answers kbd { display: none; }   /* keyboard hints only where there is a keyboard */
+@media (hover: hover) { .pm-foot-answers kbd { display: inline-block; } }
+@media (max-width: 767px) { .pm-foot.pm-foot-answers .pm-btn { height: 56px; } }
+
+/* One fixed height so the answer bar never moves between front / back / summary (only the body changes). */
+.rv-dialog { height: min(620px, calc(100dvh - var(--dlg-top) - var(--space-4))); }
 .rv-body {
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow-y: auto;
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: var(--space-5) var(--space-4);
+  padding-block: var(--space-4);
   text-align: center;
 }
 .rv-han {
@@ -21,7 +27,7 @@
   font-size: clamp(96px, 28vw, 150px);
   line-height: 1.1;
   color: var(--ink);
-  margin: var(--space-3) 0;
+  margin: var(--space-2) 0;
 }
 .rv-answer { display: flex; flex-direction: column; align-items: center; gap: var(--space-2); width: 100%; margin-top: var(--space-2); }
 .rv-hv {
@@ -34,22 +40,22 @@
 }
 .rv-py { display: flex; align-items: center; gap: var(--space-1); font-size: var(--text-xl); font-weight: 600; }
 .rv-mean { font-size: var(--text-lg); color: var(--ink-2); max-width: 36ch; }
+/* Leech note: a single left rule, not a box inside the dialog. */
 .rv-leech {
   width: 100%;
   margin-top: var(--space-2);
-  padding: var(--space-2) var(--space-3);
-  border: 1px solid var(--rule-strong);
+  padding: var(--space-1) 0 var(--space-1) var(--space-3);
   border-left: 3px solid var(--mnemonic);
-  border-radius: var(--radius-sm);
   text-align: left;
   font-size: var(--text-sm);
   color: var(--ink-2);
 }
 .rv-leech p { margin: var(--space-1) 0 0; }
 .rv-link {
+  min-height: var(--control-h-sm);
   border: 0;
   background: none;
-  padding: var(--space-1);
+  padding: 0 var(--space-2);
   font: inherit;
   font-size: var(--text-sm);
   color: var(--ink-3);
@@ -57,62 +63,16 @@
   cursor: pointer;
 }
 .rv-link:hover { color: var(--ink); }
-.rv-actions {
-  flex: none;
-  display: flex;
-  gap: var(--space-2);
-  padding: var(--space-3) var(--space-4);
-  border-top: 1px solid var(--rule);
-}
-.rv-btn {
-  flex: 1;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-2);
-  height: var(--touch);
-  padding: 0 var(--space-4);
-  border: 1px solid var(--rule-strong);
-  border-radius: var(--radius-md);
-  background: var(--sheet);
-  color: var(--ink);
-  font: inherit;
-  font-size: var(--text-lg);
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color var(--dur-1) var(--ease);
-}
-.rv-btn:hover { background: var(--hover); }
-.rv-btn:active { background: var(--press); }
-.rv-btn-primary { background: var(--seal); border-color: var(--seal); color: var(--seal-ink); }
-.rv-btn-primary:hover { background: var(--seal); filter: brightness(1.08); }
-.rv-btn-wide { flex: 1 1 100%; }
-.rv-kbd {
-  font-family: var(--font-ui);
-  font-size: var(--text-xs);
-  padding: 1px 6px;
-  border: 1px solid currentColor;
-  border-radius: var(--radius-sm);
-  opacity: 0.7;
-}
-.rv-btn:focus-visible, .rv-link:focus-visible { outline-offset: 2px; }
+.rv-link:focus-visible { outline-offset: 2px; }
+@media (pointer: coarse) { .rv-link { min-height: var(--touch); } }
+
+/* Summary / nothing due */
 .rv-summary { justify-content: center; gap: var(--space-3); }
-.rv-summary .rv-btn { flex: none; min-width: 160px; margin-top: var(--space-2); }
 .rv-lead { margin: 0; font-family: var(--font-display); font-size: var(--text-2xl); font-weight: 700; }
 .rv-note { margin: 0; color: var(--ink-2); max-width: 36ch; }
 .rv-counts { display: flex; gap: var(--space-6); }
 .rv-count { display: flex; flex-direction: column; align-items: center; gap: var(--space-1); }
 .rv-count-n { font-size: var(--text-3xl); font-weight: 700; }
-
-@media (max-width: 767px) {
-  .rv-dialog { max-width: none; max-height: none; min-height: 0; }
-  .rv-actions { padding-bottom: calc(var(--space-3) + env(safe-area-inset-bottom, 0px)); }
-  .rv-btn { height: 56px; }
-  .rv-hv { font-size: 44px; }
-  .rv-kbd { display: none; }
-}
-
-/* End of session: forgotten characters + next actions. */
 .rv-forgot { display: flex; flex-direction: column; align-items: center; gap: var(--space-2); width: 100%; }
 .rv-forgot-list { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-2); }
 .rv-forgot-chip {
@@ -121,5 +81,8 @@
   font-family: var(--font-han); font-size: 24px; color: var(--ink); cursor: pointer;
 }
 .rv-forgot-chip:hover:not(:disabled) { border-color: var(--seal); background: var(--hover); }
-.rv-summary-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-2); width: 100%; margin-top: var(--space-2); }
-.rv-summary .rv-summary-actions .rv-btn { flex: 1 1 160px; max-width: 240px; margin-top: 0; }
+
+@media (max-width: 767px) {
+  .rv-dialog { height: 100dvh; }
+  .rv-hv { font-size: 44px; }
+}

@@ -64,7 +64,7 @@ export function BackupReminder({ hidden, onOpenBackup }: Props) {
         {d.lastBackup === null ? 'Bạn chưa sao lưu tiến độ học.' : 'Đã hơn 2 tuần bạn chưa sao lưu tiến độ học.'} Dữ liệu chỉ nằm trên thiết bị này.
       </p>
       <span className="sy-nudge-actions">
-        <button type="button" className="pm-btn bk-primary" onClick={open}>Sao lưu</button>
+        <button type="button" className="pm-btn pm-btn-accent" onClick={open}>Sao lưu</button>
         <button type="button" className="pm-btn" onClick={open}>Bật đồng bộ</button>
         <button type="button" className="pm-icon-btn" onClick={snooze} aria-label="Để sau (nhắc lại sau 7 ngày)" title="Để sau">
           <X size={16} />

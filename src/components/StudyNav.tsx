@@ -34,11 +34,11 @@ export function StudyNav({ onPrev, onNext, onRandom, onOpenList, listOpen, index
           aria-controls="app-rail"
           title="Danh sách chữ (L)"
         >
-          <LayoutGrid size={20} aria-hidden="true" />
+          <LayoutGrid size={18} aria-hidden="true" />
           <span>Danh sách</span>
         </button>
         <button type="button" className="sn-btn sn-prev" onClick={onPrev} disabled={disabled} title="Chữ trước (←)">
-          <ChevronLeft size={20} aria-hidden="true" />
+          <ChevronLeft size={18} aria-hidden="true" />
           <span>Trước</span>
         </button>
         <button type="button" className="sn-btn sn-random" onClick={onRandom} disabled={disabled} title="Ngẫu nhiên (Space)">
@@ -48,7 +48,7 @@ export function StudyNav({ onPrev, onNext, onRandom, onOpenList, listOpen, index
         </button>
         <button type="button" className="sn-btn sn-next" onClick={onNext} disabled={disabled} title="Chữ tiếp theo (→)">
           <span>Tiếp</span>
-          <ChevronRight size={20} aria-hidden="true" />
+          <ChevronRight size={18} aria-hidden="true" />
         </button>
       </div>
     </nav>

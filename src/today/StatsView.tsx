@@ -188,7 +188,7 @@ function ReviewsChart({ series }: { series: ReturnType<typeof activitySeries> })
       </div>
       <Tip tip={tip} width={W} />
       <details className="sv-table">
-        <summary>Xem dạng bảng</summary>
+        <summary className="pg-ghost pg-hang">Xem dạng bảng</summary>
         <div className="sv-table-scroll">
           <table>
             <thead>
@@ -318,12 +318,12 @@ export function StatsView({ characters, onOpenCharacter, onBack }: StatsViewProp
   const retOk = ret.pct !== null && ret.total >= 10
 
   return (
-    <section className="sv" data-testid="stats-view" aria-labelledby="sv-title">
-      <header className="sv-head">
-        <button type="button" className="pm-btn sv-back" onClick={onBack}>
-          <ArrowLeft size={14} aria-hidden="true" /> Hôm nay
+    <section className="sv pg" data-testid="stats-view" aria-labelledby="sv-title">
+      <header className="pg-head">
+        <button type="button" className="pg-ghost pg-hang sv-back" onClick={onBack}>
+          <ArrowLeft size={16} aria-hidden="true" /> Hôm nay
         </button>
-        <h1 id="sv-title" className="sv-title">Thống kê học tập</h1>
+        <h1 id="sv-title" className="pg-title">Thống kê học tập</h1>
       </header>
 
       <div className="sv-tiles">
@@ -351,13 +351,13 @@ export function StatsView({ characters, onOpenCharacter, onBack }: StatsViewProp
         </div>
       </div>
 
-      <section className="sv-card" aria-labelledby="sv-h-rev">
-        <h2 id="sv-h-rev" className="sv-h">Lượt ôn mỗi ngày <span>30 ngày qua</span></h2>
+      <section className="pg-sec" aria-labelledby="sv-h-rev">
+        <h2 id="sv-h-rev" className="pg-h label">Lượt ôn mỗi ngày <span>30 ngày qua</span></h2>
         <ReviewsChart series={series} />
       </section>
 
-      <section className="sv-card" aria-labelledby="sv-h-lv">
-        <h2 id="sv-h-lv" className="sv-h">Chữ đã học theo cấp HSK</h2>
+      <section className="pg-sec" aria-labelledby="sv-h-lv">
+        <h2 id="sv-h-lv" className="pg-h label">Chữ đã học theo cấp HSK</h2>
         <div className="sv-legend" aria-hidden="true">
           <span><i className="sv-key sv-key-rev" />Đã học</span>
           <span><i className="sv-key sv-key-learning" />Đang học</span>
@@ -382,14 +382,14 @@ export function StatsView({ characters, onOpenCharacter, onBack }: StatsViewProp
         </ul>
       </section>
 
-      <section className="sv-card" aria-labelledby="sv-h-cal">
-        <h2 id="sv-h-cal" className="sv-h">Lịch chuỗi ngày <span>{WEEKS} tuần qua</span></h2>
+      <section className="pg-sec" aria-labelledby="sv-h-cal">
+        <h2 id="sv-h-cal" className="pg-h label">Lịch chuỗi ngày <span>{WEEKS} tuần qua</span></h2>
         <StreakCalendar days={daily.days} today={today} />
         <p className="sv-rule">Nghỉ 1 ngày không sao — nghỉ 2 ngày liền thì chuỗi bắt đầu lại.</p>
       </section>
 
-      <section className="sv-card" aria-labelledby="sv-h-hard">
-        <h2 id="sv-h-hard" className="sv-h">Chữ khó nhớ nhất</h2>
+      <section className="pg-sec" aria-labelledby="sv-h-hard">
+        <h2 id="sv-h-hard" className="pg-h label">Chữ khó nhớ nhất</h2>
         {hard.length === 0 ? (
           <p className="sv-empty" data-testid="stats-hardest">Chưa có chữ nào khó — tốt lắm.</p>
         ) : (

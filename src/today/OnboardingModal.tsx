@@ -31,6 +31,7 @@ function RadioGroup<T extends string | number>({
   options,
   onChange,
   className,
+  optionClass,
   render,
 }: {
   label: string
@@ -38,6 +39,8 @@ function RadioGroup<T extends string | number>({
   options: { value: T; testid: string; aria?: string }[]
   onChange: (v: T) => void
   className: string
+  /** Replaces the default card class (used by the segmented HSK picker). */
+  optionClass?: string
   render: (o: { value: T }, checked: boolean) => ReactNode
 }) {
   const refs = useRef<(HTMLButtonElement | null)[]>([])
@@ -79,7 +82,7 @@ function RadioGroup<T extends string | number>({
             tabIndex={checked ? 0 : -1}
             data-testid={o.testid}
             data-value={String(o.value)}
-            className={`ob-opt${checked ? ' on' : ''}`}
+            className={optionClass ?? `ob-opt${checked ? ' on' : ''}`}
             onClick={() => onChange(o.value)}
           >
             {render(o, checked)}
@@ -153,7 +156,7 @@ export function OnboardingModal({ onDone, onClose }: OnboardingModalProps) {
       data-testid="onboarding"
       onKeyDown={onKeyDown}
     >
-      <div ref={dialogRef} {...dialogProps} className="pm-dialog ob-dialog">
+      <div ref={dialogRef} {...dialogProps} className="pm-dialog pm-sm ob-dialog">
         <div className="pm-header ob-header">
           <div className="ob-progress" role="group" aria-label={`Bước ${step + 1} trên ${steps.length}`}>
             <span className="ob-count" aria-hidden="true">
@@ -166,7 +169,7 @@ export function OnboardingModal({ onDone, onClose }: OnboardingModalProps) {
             </span>
           </div>
           <div className="pm-header-actions">
-            <button type="button" className="pm-btn pm-btn-ghost ob-skip" data-testid="onboarding-skip" onClick={skip} title="Bỏ qua (Esc)">
+            <button type="button" className="pm-btn pm-btn-ghost pm-close ob-skip" data-testid="onboarding-skip" onClick={skip} title="Bỏ qua (Esc)">
               Bỏ qua
             </button>
           </div>
@@ -200,10 +203,11 @@ export function OnboardingModal({ onDone, onClose }: OnboardingModalProps) {
               />
               {track === 'hsk' && (
                 <div className="ob-level">
-                  <span className="label" id="ob-level-label">Bắt đầu từ cấp</span>
+                  <span className="pm-section-title" id="ob-level-label">Bắt đầu từ cấp</span>
                   <RadioGroup
                     label="Cấp HSK bắt đầu"
-                    className="ob-seg"
+                    className="pm-seg ob-seg"
+                    optionClass="pm-seg-btn"
                     value={level}
                     onChange={setLevel}
                     options={LEVELS.map((l) => ({ value: l, testid: `onboarding-level-${l}`, aria: `HSK ${l}` }))}
@@ -251,16 +255,16 @@ export function OnboardingModal({ onDone, onClose }: OnboardingModalProps) {
           )}
         </div>
 
-        <div className="ob-footer">
-          <button type="button" className="pm-btn pm-btn-ghost ob-back" data-testid="onboarding-back" onClick={back} disabled={step === 0}>
+        <div className="pm-foot">
+          <button type="button" className="pm-btn pm-btn-ghost pm-foot-start ob-back" data-testid="onboarding-back" onClick={back} disabled={step === 0}>
             Quay lại
           </button>
           {last ? (
-            <button type="button" className="pm-btn ob-primary" data-testid="onboarding-done" onClick={done}>
+            <button type="button" className="pm-btn pm-btn-primary" data-testid="onboarding-done" onClick={done}>
               {track === 'lookup' ? 'Bắt đầu tra chữ' : 'Bắt đầu học hôm nay'}
             </button>
           ) : (
-            <button type="button" className="pm-btn ob-primary" data-testid="onboarding-next" onClick={next}>
+            <button type="button" className="pm-btn pm-btn-primary" data-testid="onboarding-next" onClick={next}>
               Tiếp tục
             </button>
           )}

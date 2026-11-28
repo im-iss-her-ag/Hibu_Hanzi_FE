@@ -1,4 +1,4 @@
-/* library.css — Library (LeftSidebar), shared modal shell (pm-*), Search (sm-*), Favorites (fm-*).
+/* library.css — Library (LeftSidebar), Search (sm-*), Favorites (fm-*). The modal shell (pm-*) lives in dialog.css.
    Owner: workstream D. Tokens only (see tokens.css, DESIGN-SYSTEM.md). */
 
 /* =====================================================================
@@ -19,7 +19,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-  padding: var(--space-3) var(--space-3) 0;
+  padding: var(--space-3);
   border-bottom: 1px solid var(--rule);
 }
 
@@ -30,7 +30,7 @@
   flex: 1;
   min-width: 0;
   display: flex;
-  height: 32px;
+  height: var(--control-h-sm);
   border: 1px solid var(--rule-strong);
   border-radius: var(--radius-md);
   overflow: hidden;
@@ -64,7 +64,7 @@
 .lib-filter-icon { position: absolute; left: var(--space-2); color: var(--ink-3); pointer-events: none; }
 .lib-filter-input {
   width: 100%;
-  height: var(--control-h);
+  height: var(--control-h-sm);
   padding: 0 34px 0 32px;
   border: 1px solid var(--rule-strong);
   border-radius: var(--radius-md);
@@ -74,12 +74,14 @@
   font-size: var(--text-md);
 }
 .lib-filter-input::placeholder { color: var(--ink-4); }
+.lib-filter-input:hover { border-color: var(--ink-4); }
 .lib-filter-input:focus { outline: none; border-color: var(--seal); }
 .lib-filter-clear {
   position: absolute;
-  right: 3px;
-  width: 30px;
-  height: 30px;
+  top: 1px;
+  right: 1px;
+  bottom: 1px;
+  width: calc(var(--control-h-sm) - 2px);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -92,9 +94,9 @@
 .lib-filter-clear:hover { background: var(--hover); color: var(--ink); }
 
 /* Slim toolbar: count · saved · sort */
-.lib-bar { display: flex; align-items: center; gap: var(--space-2); min-height: 36px; padding-bottom: var(--space-1); }
+.lib-bar { display: flex; align-items: center; gap: var(--space-2); min-height: var(--control-h-sm); }
 .lib-count { font-size: var(--text-sm); color: var(--ink-3); font-variant-numeric: tabular-nums; }
-.lib-tools { margin-left: auto; display: flex; align-items: center; gap: 2px; }
+.lib-tools { margin-left: auto; display: flex; align-items: center; gap: var(--space-1); }
 .lib-tool {
   height: var(--control-h-sm);
   min-width: var(--control-h-sm);
@@ -102,7 +104,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: var(--space-1);
   border: 0;
   border-radius: var(--radius-md);
   background: transparent;
@@ -152,7 +154,7 @@
 .lib-menu-check { width: 16px; display: inline-flex; color: var(--seal); }
 
 /* Radical mode extras */
-.lib-note { margin-bottom: var(--space-2); font-size: var(--text-sm); color: var(--ink-2); }
+.lib-note { font-size: var(--text-sm); color: var(--ink-2); }
 .lib-note summary { cursor: pointer; color: var(--ink-3); }
 .lib-note summary:hover { color: var(--ink); }
 .lib-note p { margin: var(--space-1) 0 0; line-height: 1.5; }
@@ -160,7 +162,6 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
-  margin-bottom: var(--space-3);
   padding: var(--space-2) var(--space-3);
   border: 1px solid var(--rule-strong);
   background: var(--sheet);
@@ -189,7 +190,7 @@
 .lib-focus-py { margin-left: var(--space-2); font-family: var(--font-ui); font-weight: 400; font-size: var(--text-sm); letter-spacing: 0; text-transform: none; color: var(--tone-1); }
 .lib-focus-mean { font-size: var(--text-sm); color: var(--ink-2); }
 .lib-focus-hint { margin: 0; font-size: var(--text-sm); color: var(--ink-3); }
-.lib-radmatch { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1) var(--space-2); margin-bottom: var(--space-2); }
+.lib-radmatch { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1) var(--space-2); }
 .lib-chip {
   height: 24px;
   padding: 0 var(--space-2);
@@ -279,11 +280,10 @@
   font-variant-numeric: tabular-nums;
 }
 
-.lib-legend { margin: calc(var(--space-1) * -1) 0 var(--space-2); font-size: var(--text-sm); color: var(--ink-3); }
+.lib-legend { margin: 0; font-size: var(--text-sm); color: var(--ink-3); }
 .lib-group-title {
   margin: 0;
   padding: var(--space-3) var(--space-3) var(--space-2);
-  font-size: 12px;
 }
 .lib-group + .lib-group .lib-grid { border-top: 1px solid var(--rule); }
 
@@ -294,7 +294,7 @@
 .lib-empty-btn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-2);
   height: var(--control-h);
   margin-top: var(--space-2);
   padding: 0 var(--space-3);
@@ -312,7 +312,7 @@
 @media (pointer: coarse), (max-width: 767px) {
   .lib-seg { height: var(--touch); }
   .lib-filter-input { height: var(--touch); font-size: 16px; }
-  .lib-filter-clear { width: var(--touch); height: var(--touch); }
+  .lib-filter-clear { width: calc(var(--touch) - 2px); }
   .lib-tool { height: var(--touch); min-width: var(--touch); }
   .lib-menu-item { height: var(--touch); }
   .lib-back { height: var(--touch); }
@@ -320,140 +320,20 @@
   .sm-example::after { content: ''; position: absolute; inset: -4px 0; }
 }
 
-/* =====================================================================
-   MODAL SHELL (pm-*) — shared with Pinyin chart & Pronunciation (workstream E)
-   ===================================================================== */
-.pm-backdrop {
-  overscroll-behavior: contain;
-  position: fixed;
-  inset: 0;
-  z-index: 100;
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  padding: 8vh var(--space-4) var(--space-4);
-  background: var(--scrim);
-  animation: pmFade var(--dur-1) var(--ease);
-}
-@keyframes pmFade { from { opacity: 0; } to { opacity: 1; } }
-@keyframes pmRise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
-.pm-dialog {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  max-width: 560px;
-  max-height: 84vh;
-  background: var(--sheet);
-  color: var(--ink);
-  border: 1px solid var(--rule);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-float);
-  overflow: hidden;
-  animation: pmRise var(--dur-2) var(--ease);
-}
-.pm-header {
-  flex: none;
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  height: 52px;
-  padding: 0 var(--space-2) 0 var(--space-4);
-  border-bottom: 1px solid var(--rule);
-}
-.pm-title { margin: 0; font-family: var(--font-display); font-size: var(--text-lg); font-weight: 700; letter-spacing: 0; color: var(--ink); }
-.pm-meta { font-size: var(--text-sm); color: var(--ink-3); }
-.pm-header-actions { margin-left: auto; display: flex; align-items: center; gap: var(--space-1); }
-.pm-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: var(--space-3); scrollbar-width: thin; scrollbar-color: var(--rule-strong) transparent; }
-.pm-icon-btn {
-  flex: none;
-  width: var(--control-h);
-  height: var(--control-h);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 0;
-  border-radius: var(--radius-md);
-  background: transparent;
-  color: var(--ink-3);
-  cursor: pointer;
-  transition: background-color var(--dur-1) var(--ease), color var(--dur-1) var(--ease);
-}
-.pm-icon-btn:hover { background: var(--hover); color: var(--ink); }
-.pm-icon-btn:active { background: var(--press); }
-.pm-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: var(--control-h-sm);
-  padding: 0 var(--space-3);
-  border: 1px solid var(--rule-strong);
-  border-radius: var(--radius-md);
-  background: var(--sheet);
-  color: var(--ink);
-  font: inherit;
-  font-size: var(--text-sm);
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color var(--dur-1) var(--ease);
-}
-.pm-btn:hover { background: var(--hover); }
-.pm-btn:active { background: var(--press); }
-.pm-btn-ghost { border-color: transparent; background: transparent; color: var(--ink-2); }
-.pm-btn-danger { background: var(--seal); border-color: var(--seal); color: var(--seal-ink); }
-.pm-btn-danger:hover { background: var(--seal); filter: brightness(1.08); }
-.pm-tag {
-  display: inline-flex;
-  align-items: center;
-  height: 18px;
-  padding: 0 6px;
-  border-radius: var(--radius-sm);
-  background: var(--hover);
-  color: var(--ink-2);
-  font-size: var(--text-xs);
-  font-weight: 600;
-  white-space: nowrap;
-}
-.pm-icon-btn:focus-visible, .pm-btn:focus-visible, .pm-seg-btn:focus-visible { outline-offset: -2px; }
-
-/* Full-screen below 768. `.pm-backdrop .pm-dialog` outranks single-class dialog sizing (pc-/pn-dialog). */
-@media (max-width: 767px) {
-  .pm-backdrop,
-  .pm-backdrop:has(.pc-dialog),
-  .pm-backdrop:has(.pn-dialog) { padding: 0; align-items: stretch; }
-  .pm-backdrop .pm-dialog {
-    max-width: none;
-    width: 100%;
-    height: 100dvh;
-    max-height: none;
-    border: 0;
-    border-radius: 0;
-    box-shadow: none;
-    padding-bottom: env(safe-area-inset-bottom, 0px);
-    animation: none;
-  }
-  .pm-icon-btn { width: var(--touch); height: var(--touch); }
-  .pm-btn { height: 40px; }
-  .pm-header { padding-left: var(--space-4); }
-}
+/* Modal shell (pm-*) moved to dialog.css — the shared dialog system. */
 
 /* =====================================================================
-   SEARCH (sm-*) — command palette
+   SEARCH (sm-*) — command palette. Its input row IS the dialog header (.pm-header metrics: 52px,
+   padding 0 8 0 16, close button last); size, top offset and phone layout come from dialog.css (pm-md).
    ===================================================================== */
-.pm-backdrop.sm-backdrop { padding-top: 12vh; }
-.sm-dialog { max-width: 640px; max-height: min(640px, 76vh); }
-.sm-head {
-  flex: none;
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-3) var(--space-2) var(--space-4);
-  border-bottom: 1px solid var(--rule);
+@media (min-width: 768px) {
+  .pm-dialog.sm-dialog { max-height: min(640px, calc(100dvh - var(--dlg-top) - var(--space-4))); }
 }
 .sm-search-icon { flex: none; color: var(--ink-3); }
 .sm-input {
   flex: 1;
   min-width: 0;
-  height: 48px;
+  height: var(--control-h);
   padding: 0;
   border: 0;
   outline: 0;
@@ -463,44 +343,12 @@
   font-size: var(--text-xl);
 }
 .sm-input::placeholder { color: var(--ink-4); }
-.sm-esc { flex: none; }
-.sm-close { display: none; }
 
-.sm-tabs { flex: none; display: flex; align-items: center; gap: var(--space-3); padding: 0 var(--space-3) 0 var(--space-4); border-bottom: 1px solid var(--rule); }
-.sm-tablist { display: flex; gap: var(--space-4); }
-.sm-tab {
-  height: 38px;
-  padding: 0;
-  border: 0;
-  border-bottom: 2px solid transparent;
-  margin-bottom: -1px;
-  background: transparent;
-  color: var(--ink-3);
-  font: inherit;
-  font-size: var(--text-sm);
-  font-weight: 600;
-  cursor: pointer;
-}
-.sm-tab:hover { color: var(--ink); }
-.sm-tab.active { color: var(--ink); border-bottom-color: var(--seal); }
+/* Tabs = .pm-tabs; the radical chips share the row (own row on phones). */
+.sm-tabs { gap: var(--space-4); overflow: visible; }
+.sm-tablist { display: flex; gap: var(--space-5); }
 .sm-tab-n { margin-left: 2px; font-weight: 500; color: var(--ink-3); font-variant-numeric: tabular-nums; }
 .sm-radicals { margin-left: auto; display: flex; align-items: center; gap: var(--space-2); min-width: 0; overflow: hidden; }
-.sm-chip {
-  flex: none;
-  height: 24px;
-  padding: 0 var(--space-2);
-  border: 1px solid var(--rule-strong);
-  border-radius: var(--radius-sm);
-  background: var(--sheet);
-  color: var(--ink);
-  font: inherit;
-  font-size: var(--text-sm);
-  white-space: nowrap;
-  cursor: pointer;
-}
-.sm-chip:hover { border-color: var(--seal); }
-
-.sm-results { flex: 1 1 auto; min-height: 120px; overflow-y: auto; padding: var(--space-1) 0; scrollbar-width: thin; scrollbar-color: var(--rule-strong) transparent; }
 
 /* One row language, shared by search + favorites */
 .sm-row {
@@ -547,8 +395,8 @@
 .sm-end { display: inline-flex; align-items: center; gap: var(--space-1); }
 .sm-speak { width: 30px; height: 30px; }
 
-.sm-start { padding: var(--space-3) var(--space-4) var(--space-4); display: flex; flex-direction: column; gap: var(--space-4); }
-.sm-start-title { display: flex; align-items: center; gap: 6px; margin: 0 0 var(--space-2); }
+.sm-start { padding: var(--space-4); }
+.sm-start-title { display: flex; align-items: center; gap: 6px; }
 .sm-recent { display: flex; flex-wrap: wrap; gap: 0; border-top: 1px solid var(--rule); border-left: 1px solid var(--rule); width: fit-content; max-width: 100%; }
 .sm-recent-cell {
   width: 48px;
@@ -565,43 +413,24 @@
 .sm-recent-cell:hover { background: var(--hover); }
 .sm-tips { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); font-size: var(--text-sm); color: var(--ink-2); }
 .sm-tips li { display: flex; align-items: center; gap: var(--space-3); }
-.sm-example {
-  flex: none;
-  min-width: 64px;
-  height: 26px;
-  padding: 0 var(--space-2);
-  border: 1px solid var(--rule-strong);
-  border-radius: var(--radius-sm);
-  background: var(--paper);
-  color: var(--ink);
-  font: inherit;
-  font-size: var(--text-sm);
-  cursor: pointer;
-}
-.sm-example:hover { border-color: var(--seal); }
+.sm-tips { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); font-size: var(--text-sm); color: var(--ink-2); }
+.sm-tips li { display: flex; align-items: center; gap: var(--space-3); }
+.sm-example { min-width: 64px; }
 
-.sm-empty { display: flex; flex-direction: column; align-items: center; gap: var(--space-1); padding: var(--space-6) var(--space-4); text-align: center; font-size: var(--text-sm); color: var(--ink-3); }
-.sm-empty p { margin: 0; line-height: 1.5; }
-.sm-empty .sm-empty-title { font-size: var(--text-md); font-weight: 600; color: var(--ink); }
-.sm-empty kbd { margin: 0 2px; }
+.pm-empty kbd { margin: 0 2px; }
 .fm-empty-star { color: var(--ink-4); margin-bottom: var(--space-1); }
 
-.sm-footer { flex: none; display: flex; gap: var(--space-4); padding: var(--space-2) var(--space-4); border-top: 1px solid var(--rule); background: var(--paper-2); font-size: var(--text-xs); color: var(--ink-3); }
+.sm-footer { flex: none; display: flex; gap: var(--space-4); padding: var(--space-2) var(--dlg-pad); border-top: 1px solid var(--rule); font-size: var(--text-xs); color: var(--ink-3); }
 .sm-footer span { display: inline-flex; align-items: center; gap: 4px; }
 .sm-footer kbd { font-size: var(--text-xs); padding: 2px 4px; }
 
 @media (max-width: 767px) {
-  .pm-backdrop.sm-backdrop { padding: 0; }
-  .sm-head { padding: var(--space-1) var(--space-1) var(--space-1) var(--space-4); }
-  .sm-input { height: 52px; font-size: 18px; }
-  .sm-esc, .sm-footer { display: none; }
-  .sm-close { display: inline-flex; }
-  .sm-tabs { padding-left: var(--space-4); }
+  .sm-footer { display: none; }
+  .sm-input { font-size: var(--text-lg); }
+  .sm-tablist { gap: var(--space-4); }
   /* Radical chips wrap onto their own row instead of disappearing on phones. */
   .sm-tabs { flex-wrap: wrap; row-gap: 0; }
-  .sm-radicals { margin-left: 0; width: 100%; padding-bottom: var(--space-2); overflow-x: auto; scrollbar-width: none; }
-  .sm-chip { height: 36px; }
-  .sm-tab { height: 44px; }
+  .sm-radicals { margin-left: 0; width: 100%; flex-wrap: wrap; padding-bottom: var(--space-2); overflow: visible; }
   .sm-row, .sm-row-word {
     grid-template-columns: 48px auto minmax(0, 1fr) auto;
     grid-template-areas: 'g py hv tag' 'g mean mean mean';
@@ -623,22 +452,9 @@
 /* =====================================================================
    FAVORITES (fm-*)
    ===================================================================== */
-.fm-dialog { max-width: 600px; }
-.fm-body { padding: var(--space-1) 0; }
-.fm-confirm {
-  flex: none;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: var(--space-2) var(--space-3);
-  padding: var(--space-2) var(--space-4);
-  border-bottom: 1px solid var(--seal-line);
-  background: var(--seal-soft);
-  font-size: var(--text-sm);
-  color: var(--ink);
-}
-.fm-confirm-actions { display: inline-flex; gap: var(--space-2); }
+/* Header actions and the confirm band use the 36px control height, like the close button. */
+.fm-dialog .pm-header-actions .pm-btn,
+.fm-dialog .pm-confirm .pm-btn { height: var(--control-h); }
 .fm-list { display: flex; flex-direction: column; }
 .fm-item { display: flex; align-items: center; padding-right: var(--space-2); }
 .fm-item:hover { background: var(--hover); }
@@ -648,9 +464,6 @@
 @media (max-width: 767px) {
   .fm-item .fm-open { grid-template-columns: 48px auto minmax(0, 1fr) auto; }
 }
-
-/* Section labels in the library: 12px (global .label is 11px) */
-.lib-levels .label { font-size: 12px; }
 
 /* Short screens (landscape phone, small phone, on-screen keyboard up): the level tabs, filter and
    known/bulk controls took ~330px and left one row of characters (or none). Cap the controls at a

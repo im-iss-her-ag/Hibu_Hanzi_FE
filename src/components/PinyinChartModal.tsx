@@ -230,11 +230,17 @@ function MatrixTab({ onInspectPinyin }: { onInspectPinyin: (p: string) => void }
         </label>
         <div className="rf-filters" role="group" aria-label="Nhóm thanh mẫu">
           {FILTERS.map((f) => (
-            <button key={f.id} type="button" className={`rf-filter${filter === f.id ? ' active' : ''}`} aria-pressed={filter === f.id} onClick={() => setFilter(f.id)}>
+            <button key={f.id} type="button" className={`pm-chip${filter === f.id ? ' active' : ''}`} aria-pressed={filter === f.id} onClick={() => setFilter(f.id)}>
               {f.short}
             </button>
           ))}
         </div>
+        {/* Phones / short screens: one select instead of a second horizontally scrolling chip row. */}
+        <select className="rf-filter-select" aria-label="Nhóm thanh mẫu" value={filter} onChange={(e) => setFilter(e.target.value as typeof filter)}>
+          {FILTERS.map((f) => (
+            <option key={f.id} value={f.id}>{f.short}</option>
+          ))}
+        </select>
       </div>
 
       <div className="rf-inspector">
@@ -583,20 +589,20 @@ export function PinyinChartModal({ onClose, onInspectPinyin }: PinyinChartModalP
 
   return (
     <div className="pm-backdrop" onClick={onClose} onTouchStart={(e) => e.stopPropagation()} onTouchEnd={(e) => e.stopPropagation()}>
-      <div ref={dialogRef} {...dialogProps} className="pm-dialog pc-dialog rf-dialog" onClick={(e) => e.stopPropagation()} onTouchStart={(e) => e.stopPropagation()} onTouchEnd={(e) => e.stopPropagation()}>
+      <div ref={dialogRef} {...dialogProps} className="pm-dialog pm-xl pc-dialog" onClick={(e) => e.stopPropagation()} onTouchStart={(e) => e.stopPropagation()} onTouchEnd={(e) => e.stopPropagation()}>
         <div className="pm-header">
           <h2 className="pm-title" id={titleId}>Bảng pinyin</h2>
           <span className="pm-meta rf-head-meta">
             {TOTAL_FINALS} vận mẫu · 21 thanh mẫu · 4 thanh điệu
           </span>
           <div className="pm-header-actions">
-            <button type="button" className="pm-icon-btn" onClick={onClose} aria-label="Đóng bảng pinyin" title="Đóng (Esc)">
+            <button type="button" className="pm-icon-btn pm-close" onClick={onClose} aria-label="Đóng bảng pinyin" title="Đóng (Esc)">
               <X size={18} />
             </button>
           </div>
         </div>
 
-        <div className="rf-tabs" role="tablist" aria-label="Nội dung bảng pinyin" onKeyDown={onTabKey}>
+        <div className="pm-tabs" role="tablist" aria-label="Nội dung bảng pinyin" onKeyDown={onTabKey}>
           {TABS.map((t) => (
             <button
               key={t.id}
@@ -609,7 +615,7 @@ export function PinyinChartModal({ onClose, onInspectPinyin }: PinyinChartModalP
               aria-selected={activeTab === t.id}
               aria-controls="rf-panel"
               tabIndex={activeTab === t.id ? 0 : -1}
-              className={`rf-tab${activeTab === t.id ? ' active' : ''}`}
+              className={`pm-tab${activeTab === t.id ? ' active' : ''}`}
               onClick={() => setActiveTab(t.id)}
             >
               {t.label}
@@ -617,7 +623,7 @@ export function PinyinChartModal({ onClose, onInspectPinyin }: PinyinChartModalP
           ))}
         </div>
 
-        <div className={`rf-body${activeTab === 'matrix' ? ' rf-body-fill' : ''}`} id="rf-panel" role="tabpanel" aria-labelledby={`rf-tab-${activeTab}`}>
+        <div className={`pm-body rf-body${activeTab === 'matrix' ? ' rf-body-fill' : ''}`} id="rf-panel" role="tabpanel" aria-labelledby={`rf-tab-${activeTab}`}>
           {activeTab === 'matrix' && <MatrixTab onInspectPinyin={onInspectPinyin} />}
           {activeTab === 'initials' && <InitialsTab onInspectPinyin={onInspectPinyin} />}
           {activeTab === 'finals' && <FinalsTab onInspectPinyin={onInspectPinyin} />}

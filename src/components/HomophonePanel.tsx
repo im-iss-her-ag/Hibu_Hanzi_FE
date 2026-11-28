@@ -100,17 +100,19 @@ export function HomophonePanel({ characters, character, onSelect, onClose }: Pro
     <>
       <div className="hp-scrim" aria-hidden />
       <div className="hp-panel" ref={ref} {...dialogProps} tabIndex={-1}>
-        <div className="hp-head">
-          <span className="label" id={titleId}>Đồng âm với {character.hanzi}</span>
-          <button type="button" className="hp-close" onClick={onClose} aria-label="Đóng">
-            <X size={16} />
-          </button>
+        <div className="pm-header hp-head">
+          <h2 className="pm-title" id={titleId}>Đồng âm với {character.hanzi}</h2>
+          <div className="pm-header-actions">
+            <button type="button" className="pm-icon-btn pm-close" onClick={onClose} aria-label="Đóng">
+              <X size={18} />
+            </button>
+          </div>
         </div>
-        <div className="hp-tabs" role="tablist">
-          <button type="button" role="tab" aria-selected={tab === 'hv'} className={tab === 'hv' ? 'on' : ''} onClick={() => setTab('hv')}>
+        <div className="pm-tabs hp-tabs" role="tablist">
+          <button type="button" role="tab" aria-selected={tab === 'hv'} className={`pm-tab${tab === 'hv' ? ' active' : ''}`} onClick={() => setTab('hv')}>
             Cùng âm Hán Việt <span className="hp-n">{counts.hv}</span>
           </button>
-          <button type="button" role="tab" aria-selected={tab === 'py'} className={tab === 'py' ? 'on' : ''} onClick={() => setTab('py')}>
+          <button type="button" role="tab" aria-selected={tab === 'py'} className={`pm-tab${tab === 'py' ? ' active' : ''}`} onClick={() => setTab('py')}>
             Cùng pinyin <span className="hp-n">{counts.py}</span>
           </button>
         </div>

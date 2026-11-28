@@ -339,9 +339,9 @@ export function LeftSidebar({
         {typeof selectedLevel === 'number' && (
           <>
             <div className="kn-row">
-              <div className="kn-seg" role="group" aria-label="Lọc theo đã thuộc">
+              <div className="lib-seg" role="group" aria-label="Lọc theo đã thuộc">
                 {KNOWN_OPTIONS.map((o) => (
-                  <button key={o.id} type="button" className="kn-seg-btn" aria-pressed={knownFilter === o.id} onClick={() => setKnownFilter(o.id)}>
+                  <button key={o.id} type="button" className={`lib-seg-btn ${knownFilter === o.id ? 'active' : ''}`} aria-pressed={knownFilter === o.id} onClick={() => setKnownFilter(o.id)}>
                     {o.label}
                   </button>
                 ))}

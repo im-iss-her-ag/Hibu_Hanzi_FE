@@ -252,7 +252,7 @@ export function DeviceCheck({ onBack }: { onBack: () => void }) {
   return (
     <section className="dc" aria-labelledby="dc-title">
       <div className="dc-head">
-        <button type="button" className="tt-btn" onClick={() => { stop(); onBack() }}>
+        <button type="button" className="pm-btn" onClick={() => { stop(); onBack() }}>
           <ArrowLeft size={16} aria-hidden="true" /> Quay lại
         </button>
         <h3 id="dc-title" className="dc-title" tabIndex={-1} ref={titleRef}>Kiểm tra thiết bị</h3>
@@ -261,13 +261,13 @@ export function DeviceCheck({ onBack }: { onBack: () => void }) {
 
       <div className="dc-actions">
         {run === 'on' ? (
-          <button type="button" className="tt-btn tt-btn-strong" onClick={stop}><Square size={14} aria-hidden="true" /> Dừng</button>
+          <button type="button" className="pm-btn pm-btn-primary" onClick={stop}><Square size={14} aria-hidden="true" /> Dừng</button>
         ) : (
-          <button type="button" className="tt-btn tt-btn-strong" onClick={start} disabled={run === 'starting'} data-dc="start">
+          <button type="button" className="pm-btn pm-btn-primary" onClick={start} disabled={run === 'starting'} data-dc="start">
             <Mic size={16} aria-hidden="true" /> {err || mic ? 'Kiểm tra lại' : 'Bắt đầu kiểm tra'}
           </button>
         )}
-        <button type="button" className="tt-btn" onClick={playTone} disabled={!env.Ctor} data-dc="tone"><Volume2 size={16} aria-hidden="true" /> Phát âm thử</button>
+        <button type="button" className="pm-btn" onClick={playTone} disabled={!env.Ctor} data-dc="tone"><Volume2 size={16} aria-hidden="true" /> Phát âm thử</button>
       </div>
       <p className="sr-only" role="status" aria-live="polite">{live}</p>
 
@@ -285,8 +285,8 @@ export function DeviceCheck({ onBack }: { onBack: () => void }) {
                 )}
                 {r.id === 'spk' && spk === 'asking' && (
                   <div className="dc-actions">
-                    <button type="button" className="tt-btn" onClick={() => setSpk('heard')}>Nghe thấy</button>
-                    <button type="button" className="tt-btn" onClick={() => setSpk('not')}>Không nghe thấy</button>
+                    <button type="button" className="pm-btn" onClick={() => setSpk('heard')}>Nghe thấy</button>
+                    <button type="button" className="pm-btn" onClick={() => setSpk('not')}>Không nghe thấy</button>
                   </div>
                 )}
                 {r.help?.map((h) => <p key={h} className="dc-help">{h}</p>)}
@@ -300,7 +300,7 @@ export function DeviceCheck({ onBack }: { onBack: () => void }) {
       </ul>
 
       <div className="dc-actions">
-        <button type="button" className="tt-btn" onClick={doCopy} data-dc="copy"><Copy size={16} aria-hidden="true" /> Sao chép thông tin</button>
+        <button type="button" className="pm-btn" onClick={doCopy} data-dc="copy"><Copy size={16} aria-hidden="true" /> Sao chép thông tin</button>
         <span className="dc-copied" role="status" aria-live="polite">{copy.st === 'ok' ? 'Đã sao chép.' : copy.st === 'fail' ? 'Không sao chép được. Hãy chọn và sao chép thủ công bên dưới.' : ''}</span>
       </div>
       {copy.st === 'fail' && <textarea className="dc-box" readOnly rows={6} value={copy.text} aria-label="Thông tin chẩn đoán" onFocus={(e) => e.currentTarget.select()} />}

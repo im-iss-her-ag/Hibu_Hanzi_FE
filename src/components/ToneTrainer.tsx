@@ -335,7 +335,7 @@ export function ToneTrainer({ hanzi, pinyin, hanViet, initialMode = 'char', onNe
   return (
     <div className="pm-backdrop tt-backdrop" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
       <div
-        className="pm-dialog tt-dialog"
+        className="pm-dialog pm-md pm-sheet tt-dialog"
         ref={dialogRef}
         {...dialogProps}
         onKeyDown={(e) => {
@@ -358,42 +358,57 @@ export function ToneTrainer({ hanzi, pinyin, hanViet, initialMode = 'char', onNe
                 <SlidersHorizontal size={14} aria-hidden="true" /> <span className="tt-hide-sm">Đo lại giọng</span>
               </button>
             )}
-            <button type="button" className="pm-icon-btn tt-close" onClick={onClose} aria-label="Đóng" title="Đóng (Esc)">
+            <button type="button" className="pm-icon-btn pm-close" onClick={onClose} aria-label="Đóng" title="Đóng (Esc)">
               <X size={18} />
             </button>
           </div>
         </header>
 
+        {phase === 'practice' && !error && !devCheck && (
+          <div className="pm-tabs tt-modes" role="tablist" aria-label="Chế độ luyện">
+            <button type="button" role="tab" className="pm-tab" aria-selected={mode === 'char'} disabled={!syllables.length} onClick={() => setMode('char')}>
+              Chữ đang học
+            </button>
+            <button type="button" role="tab" className="pm-tab" aria-selected={mode === 'free'} onClick={() => setMode('free')}>
+              Luyện tự do
+            </button>
+          </div>
+        )}
+
         <div className="pm-body tt-body">
           {devCheck ? (
             <DeviceCheck onBack={() => setDevCheck(false)} />
           ) : error ? (
-            <section className="tt-state" data-tt-error={error} role="alert">
+            <section className="pm-empty tt-state" data-tt-error={error} role="alert">
               <MicOff size={28} aria-hidden="true" className="tt-state-icon" />
-              <h3>{ERROR_TEXT[error].title}</h3>
+              <h3 className="pm-empty-title">{ERROR_TEXT[error].title}</h3>
               <p>{ERROR_TEXT[error].body}</p>
-              {(error === 'permission-denied' || error === 'no-microphone' || error === 'mic-busy' || error === 'unknown') && (
-                <button type="button" className="tt-primary" onClick={start} data-tt="enable">
-                  Thử lại
+              <div className="tt-state-actions">
+                {(error === 'permission-denied' || error === 'no-microphone' || error === 'mic-busy' || error === 'unknown') && (
+                  <button type="button" className="pm-btn pm-btn-primary" onClick={start} data-tt="enable">
+                    Thử lại
+                  </button>
+                )}
+                <button type="button" className="pm-btn" onClick={openDevCheck} data-tt="devcheck">
+                  <Stethoscope size={16} aria-hidden="true" /> Kiểm tra thiết bị
                 </button>
-              )}
-              <button type="button" className="tt-btn" onClick={openDevCheck} data-tt="devcheck">
-                <Stethoscope size={16} aria-hidden="true" /> Kiểm tra thiết bị
-              </button>
+              </div>
             </section>
           ) : phase === 'intro' ? (
-            <section className="tt-state tt-intro">
+            <section className="pm-empty tt-state tt-intro">
               <Mic size={28} aria-hidden="true" className="tt-state-icon" />
-              <h3>Luyện thanh điệu bằng giọng của bạn</h3>
+              <h3 className="pm-empty-title">Luyện thanh điệu bằng giọng của bạn</h3>
               <p>
                 Bạn đọc một âm tiết, ứng dụng vẽ <b>đường cao độ</b> giọng bạn ngay khi nói, đặt cạnh <b>làn mẫu</b> của thanh điệu, rồi
                 chỉ ra chỗ cần lên hay xuống.
               </p>
               <p>Trình duyệt sẽ hỏi quyền dùng micro. Hãy chọn <b>Cho phép</b>.</p>
-              <button type="button" className="tt-primary" onClick={enable} data-tt="enable">
-                <Mic size={18} aria-hidden="true" /> Bật micro
-              </button>
-              <button type="button" className="dc-open" onClick={openDevCheck}>Kiểm tra thiết bị (micro, loa)</button>
+              <div className="tt-state-actions">
+                <button type="button" className="pm-btn pm-btn-primary" onClick={enable} data-tt="enable">
+                  <Mic size={16} aria-hidden="true" /> Bật micro
+                </button>
+                <button type="button" className="pm-btn pm-btn-ghost dc-open" onClick={openDevCheck}>Kiểm tra thiết bị (micro, loa)</button>
+              </div>
             </section>
           ) : (
             <>
@@ -413,14 +428,6 @@ export function ToneTrainer({ hanzi, pinyin, hanViet, initialMode = 'char', onNe
                 </section>
               ) : (
                 <section className="tt-target">
-                  <div className="tt-modes" role="tablist" aria-label="Chế độ luyện">
-                    <button type="button" role="tab" aria-selected={mode === 'char'} disabled={!syllables.length} className={mode === 'char' ? 'is-on' : ''} onClick={() => setMode('char')}>
-                      Chữ đang học
-                    </button>
-                    <button type="button" role="tab" aria-selected={mode === 'free'} className={mode === 'free' ? 'is-on' : ''} onClick={() => setMode('free')}>
-                      Luyện tự do
-                    </button>
-                  </div>
                   {mode === 'char' ? (
                     <div className="tt-chips" role="group" aria-label="Chọn âm tiết">
                       {syllables.map((s, i) => (
@@ -529,10 +536,10 @@ export function ToneTrainer({ hanzi, pinyin, hanViet, initialMode = 'char', onNe
         </div>
 
         {!error && !devCheck && phase !== 'intro' && (
-          <footer className="tt-actions">
+          <footer className="pm-foot tt-actions">
             {phase === 'calibrate' ? (
               <>
-                <button type="button" className="tt-btn" onClick={skipCalib} data-tt="calib-skip">Bỏ qua</button>
+                <button type="button" className="pm-btn" onClick={skipCalib} data-tt="calib-skip">Bỏ qua</button>
                 <button type="button" className={`tt-mic ${listening ? 'is-on' : ''}`} onClick={toggle} data-tt="mic" aria-pressed={listening} aria-label={listening ? 'Tắt micro' : 'Bật micro'}>
                   {listening ? <Mic size={22} /> : <MicOff size={22} />}
                 </button>
@@ -540,11 +547,11 @@ export function ToneTrainer({ hanzi, pinyin, hanViet, initialMode = 'char', onNe
               </>
             ) : (
               <>
-                <button type="button" className="tt-btn" onClick={() => speakChinese(target.hanzi || target.text, 0.8, target.text)}>
+                <button type="button" className="pm-btn" onClick={() => speakChinese(target.hanzi || target.text, 0.8, target.text)}>
                   <Volume2 size={16} aria-hidden="true" /> Nghe mẫu
                 </button>
                 {result ? (
-                  <button type="button" className="tt-btn tt-btn-strong" onClick={retry} data-tt="retry">
+                  <button type="button" className="pm-btn pm-btn-primary" onClick={retry} data-tt="retry">
                     <RotateCcw size={16} aria-hidden="true" /> Thử lại <kbd>R</kbd>
                   </button>
                 ) : (
@@ -552,7 +559,7 @@ export function ToneTrainer({ hanzi, pinyin, hanViet, initialMode = 'char', onNe
                     {listening ? <Mic size={22} /> : <MicOff size={22} />}
                   </button>
                 )}
-                <button type="button" className="tt-btn" onClick={next} disabled={!hasNext}>
+                <button type="button" className="pm-btn" onClick={next} disabled={!hasNext}>
                   Tiếp <ArrowRight size={16} aria-hidden="true" />
                 </button>
               </>
@@ -561,7 +568,7 @@ export function ToneTrainer({ hanzi, pinyin, hanViet, initialMode = 'char', onNe
         )}
         <p className="tt-foot">
           <ShieldCheck size={12} aria-hidden="true" /> Âm thanh chỉ xử lý trên máy bạn, không gửi đi đâu.
-          {!devCheck && phase !== 'intro' && <button type="button" className="dc-open" onClick={openDevCheck}>Kiểm tra thiết bị</button>}
+          {!devCheck && !error && phase !== 'intro' && <button type="button" className="dc-open" onClick={openDevCheck}>Kiểm tra thiết bị</button>}
           <span className="tt-keys tt-hide-sm"><kbd>Space</kbd> bật/tắt micro · <kbd>R</kbd> thử lại · <kbd>Esc</kbd> đóng</span>
         </p>
       </div>

@@ -1,8 +1,10 @@
-/* today.css — "Học hôm nay" (td-*) and the guided learn step (ls-*). Tokens only; Mực & Giấy. */
+/* today.css — "Hôm nay" (td-*), the shared page frame (pg-*, also used by Thống kê) and the guided learn step (ls-*). Tokens only; Mực & Giấy. */
 
-/* ---------- Page ---------- */
-.td { width: 100%; }
-.td-page {
+/* ---------- Page frame (shared by Hôm nay + Thống kê; same logic as the study .sheet) ----------
+   Desktop/tablet: one bordered sheet, 32px (24px <1200) padding. Phones: flat on paper with a 16px gutter,
+   because .main-scroll has no padding there. Blocks are .pg-sec, separated by one hairline and the same 24px
+   on each side, so there are never boxes inside the sheet. */
+.pg {
   display: flex;
   flex-direction: column;
   gap: var(--space-5);
@@ -14,89 +16,88 @@
   border: 1px solid var(--rule);
   box-shadow: var(--shadow-sheet);
 }
-.td-page > * { min-width: 0; }
-.td-label {
-  font-size: var(--text-xs);
-  font-weight: 600;
-  letter-spacing: var(--tracking-label);
-  text-transform: uppercase;
-  color: var(--ink-3);
+.pg > * { min-width: 0; }
+.pg-head { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-1); }
+.pg-title { margin: 0; font-family: var(--font-display); font-size: var(--text-2xl); font-weight: 700; line-height: 1.2; color: var(--ink); }
+.pg-sub { margin: 0; font-size: var(--text-md); color: var(--ink-3); }
+.td-date { text-transform: capitalize; }
+.pg-sec { display: flex; flex-direction: column; gap: var(--space-3); padding-top: var(--space-5); border-top: 1px solid var(--rule); }
+.pg-head + .pg-sec, .pg-sec.pg-first { padding-top: 0; border-top: 0; }
+/* Section heading = the .label look; an optional <span> is the lighter qualifier ("30 ngày qua"). */
+.pg-h { margin: 0; display: flex; align-items: baseline; flex-wrap: wrap; gap: var(--space-1) var(--space-2); }
+.pg-h span { font-weight: 400; letter-spacing: 0; text-transform: none; font-size: var(--text-sm); }
+/* Ghost control: back link, footer links, "Xem dạng bảng", "Đã thuộc từ trước". Same height as every control. */
+.pg-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex: none;
+  width: fit-content;
+  height: var(--control-h);
+  padding: 0 var(--space-3);
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--ink-2);
+  font: inherit;
+  font-size: var(--text-md);
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color var(--dur-1) var(--ease);
 }
-.td-head { display: flex; flex-direction: column; gap: var(--space-1); }
-.td-title { margin: 0; font-family: var(--font-display); font-size: var(--text-2xl); font-weight: 700; line-height: 1.2; color: var(--ink); }
-.td-date { margin: 0; font-size: var(--text-md); color: var(--ink-3); text-transform: capitalize; }
+.pg-ghost:hover { background: var(--hover); color: var(--ink); }
+.pg-ghost:active { background: var(--press); }
+.pg-ghost:focus-visible { outline-offset: -2px; }
+/* A ghost control that starts a block hangs 12px left so its label lines up with the text edge. */
+.pg-hang { margin-left: calc(var(--space-3) * -1); }
+
 .td-intro { margin: 0; font-size: var(--text-lg); line-height: 1.6; color: var(--ink-2); max-width: 52ch; }
 
 /* ---------- Ring + plan ---------- */
-.td-hero { display: flex; align-items: center; gap: var(--space-5); }
+.td-hero { display: flex; flex-direction: row; align-items: center; gap: var(--space-5); }
 .td-ring { --ring: 124px; position: relative; flex: none; width: var(--ring); height: var(--ring); }
 .td-ring svg { display: block; width: 100%; height: 100%; }
 .td-ring circle { fill: none; stroke-width: 9; }
 .td-ring-track { stroke: var(--rule); }
 .td-ring-bar { stroke: var(--ink); stroke-linecap: butt; transition: stroke-dashoffset var(--dur-3) var(--ease); }
 .td-ring-text { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--ink); }
-.td-ring-n { font-family: var(--font-display); font-size: var(--text-2xl); font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
-.td-ring-of { margin-top: 2px; font-size: var(--text-sm); color: var(--ink-3); font-variant-numeric: tabular-nums; }
-
-.td-plan { flex: 1 1 auto; margin: 0; display: flex; flex-direction: column; min-width: 0; }
-.td-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 2px;
-  padding: var(--space-3) 0;
-  border-top: 1px solid var(--rule);
+/* Big figures everywhere (ring, plan rows, streak, Thống kê tiles): display face, --text-2xl, bold, tabular. */
+.td-ring-n, .td-count b, .sv-num {
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
 }
+.td-ring-of { margin-top: var(--space-1); font-size: var(--text-sm); color: var(--ink-3); font-variant-numeric: tabular-nums; }
+
+/* Plan rows (also the streak row): label, big figure, muted line. Hairline between rows. */
+.td-plan { flex: 1 1 auto; margin: 0; display: flex; flex-direction: column; min-width: 0; }
+.td-row { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-1); padding: var(--space-3) 0; border-top: 1px solid var(--rule); }
 .td-row:first-child { border-top: 0; padding-top: 0; }
 .td-row:last-child { padding-bottom: 0; }
-.td-plan dt, .td-plan dd { margin: 0; }
-.td-count { font-size: var(--text-lg); color: var(--ink); }
-.td-count b { font-family: var(--font-display); font-size: var(--text-2xl); font-weight: 700; font-variant-numeric: tabular-nums; margin-right: 2px; }
-.td-sub { font-size: var(--text-sm); color: var(--ink-3); }
+.td-plan dt, .td-plan dd, .td-streak p { margin: 0; }
+.td-count { display: flex; align-items: baseline; gap: var(--space-2); font-size: var(--text-lg); color: var(--ink); }
+.td-sub { font-size: var(--text-sm); color: var(--ink-3); line-height: 1.4; }
 
-/* ---------- Streak ---------- */
-.td-streak {
-  display: flex;
-  gap: var(--space-3);
-  padding: var(--space-4);
-  background: var(--paper);
-  border: 1px solid var(--rule);
-}
-.td-streak-icon { flex: none; margin-top: 2px; color: var(--seal); }
-.td-streak-body { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; }
-.td-streak p { margin: 0; }
-.td-streak-line { font-size: var(--text-lg); color: var(--ink); }
-.td-streak-n { font-family: var(--font-display); font-size: var(--text-xl); font-variant-numeric: tabular-nums; }
-.td-streak-ok { color: var(--ink-3); font-size: var(--text-md); }
-.td-warn {
-  font-size: var(--text-md);
-  font-weight: 600;
-  color: var(--ink);
-  padding: var(--space-1) var(--space-2);
-  border-left: 3px solid var(--seal);
-  background: var(--seal-soft);
-}
-.td-rule { font-size: var(--text-sm); color: var(--ink-3); }
+/* ---------- Streak: a row of the same family, not a box ---------- */
+.td-streak { gap: var(--space-1); }
+.td-streak-label { display: flex; align-items: center; gap: var(--space-2); }
+.td-streak-icon { flex: none; color: var(--seal); }
+.td-warn { margin-top: var(--space-1); padding: var(--space-1) var(--space-2); border-left: 3px solid var(--seal); background: var(--seal-soft); font-size: var(--text-md); font-weight: 600; color: var(--ink); }
 
-/* ---------- Exhausted note ---------- */
-.td-note {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
-  padding: var(--space-3) var(--space-4);
-  border: 1px solid var(--rule-strong);
-  border-left: 3px solid var(--seal-line);
-}
+/* ---------- Exhausted note: a notice rule, not a box ---------- */
+.td-note { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding-left: var(--space-4); border-left: 3px solid var(--seal-line); }
 .td-note-text { margin: 0; font-size: var(--text-md); color: var(--ink-2); }
 .td-note-text b { color: var(--ink); }
 
-/* ---------- Buttons ---------- */
+/* ---------- Buttons: one CTA height (--space-7 = 48) for Hôm nay and the learn step ---------- */
 .td-cta {
   display: flex;
   align-items: center;
   justify-content: center;
   width: 100%;
-  min-height: 52px;
+  min-height: var(--space-7);
   padding: 0 var(--space-5);
   border: 1px solid var(--seal);
   border-radius: var(--radius-md);
@@ -115,7 +116,7 @@
   align-items: center;
   justify-content: center;
   flex: none;
-  min-height: var(--control-h);
+  height: var(--control-h);
   padding: 0 var(--space-4);
   border: 1px solid var(--rule-strong);
   border-radius: var(--radius-md);
@@ -130,30 +131,26 @@
 .td-btn:hover { background: var(--hover); }
 .td-btn:active { background: var(--press); }
 
-/* ---------- Done ---------- */
-.td-done { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-4); border: 1px solid var(--rule-strong); background: var(--paper); }
+/* ---------- Done (replaces the CTA) ---------- */
+.td-done { display: flex; flex-direction: column; gap: var(--space-3); }
 .td-done-text { margin: 0; font-size: var(--text-lg); color: var(--ink-2); line-height: 1.5; }
 .td-done-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
 
-/* ---------- Settings ---------- */
-.td-settings {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-4);
-  padding-top: var(--space-4);
-  border-top: 1px solid var(--rule);
-}
+/* ---------- Settings: segmented + select share height, radius and border ---------- */
+.td-settings { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); }
 .td-field { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
 .td-seg {
   display: grid;
   grid-auto-flow: column;
   grid-auto-columns: 1fr;
-  height: 32px;
-  border: 1px solid var(--rule-strong);
+  position: relative;
+  height: var(--control-h);
   border-radius: var(--radius-md);
   overflow: hidden;
   background: var(--sheet);
 }
+/* The frame is drawn over the radios so each radio is the full control height (same box as the select). */
+.td-seg::after { content: ''; position: absolute; inset: 0; border: 1px solid var(--rule-strong); border-radius: inherit; pointer-events: none; }
 .td-seg-btn {
   border: 0;
   background: transparent;
@@ -164,12 +161,12 @@
   font-variant-numeric: tabular-nums;
   cursor: pointer;
 }
-.td-seg-btn + .td-seg-btn { border-left: 1px solid var(--rule-strong); }
+.td-seg-btn + .td-seg-btn { box-shadow: inset 1px 0 0 var(--rule-strong); }
 .td-seg-btn:hover { background: var(--hover); }
 .td-seg-btn.on { background: var(--ink); color: var(--sheet); }
 .td-seg-btn:focus-visible { outline-offset: -2px; }
 .td-select {
-  height: 32px;
+  height: var(--control-h);
   min-width: 0;
   width: 100%;
   padding: 0 var(--space-2);
@@ -181,78 +178,40 @@
   font-size: var(--text-md);
   text-overflow: ellipsis;
 }
+.td-select:hover { border-color: var(--ink-4); }
 .td-select:focus-visible { outline-offset: 1px; }
 
 /* ---------- Links ---------- */
-.td-links { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-4); padding-top: var(--space-4); border-top: 1px solid var(--rule); }
-.td-link {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  min-height: var(--control-h);
-  padding: 0 var(--space-2);
-  margin-left: calc(var(--space-2) * -1);
-  border: 0;
-  border-radius: var(--radius-md);
-  background: transparent;
-  color: var(--ink-2);
-  font: inherit;
-  font-size: var(--text-md);
-  font-weight: 500;
-  cursor: pointer;
-}
-.td-link:hover { background: var(--hover); color: var(--ink); }
-.td-link:active { background: var(--press); }
-.td-link + .td-link { margin-left: 0; }
+.td-links { flex-direction: row; flex-wrap: wrap; gap: var(--space-2); }
 
 @media (max-width: 1199px) {
-  .td-page { padding: var(--space-5); }
+  .pg { padding: var(--space-5); }
 }
 @media (max-width: 767px) {
-  .td-page { max-width: none; padding: var(--space-4); gap: var(--space-4); background: var(--paper); border: 0; box-shadow: none; }
-  .td-title { font-size: 26px; }
+  .pg { max-width: none; padding: var(--space-4); background: var(--paper); border: 0; box-shadow: none; }
   .td-ring { --ring: 96px; }
   .td-hero { gap: var(--space-4); }
-  .td-count b { font-size: var(--text-xl); }
   .td-row { padding: var(--space-2) 0; }
-  .td-streak { background: var(--sheet); }
-  .td-done { background: var(--sheet); }
-  .td-cta { min-height: 56px; }
-  .td-settings { grid-template-columns: minmax(0, 1fr); gap: var(--space-3); }
-}
-@media (pointer: coarse) {
-  .td-select { height: var(--touch); }
-  /* The radios themselves reach 44px (the group's 1px border sits outside them). */
-  .td-seg { height: auto; }
-  .td-seg-btn { min-height: var(--touch); }
-  .td-btn { min-height: var(--touch); }
-  .td-link { min-height: var(--touch); }
-}
-@media (max-width: 767px) {
-  .td-select { height: var(--touch); }
-  /* The radios themselves reach 44px (the group's 1px border sits outside them). */
-  .td-seg { height: auto; }
-  .td-seg-btn { min-height: var(--touch); }
-  .td-btn, .td-link { min-height: var(--touch); }
+  .td-seg, .td-select, .td-btn, .pg-ghost { height: var(--touch); }
 }
 @media (max-width: 479px) {
   .td-note { flex-direction: column; align-items: stretch; }
+  /* The source select ("Hán Việt, chữ hay gặp trước") clips in a half-width column: stack the two fields. */
+  .td-settings { grid-template-columns: minmax(0, 1fr); }
 }
 @media (prefers-reduced-motion: reduce) {
   .td-ring-bar { transition: none; }
 }
 
 /* ---------- Learn step ---------- */
-.ls-dialog { max-width: 640px; max-height: min(92vh, calc(100dvh - 8vh - var(--space-4))); }
+/* On the pm-* shell (pm-md). The answer bar is .pm-foot-answers (learn-review.css), shared with Review. */
 .ls-body {
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow-y: auto;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: var(--space-5);
-  padding: var(--space-5);
+  min-height: min(306px, calc(100dvh - 240px));   /* learning and done states share one height */
+  padding-block: var(--space-5);
 }
 .ls-info { display: flex; align-items: center; gap: var(--space-5); min-width: 0; }
 .ls-glyph {
@@ -274,7 +233,7 @@
 .ls-glyph::before, .ls-glyph::after { content: ''; position: absolute; z-index: -1; pointer-events: none; }
 .ls-glyph::before { left: 0; right: 0; top: 50%; border-top: 1px dashed var(--grid); }
 .ls-glyph::after { top: 0; bottom: 0; left: 50%; border-left: 1px dashed var(--grid); }
-.ls-text { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
+.ls-text { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-2); min-width: 0; }
 .ls-hv {
   font-family: var(--font-display);
   font-weight: 700;
@@ -289,66 +248,14 @@
 .ls-mean { font-size: var(--text-lg); color: var(--ink-2); line-height: 1.4; overflow-wrap: anywhere; }
 .ls-stroke { --box: 200px; display: flex; flex-direction: column; align-items: center; gap: var(--space-2); }
 .ls-stroke-label { align-self: flex-start; }
+/* "Already known" sits with the card it skips (a quiet ghost button), not in the answer bar. */
+.ls-known { margin-left: calc(var(--space-3) * -1); color: var(--ink-3); text-decoration: underline; text-underline-offset: 3px; }
+.ls-known:hover:not(:disabled) { color: var(--ink); }
 
-.ls-actions {
-  flex: none;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-3) var(--space-5) var(--space-4);
-  border-top: 1px solid var(--rule);
-}
-.ls-answers { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2); width: 100%; }
-.ls-btn {
-  display: inline-flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 2px;
-  min-height: 60px;
-  padding: var(--space-2) var(--space-3);
-  border: 1px solid var(--rule-strong);
-  border-radius: var(--radius-md);
-  background: var(--sheet);
-  color: var(--ink);
-  font: inherit;
-  cursor: pointer;
-  transition: background-color var(--dur-1) var(--ease);
-}
-.ls-btn:hover { background: var(--hover); }
-.ls-btn:active { background: var(--press); }
-.ls-btn-primary { background: var(--seal); border-color: var(--seal); color: var(--seal-ink); }
-.ls-btn-primary:hover { background: var(--seal); filter: brightness(1.08); }
-.ls-btn-primary:active { background: var(--seal); filter: brightness(0.95); }
-.ls-btn-main { display: inline-flex; align-items: center; gap: var(--space-2); font-size: var(--text-lg); font-weight: 600; }
-.ls-btn-sub { font-size: var(--text-sm); opacity: 0.8; }
-.ls-kbd {
-  display: none;
-  font-family: var(--font-ui);
-  font-size: var(--text-xs);
-  padding: 0 5px;
-  border: 1px solid currentColor;
-  border-radius: var(--radius-sm);
-  opacity: 0.7;
-}
-@media (hover: hover) {
-  .ls-kbd { display: inline-block; }
-}
-.ls-known {
-  min-height: var(--control-h);
-  padding: 0 var(--space-3);
-  border: 0;
-  border-radius: var(--radius-md);
-  background: transparent;
-  color: var(--ink-3);
-  font: inherit;
-  font-size: var(--text-sm);
-  text-decoration: underline;
-  text-underline-offset: 3px;
-  cursor: pointer;
-}
-.ls-known:hover { background: var(--hover); color: var(--ink); }
+/* Two-line answer buttons (title + what happens next) inside .pm-foot-answers */
+.ls-answer { flex-direction: column; gap: 0; }
+.ls-answer-main { display: inline-flex; align-items: center; gap: var(--space-2); font-weight: 600; }
+.ls-answer-sub { font-size: var(--text-sm); font-weight: 400; opacity: 0.8; }
 
 /* Summary */
 .ls-summary { grid-template-columns: minmax(0, 1fr); justify-items: center; align-content: center; text-align: center; gap: var(--space-3); }
@@ -359,7 +266,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
+  gap: var(--space-1);
   min-width: 72px;
   padding: var(--space-2) var(--space-3);
   border: 1px solid var(--rule-strong);
@@ -372,24 +279,15 @@
 .ls-chip:hover { border-color: var(--seal); background: var(--hover); }
 .ls-chip-han { font-family: var(--font-han); font-size: 32px; line-height: 1.1; }
 .ls-chip-hv { font-family: var(--font-display); font-size: var(--text-xs); font-weight: 700; letter-spacing: 0.04em; color: var(--ink-2); }
-.ls-summary-actions { display: flex; justify-content: center; width: 100%; margin-top: var(--space-2); }
-.ls-summary-actions .ls-btn { flex-direction: row; min-width: 200px; min-height: 52px; font-size: var(--text-lg); font-weight: 600; }
 
 @media (max-width: 767px) {
-  .ls-dialog { max-height: none; }
-  .ls-body { grid-template-columns: minmax(0, 1fr); justify-items: center; align-content: start; gap: var(--space-4); padding: var(--space-4); }
+  .ls-body { grid-template-columns: minmax(0, 1fr); justify-items: center; align-content: start; gap: var(--space-4); min-height: 0; padding-block: var(--space-4); }
   .ls-info { width: 100%; gap: var(--space-4); }
   .ls-glyph { width: 104px; font-size: 76px; }
   .ls-body.ls-summary { align-content: center; }
   .ls-hv { font-size: 32px; }
   .ls-stroke { --box: min(240px, 62vw, 34dvh); }
   .ls-stroke-label { display: none; }
-  .ls-actions { padding: var(--space-3) var(--space-4) calc(var(--space-3) + env(safe-area-inset-bottom, 0px)); }
-  .ls-btn { min-height: 64px; }
-  .ls-known { min-height: var(--touch); }
-}
-@media (pointer: coarse) {
-  .ls-known { min-height: var(--touch); }
 }
 @media (min-width: 768px) and (max-width: 900px) {
   .ls-body { grid-template-columns: minmax(0, 1fr); justify-items: center; }
@@ -397,18 +295,12 @@
 
 /* ---------- Header entry ---------- */
 .sh-today.is-open { background: var(--hover); color: var(--ink); }
-@media (max-width: 1099px) {
-  .sh-today { padding: 0 var(--space-2); }
-  .sh-today .sh-today-label { display: none; }
-}
-/* Phones: "Hôm nay" is the main daily entry, so it keeps its word; "Ôn tập" (also reachable from
-   Hôm nay) becomes icon + badge, so two bare numbers never sit side by side unexplained. */
+/* Phones: "Hôm nay" is the main daily entry, so it keeps its word and its inline chip; "Ôn tập" and
+   "Sổ tay" (both also reachable elsewhere) stay icon + corner badge (learn.css). */
 @media (max-width: 767px) {
-  .sh-today { padding: 0 var(--space-2); width: auto; }
-  .sh-today .sh-today-label { display: inline; }
-  .sh-today ~ .rv-entry:not(.sh-today) { padding: 0; width: var(--touch); }
-  .sh-today ~ .rv-entry:not(.sh-today) .rv-entry-label { display: none; }
-  .sh-today ~ .rv-entry:not(.sh-today) .rv-entry-count { position: absolute; top: 2px; right: 0; }
+  .sh-icon-btn.rv-entry.sh-today { width: auto; padding: 0 var(--space-2); }
+  .rv-entry.sh-today .rv-entry-label { display: inline; }
+  .rv-entry.sh-today .rv-entry-count { position: static; background: var(--seal-soft); color: var(--seal); }
 }
 /* Five header buttons: drop the wordmark (logo stays) before it truncates to "H…". */
 @media (max-width: 439px) {

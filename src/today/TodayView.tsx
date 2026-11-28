@@ -121,9 +121,9 @@ export function TodayView({ characters, onStartReview, onOpenStats, onOpenStudio
   })()
 
   const settings = (
-    <section className="td-settings" aria-label="Cài đặt học hằng ngày">
+    <section className="td-settings pg-sec" aria-label="Cài đặt học hằng ngày">
       <div className="td-field">
-        <span className="td-label" id="td-goal-label">Chữ mới mỗi ngày</span>
+        <span className="label" id="td-goal-label">Chữ mới mỗi ngày</span>
         <div className="td-seg" role="radiogroup" aria-labelledby="td-goal-label" data-testid="today-goal">
           {GOAL_OPTIONS.map((g, i) => {
             const on = daily.goal === g
@@ -149,7 +149,7 @@ export function TodayView({ characters, onStartReview, onOpenStats, onOpenStudio
         </div>
       </div>
       <div className="td-field">
-        <label className="td-label" htmlFor="td-source">Nguồn chữ mới</label>
+        <label className="label" htmlFor="td-source">Nguồn chữ mới</label>
         <select id="td-source" className="td-select" value={sourceValue} onChange={(e) => onSource(e.target.value)} data-testid="today-source">
           {LEVELS.map((l) => (
             <option key={l} value={`hsk-${l}`}>HSK {l}, theo tần suất</option>
@@ -161,12 +161,12 @@ export function TodayView({ characters, onStartReview, onOpenStats, onOpenStudio
   )
 
   const links = (
-    <nav className="td-links" aria-label="Lối tắt">
-      <button type="button" className="td-link" onClick={onOpenStats}>
+    <nav className="td-links pg-sec" aria-label="Lối tắt">
+      <button type="button" className="pg-ghost pg-hang" onClick={onOpenStats}>
         <BarChart3 size={16} aria-hidden="true" />
         <span>Thống kê</span>
       </button>
-      <button type="button" className="td-link" onClick={onOpenStudio}>
+      <button type="button" className="pg-ghost" onClick={onOpenStudio}>
         <Library size={16} aria-hidden="true" />
         <span>Tra chữ / Thư viện</span>
       </button>
@@ -175,11 +175,10 @@ export function TodayView({ characters, onStartReview, onOpenStats, onOpenStudio
 
   return (
     <div className="td" data-testid="today-view">
-      <div className="td-page">
-        <header className="td-head">
-          <span className="td-label">Học hôm nay</span>
-          <h1 className="td-title">{fresh ? 'Bắt đầu học chữ Hán' : complete ? 'Hôm nay xong rồi' : 'Hôm nay'}</h1>
-          <p className="td-date">{dateLabel}</p>
+      <div className="pg">
+        <header className="pg-head">
+          <h1 className="pg-title">{fresh ? 'Bắt đầu học chữ Hán' : complete ? 'Hôm nay xong rồi' : 'Hôm nay'}</h1>
+          <p className="pg-sub td-date">{dateLabel}</p>
         </header>
 
         {fresh ? (
@@ -188,7 +187,7 @@ export function TodayView({ characters, onStartReview, onOpenStats, onOpenStudio
           </p>
         ) : (
           <>
-            <section className="td-hero" aria-label="Tiến độ hôm nay">
+            <section className="td-hero pg-sec" aria-label="Tiến độ hôm nay">
               <div
                 className="td-ring"
                 role="progressbar"
@@ -227,7 +226,7 @@ export function TodayView({ characters, onStartReview, onOpenStats, onOpenStudio
 
               <dl className="td-plan">
                 <div className="td-row">
-                  <dt className="td-label">Chữ mới</dt>
+                  <dt className="label">Chữ mới</dt>
                   <dd className="td-count" data-testid="today-new-count">
                     <b>{plan.newQueue.length}</b> chữ mới
                   </dd>
@@ -236,7 +235,7 @@ export function TodayView({ characters, onStartReview, onOpenStats, onOpenStudio
                   </dd>
                 </div>
                 <div className="td-row">
-                  <dt className="td-label">Cần ôn</dt>
+                  <dt className="label">Cần ôn</dt>
                   <dd className="td-count" data-testid="today-due-count">
                     <b>{plan.dueLeft}</b> thẻ cần ôn
                   </dd>
@@ -245,24 +244,27 @@ export function TodayView({ characters, onStartReview, onOpenStats, onOpenStudio
               </dl>
             </section>
 
-            <section className="td-streak" data-testid="today-streak" aria-label="Chuỗi ngày học">
-              <Flame className="td-streak-icon" size={22} aria-hidden="true" />
-              <div className="td-streak-body">
-                {streak.current > 0 ? (
-                  <p className="td-streak-line">
-                    <b className="td-streak-n">{streak.current}</b> ngày học liên tiếp
-                    {streak.todayActive && <span className="td-streak-ok"> · hôm nay đã tính</span>}
-                  </p>
-                ) : (
-                  <p className="td-streak-line">Học hôm nay để bắt đầu chuỗi ngày học của bạn.</p>
-                )}
-                {streak.atRisk && (
-                  <p className="td-warn" role="status">
-                    Hôm qua bạn nghỉ — học hôm nay để giữ chuỗi.
-                  </p>
-                )}
-                <p className="td-rule">Nghỉ 1 ngày không sao — nghỉ 2 ngày liền thì chuỗi bắt đầu lại.</p>
+            <section className="td-streak pg-sec" data-testid="today-streak" aria-label="Chuỗi ngày học">
+              <div className="td-streak-label label">
+                <Flame className="td-streak-icon" size={16} aria-hidden="true" />
+                Chuỗi ngày
               </div>
+              {streak.current > 0 ? (
+                <p className="td-count">
+                  <span>
+                    <b>{streak.current}</b> ngày học liên tiếp
+                  </span>
+                  {streak.todayActive && <span className="td-sub"> · hôm nay đã tính</span>}
+                </p>
+              ) : (
+                <p className="td-count">Học hôm nay để bắt đầu chuỗi ngày học của bạn.</p>
+              )}
+              {streak.atRisk && (
+                <p className="td-warn" role="status">
+                  Hôm qua bạn nghỉ — học hôm nay để giữ chuỗi.
+                </p>
+              )}
+              <p className="td-sub">Nghỉ 1 ngày không sao — nghỉ 2 ngày liền thì chuỗi bắt đầu lại.</p>
             </section>
           </>
         )}
@@ -281,7 +283,7 @@ export function TodayView({ characters, onStartReview, onOpenStats, onOpenStudio
         )}
 
         {plan.next === 'done' ? (
-          <section className="td-done" data-testid="today-done" aria-label="Đã xong hôm nay">
+          <section className="td-done pg-sec" data-testid="today-done" aria-label="Đã xong hôm nay">
             <p className="td-done-text">
               {doneSummary ? `Hôm nay bạn đã ${doneSummary}.` : plan.exhausted ? 'Hiện chưa có chữ nào để học hoặc ôn.' : 'Hôm nay không có chữ nào cần học hoặc ôn.'}
               {due !== null && ` Lượt ôn kế tiếp: ${relDue(due, now)}.`}

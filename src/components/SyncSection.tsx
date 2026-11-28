@@ -43,7 +43,7 @@ async function copyText(text: string): Promise<boolean> {
 
 const PRIVACY = (
   <>
-    <p className="bk-note">
+    <p className="pm-note">
       Dùng cùng một <b>mã đồng bộ</b> trên nhiều thiết bị để giữ chung thẻ ôn tập, chữ đã thuộc, lịch sử ôn và sổ tay (không gồm cài đặt giao diện). Không cần tài khoản.
     </p>
     <ul className="sy-points">
@@ -133,8 +133,8 @@ export function SyncSection() {
         : 'Chưa đồng bộ lần nào'
 
   return (
-    <section className="bk-section sy-section" aria-label="Đồng bộ giữa các thiết bị">
-      <h3 className="sy-title">Đồng bộ giữa các thiết bị</h3>
+    <section className="pm-section" aria-label="Đồng bộ giữa các thiết bị">
+      <h3 className="pm-section-title">Đồng bộ giữa các thiết bị</h3>
 
       {!st.enabled && (
         <>
@@ -142,7 +142,7 @@ export function SyncSection() {
           {!secure && <p className="bk-meta sy-warn">Đồng bộ cần kết nối an toàn (https hoặc localhost). Hãy mở ứng dụng bằng địa chỉ https để dùng tính năng này.</p>}
           {!joining ? (
             <span className="bk-actions">
-              <button type="button" className="pm-btn bk-primary" disabled={busy || !secure} onClick={onCreate}>
+              <button type="button" className="pm-btn pm-btn-accent" disabled={busy || !secure} onClick={onCreate}>
                 {busy ? 'Đang tạo…' : 'Tạo mã đồng bộ mới'}
               </button>
               <button type="button" className="pm-btn" disabled={busy || !secure} onClick={() => { setJoining(true); setMsg(null) }}>
@@ -151,7 +151,7 @@ export function SyncSection() {
             </span>
           ) : (
             <form className="sy-join" onSubmit={onJoin}>
-              <label className="sy-label" htmlFor="sy-code-input">Mã đồng bộ</label>
+              <label className="pm-section-title" htmlFor="sy-code-input">Mã đồng bộ</label>
               <input
                 id="sy-code-input"
                 className="sy-input"
@@ -166,7 +166,7 @@ export function SyncSection() {
                 aria-describedby="sy-msg"
               />
               <span className="bk-actions">
-                <button type="submit" className="pm-btn bk-primary" disabled={busy || !input.trim()}>
+                <button type="submit" className="pm-btn pm-btn-accent" disabled={busy || !input.trim()}>
                   {busy ? 'Đang kết nối…' : 'Kết nối'}
                 </button>
                 <button type="button" className="pm-btn pm-btn-ghost" disabled={busy} onClick={() => { setJoining(false); setInput(''); setMsg(null) }}>
@@ -182,7 +182,7 @@ export function SyncSection() {
       {st.enabled && code && (
         <>
           <div className="sy-codebox">
-            <span className="sy-label" id="sy-code-label">Mã đồng bộ của bạn</span>
+            <span className="pm-section-title" id="sy-code-label">Mã đồng bộ của bạn</span>
             <div className="sy-coderow">
               <code className="sy-code" aria-labelledby="sy-code-label">{reveal ? formatCode(code) : maskCode(code)}</code>
               <span className="sy-code-actions">
@@ -204,7 +204,7 @@ export function SyncSection() {
 
           {confirm === null && (
             <span className="bk-actions">
-              <button type="button" className="pm-btn bk-primary" disabled={busy || st.phase === 'syncing'} onClick={onNow}>
+              <button type="button" className="pm-btn pm-btn-accent" disabled={busy || st.phase === 'syncing'} onClick={onNow}>
                 <RefreshCw size={14} className={st.phase === 'syncing' ? 'sy-spin' : undefined} /> Đồng bộ ngay
               </button>
               {st.phase === 'gone' && (
@@ -222,9 +222,9 @@ export function SyncSection() {
           )}
 
           {confirm === 'off' && (
-            <div className="bk-confirm" role="alertdialog" aria-label="Xác nhận tắt đồng bộ">
+            <div className="pm-confirm" role="alertdialog" aria-label="Xác nhận tắt đồng bộ">
               <span>Mã sẽ bị xoá khỏi máy này. Muốn bật lại, bạn cần nhập mã từ thiết bị khác, nên hãy chắc chắn đã lưu mã. Dữ liệu trên máy này và trên máy chủ vẫn giữ nguyên.</span>
-              <span className="bk-actions">
+              <span className="pm-confirm-actions">
                 <button type="button" className="pm-btn" autoFocus onClick={() => setConfirm(null)}>Hủy</button>
                 <button type="button" className="pm-btn pm-btn-danger" onClick={onOff}>Tắt đồng bộ</button>
               </span>
@@ -232,9 +232,9 @@ export function SyncSection() {
           )}
 
           {confirm === 'erase' && (
-            <div className="bk-confirm" role="alertdialog" aria-label="Xác nhận xoá dữ liệu trên máy chủ">
+            <div className="pm-confirm" role="alertdialog" aria-label="Xác nhận xoá dữ liệu trên máy chủ">
               <span>Bản đồng bộ trên máy chủ sẽ bị xoá vĩnh viễn và mọi thiết bị đang dùng mã này sẽ ngừng đồng bộ. Dữ liệu học ngay trên các thiết bị vẫn còn. Không hoàn tác được.</span>
-              <span className="bk-actions">
+              <span className="pm-confirm-actions">
                 <button type="button" className="pm-btn" autoFocus onClick={() => setConfirm(null)}>Hủy</button>
                 <button type="button" className="pm-btn pm-btn-danger" disabled={busy} onClick={onErase}>{busy ? 'Đang xoá…' : 'Xoá trên máy chủ'}</button>
               </span>

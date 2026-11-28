@@ -51,7 +51,7 @@ export function FavoritesModal({
       <div
         ref={dialogRef}
         {...dialogProps}
-        className="pm-dialog fm-dialog"
+        className="pm-dialog pm-md fm-dialog"
         onClick={(e) => e.stopPropagation()}
         onTouchStart={(e) => e.stopPropagation()}
         onTouchEnd={(e) => e.stopPropagation()}
@@ -65,7 +65,7 @@ export function FavoritesModal({
                 <Trash2 size={14} /> Xóa hết
               </button>
             )}
-            <button type="button" className="pm-icon-btn" onClick={onClose} aria-label="Đóng" title="Đóng (Esc)">
+            <button type="button" className="pm-icon-btn pm-close" onClick={onClose} aria-label="Đóng" title="Đóng (Esc)">
               <X size={18} />
             </button>
           </div>
@@ -73,7 +73,7 @@ export function FavoritesModal({
 
         {confirmClear && (
           <div
-            className="fm-confirm"
+            className="pm-confirm"
             role="alertdialog"
             aria-label="Xác nhận xóa hết"
             onKeyDown={(e) => {
@@ -86,7 +86,7 @@ export function FavoritesModal({
             }}
           >
             <span>Xóa hết {favorites.length} chữ đã lưu? Không hoàn tác được.</span>
-            <span className="fm-confirm-actions">
+            <span className="pm-confirm-actions">
               <button type="button" className="pm-btn" autoFocus onClick={() => setConfirmClear(false)}>Hủy</button>
               <button
                 type="button"
@@ -102,11 +102,11 @@ export function FavoritesModal({
           </div>
         )}
 
-        <div className="pm-body fm-body">
+        <div className="pm-body pm-body-flush">
           {favoriteChars.length === 0 ? (
-            <div className="sm-empty">
+            <div className="pm-empty">
               <Star size={24} className="fm-empty-star" />
-              <p className="sm-empty-title">Chưa có chữ nào trong sổ tay</p>
+              <p className="pm-empty-title">Chưa có chữ nào trong sổ tay</p>
               <p>Bấm ☆ ở chữ đang học, hoặc nhấn phím <kbd>G</kbd>, để lưu lại và ôn sau.</p>
             </div>
           ) : (

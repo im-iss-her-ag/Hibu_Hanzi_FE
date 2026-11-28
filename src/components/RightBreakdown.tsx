@@ -61,7 +61,7 @@ function Skeleton() {
   return (
     <div className="anat anat-skel" aria-busy="true" aria-label="Đang tải chiết tự">
       <section className="anat-sec">
-        <div className="anat-head"><span className="label">Chiết tự</span></div>
+        <div className="sec-head"><span className="label">Chiết tự</span></div>
         <div className="anat-skel-bars">
           <span className="skel-line" style={{ width: '60%', height: 14 }} />
           <span className="skel-line" style={{ width: '85%', height: 14 }} />
@@ -79,7 +79,7 @@ function Skeleton() {
         ))}
       </div>
       <section className="anat-sec">
-        <div className="anat-head"><span className="label">Từ ghép</span></div>
+        <div className="sec-head"><span className="label">Từ ghép</span></div>
         <div className="anat-words">
           {[0, 1, 2, 3].map((i) => (
             <div key={i} className="anat-word">
@@ -163,7 +163,7 @@ export function RightBreakdown({
     <div className="anat" key={character.hanzi}>
       {shownParts.length > 0 && (
         <section className="anat-sec" aria-labelledby="anat-h-parts">
-          <div className="anat-head">
+          <div className="sec-head">
             <h2 id="anat-h-parts" className="label">Chiết tự</h2>
           </div>
           {!decomposed && <p className="anat-note">Chữ độc thể, không tách nhỏ hơn. Thuộc bộ:</p>}
@@ -211,7 +211,7 @@ export function RightBreakdown({
 
       {ownFamily && familyChars.length > 0 && (
         <section className="anat-sec" aria-labelledby="anat-h-family">
-          <div className="anat-head">
+          <div className="sec-head">
             <h2 id="anat-h-family" className="label">
               Chữ thuộc bộ <span className="anat-han" lang="zh">{ownFamily.key}</span>
             </h2>
@@ -240,17 +240,17 @@ export function RightBreakdown({
         <div className="anat-cols">
           {origin && (
             <section className="anat-col" aria-labelledby="anat-h-origin">
-              <h2 id="anat-h-origin" className="label anat-col-label">
-                <i className="anat-dot" style={{ background: 'var(--etymology)' }} />Nguồn gốc
-              </h2>
+              <div className="sec-head">
+                <h2 id="anat-h-origin" className="label"><i className="anat-dot" style={{ background: 'var(--etymology)' }} />Nguồn gốc</h2>
+              </div>
               <p className="anat-text"><Prose text={origin} /></p>
             </section>
           )}
           {mnemonics.length > 0 && (
             <section className="anat-col" aria-labelledby="anat-h-mnemonic">
-              <h2 id="anat-h-mnemonic" className="label anat-col-label">
-                <i className="anat-dot" style={{ background: 'var(--mnemonic)' }} />Mẹo nhớ
-              </h2>
+              <div className="sec-head">
+                <h2 id="anat-h-mnemonic" className="label"><i className="anat-dot" style={{ background: 'var(--mnemonic)' }} />Mẹo nhớ</h2>
+              </div>
               {mnemonics.map((t, i) => (
                 <p key={i} className="anat-text"><Prose text={t} /></p>
               ))}
@@ -261,7 +261,7 @@ export function RightBreakdown({
 
       {words.length > 0 && (
         <section className="anat-sec" aria-labelledby="anat-h-words">
-          <div className="anat-head">
+          <div className="sec-head">
             <h2 id="anat-h-words" className="label">Từ ghép</h2>
             <span className="anat-count">{words.length}</span>
             {onQuizWords && words.length >= 4 && (

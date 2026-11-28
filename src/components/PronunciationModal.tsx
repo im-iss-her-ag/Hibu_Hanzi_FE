@@ -65,7 +65,7 @@ export function PronunciationModal({
 
   return (
     <div className="pm-backdrop" onClick={onClose} onTouchStart={(e) => e.stopPropagation()} onTouchEnd={(e) => e.stopPropagation()}>
-      <div ref={dialogRef} {...dialogProps} className="pm-dialog pn-dialog rf-dialog rf-dialog-narrow" onClick={(e) => e.stopPropagation()} onTouchStart={(e) => e.stopPropagation()} onTouchEnd={(e) => e.stopPropagation()}>
+      <div ref={dialogRef} {...dialogProps} className="pm-dialog pm-lg pn-dialog" onClick={(e) => e.stopPropagation()} onTouchStart={(e) => e.stopPropagation()} onTouchEnd={(e) => e.stopPropagation()}>
         <div className="pm-header rf-pn-header">
           <span id={titleId} style={{ display: 'contents' }}>
             <span className="sr-only">Phát âm </span>
@@ -80,14 +80,14 @@ export function PronunciationModal({
             {meaningVi && <span>{meaningVi}</span>}
           </span>
           <div className="pm-header-actions">
-            <button type="button" className="pm-icon-btn" onClick={onClose} aria-label="Đóng" title="Đóng (Esc)">
+            <button type="button" className="pm-icon-btn pm-close" onClick={onClose} aria-label="Đóng" title="Đóng (Esc)">
               <X size={18} />
             </button>
           </div>
         </div>
 
         <div
-          className="rf-tabs"
+          className="pm-tabs"
           role="tablist"
           aria-label="Phần phát âm"
           onKeyDown={(e) => {
@@ -102,13 +102,13 @@ export function PronunciationModal({
           }}
         >
           {tabs.map((t) => (
-            <button key={t.id} type="button" role="tab" aria-selected={activeTab === t.id} tabIndex={activeTab === t.id ? 0 : -1} className={`rf-tab${activeTab === t.id ? ' active' : ''}`} onClick={() => setActiveTab(t.id)}>
+            <button key={t.id} type="button" role="tab" aria-selected={activeTab === t.id} tabIndex={activeTab === t.id ? 0 : -1} className={`pm-tab${activeTab === t.id ? ' active' : ''}`} onClick={() => setActiveTab(t.id)}>
               {t.label}
             </button>
           ))}
         </div>
 
-        <div className="rf-body" role="tabpanel">
+        <div className="pm-body rf-body" role="tabpanel">
           {activeTab === 'initial' &&
             (initialInfo && iGuide ? (
               <>
@@ -118,7 +118,7 @@ export function PronunciationModal({
                     <h3>{iGuide.title}</h3>
                     <p>{guideTraits(iGuide, 'initial').join(' · ')}</p>
                   </div>
-                  <button type="button" className="rf-btn" onClick={() => handleSpeak(initial)} title="Nghe mẫu phụ âm này">
+                  <button type="button" className="pm-btn" onClick={() => handleSpeak(initial)} title="Nghe mẫu phụ âm này">
                     <Volume2 size={15} />
                     Nghe mẫu
                   </button>
@@ -131,7 +131,7 @@ export function PronunciationModal({
                 <p>
                   Âm tiết bắt đầu trực tiếp bằng nguyên âm <strong>{final}</strong>. Chuyển sang tab Vận mẫu để xem hướng dẫn phát âm chi tiết.
                 </p>
-                <button type="button" className="rf-btn" onClick={() => setActiveTab('final')}>
+                <button type="button" className="pm-btn" onClick={() => setActiveTab('final')}>
                   Xem vận mẫu {final}
                 </button>
               </div>
@@ -146,7 +146,7 @@ export function PronunciationModal({
                     <h3>{fGuide.title}</h3>
                     <p>{[isApicalI ? 'Vần đặc biệt' : finalInfo?.groupNameVi, ...guideTraits(fGuide, 'final')].filter(Boolean).join(' · ')}</p>
                   </div>
-                  <button type="button" className="rf-btn" onClick={() => handleSpeak(finalSample)} title="Nghe mẫu vần này">
+                  <button type="button" className="pm-btn" onClick={() => handleSpeak(finalSample)} title="Nghe mẫu vần này">
                     <Volume2 size={15} />
                     Nghe vần
                   </button>

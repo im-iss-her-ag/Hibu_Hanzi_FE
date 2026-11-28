@@ -24,7 +24,7 @@ export function TodayEntry({ characters, active, onOpen }: { characters: BundleC
       aria-current={active ? 'page' : undefined}
       data-testid="nav-today"
     >
-      <Target size={16} aria-hidden="true" />
+      <Target size={18} aria-hidden="true" />
       <span className="rv-entry-label sh-today-label" aria-hidden="true">Hôm nay</span>
       {left > 0 && <span className="rv-entry-count" aria-hidden="true">{left > 99 ? '99+' : left}</span>}
     </button>

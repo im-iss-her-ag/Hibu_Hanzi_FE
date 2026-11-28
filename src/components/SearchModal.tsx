@@ -188,7 +188,7 @@ export function SearchModal({
 
   return (
     <div
-      className="pm-backdrop sm-backdrop"
+      className="pm-backdrop"
       onClick={onClose}
       onKeyDown={onKeyDown}
       onTouchStart={(e) => e.stopPropagation()}
@@ -197,13 +197,13 @@ export function SearchModal({
       <div
         ref={dialogRef}
         {...dialogProps}
-        className="pm-dialog sm-dialog"
+        className="pm-dialog pm-md sm-dialog"
         onClick={(e) => e.stopPropagation()}
         onTouchStart={(e) => e.stopPropagation()}
         onTouchEnd={(e) => e.stopPropagation()}
       >
         <h2 id={titleId} className="sr-only">Tra cứu chữ Hán và từ ghép</h2>
-        <div className="sm-head">
+        <div className="pm-header sm-head">
           <Search size={20} className="sm-search-icon" aria-hidden />
           <input
             id="global-hanzi-search"
@@ -221,32 +221,33 @@ export function SearchModal({
             autoComplete="off"
             spellCheck={false}
           />
-          {query && (
-            <button type="button" className="pm-icon-btn sm-clear" tabIndex={-1} onClick={() => setQuery('')} aria-label="Xóa nội dung" title="Xóa">
-              <X size={16} />
+          <div className="pm-header-actions">
+            {query && (
+              <button type="button" className="pm-icon-btn sm-clear" tabIndex={-1} onClick={() => setQuery('')} aria-label="Xóa nội dung" title="Xóa">
+                <X size={16} />
+              </button>
+            )}
+            <button type="button" className="pm-icon-btn pm-close" onClick={onClose} aria-label="Đóng" title="Đóng (Esc)">
+              <X size={18} />
             </button>
-          )}
-          <kbd className="sm-esc">Esc</kbd>
-          <button type="button" className="pm-icon-btn sm-close" onClick={onClose} aria-label="Đóng" title="Đóng (Esc)">
-            <X size={18} />
-          </button>
+          </div>
         </div>
 
         {hasQuery && (
-          <div className="sm-tabs">
+          <div className="pm-tabs sm-tabs">
             <div className="sm-tablist" role="tablist">
-              <button type="button" role="tab" tabIndex={-1} aria-selected={tab === 'chars'} className={`sm-tab ${tab === 'chars' ? 'active' : ''}`} onClick={() => setTab('chars')}>
+              <button type="button" role="tab" tabIndex={-1} aria-selected={tab === 'chars'} className={`pm-tab ${tab === 'chars' ? 'active' : ''}`} onClick={() => setTab('chars')}>
                 Chữ <span className="sm-tab-n">{filteredChars.length}</span>
               </button>
-              <button type="button" role="tab" tabIndex={-1} aria-selected={tab === 'words'} className={`sm-tab ${tab === 'words' ? 'active' : ''}`} onClick={() => setTab('words')}>
+              <button type="button" role="tab" tabIndex={-1} aria-selected={tab === 'words'} className={`pm-tab ${tab === 'words' ? 'active' : ''}`} onClick={() => setTab('words')}>
                 Từ ghép <span className="sm-tab-n">{filteredWords.length}</span>
               </button>
             </div>
             {tab === 'chars' && matchedFamilies.length > 0 && onBrowseRadical && (
               <div className="sm-radicals">
-                <span className="label">Bộ thủ</span>
+                <span className="pm-section-title">Bộ thủ</span>
                 {matchedFamilies.slice(0, 3).map((f) => (
-                  <button key={f.key} type="button" tabIndex={-1} className="sm-chip" onClick={() => onBrowseRadical(f.key)} title={`Xem ${f.count} chữ`}>
+                  <button key={f.key} type="button" tabIndex={-1} className="pm-chip" onClick={() => onBrowseRadical(f.key)} title={`Xem ${f.count} chữ`}>
                     <span lang="zh">{f.display}</span> {f.info.nameVi ?? f.info.hanViet}
                   </button>
                 ))}
@@ -269,12 +270,12 @@ export function SearchModal({
             </span>
           </div>
         )}
-        <div className="sm-results" ref={listRef} role="listbox" id="sm-listbox">
+        <div className="pm-body pm-body-flush sm-results" ref={listRef} role="listbox" id="sm-listbox">
           {!hasQuery ? (
             <div className="sm-start">
               {recentChars.length > 0 && (
-                <section>
-                  <h3 className="label sm-start-title"><History size={12} aria-hidden /> Gần đây</h3>
+                <section className="pm-section">
+                  <h3 className="pm-section-title sm-start-title"><History size={12} aria-hidden /> Gần đây</h3>
                   <div className="sm-recent">
                     {recentChars.map((c) => (
                       <button key={c.hanzi} type="button" tabIndex={-1} className="sm-recent-cell" onClick={() => pickChar(c.hanzi)} title={c.readings[0]?.meaningVi}>
@@ -284,12 +285,12 @@ export function SearchModal({
                   </div>
                 </section>
               )}
-              <section>
-                <h3 className="label sm-start-title">Bạn có thể gõ</h3>
+              <section className="pm-section">
+                <h3 className="pm-section-title sm-start-title">Bạn có thể gõ</h3>
                 <ul className="sm-tips">
                   {SEARCH_EXAMPLES.map(({ label, example }) => (
                     <li key={example}>
-                      <button type="button" tabIndex={-1} className="sm-example" onClick={() => setQuery(example)}>{example}</button>
+                      <button type="button" tabIndex={-1} className="pm-chip sm-example" onClick={() => setQuery(example)}>{example}</button>
                       <span>{label}</span>
                     </li>
                   ))}
@@ -298,15 +299,15 @@ export function SearchModal({
             </div>
           ) : tab === 'chars' ? (
             shownChars.length === 0 ? (
-              <div className="sm-empty">
+              <div className="pm-empty">
                 {matchedFamilies.length > 0 && onBrowseRadical ? (
                   <>
-                    <p className="sm-empty-title">“{query.trim()}” là tên bộ thủ</p>
+                    <p className="pm-empty-title">“{query.trim()}” là tên bộ thủ</p>
                     <p>Chọn bộ thủ ở trên để xem mọi chữ chứa bộ đó.</p>
                   </>
                 ) : (
                   <>
-                    <p className="sm-empty-title">Không có chữ nào khớp “{query.trim()}”</p>
+                    <p className="pm-empty-title">Không có chữ nào khớp “{query.trim()}”</p>
                     <p>Thử pinyin không dấu (“hao”), âm Hán Việt (“hảo”) hoặc nghĩa (“tốt”).</p>
                   </>
                 )}
@@ -334,8 +335,8 @@ export function SearchModal({
               })
             )
           ) : shownWords.length === 0 ? (
-            <div className="sm-empty">
-              <p className="sm-empty-title">Không có từ ghép nào khớp “{query.trim()}”</p>
+            <div className="pm-empty">
+              <p className="pm-empty-title">Không có từ ghép nào khớp “{query.trim()}”</p>
               <p>Thử gõ cả từ (“谢谢”), pinyin liền (“xiexie”), âm Hán Việt (“tạ tạ”) hoặc nghĩa (“cảm ơn”). Nếu từ chưa có trong dữ liệu, hãy tra từng chữ ở tab “Chữ”.</p>
             </div>
           ) : (

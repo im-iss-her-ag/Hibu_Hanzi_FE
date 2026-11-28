@@ -1,21 +1,18 @@
-.bk-dialog { max-width: 520px; }
-.bk-body { display: flex; flex-direction: column; gap: var(--space-4); }
-.bk-note { margin: 0; font-size: var(--text-md); line-height: var(--leading); color: var(--ink-2); }
-.bk-section { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-2); padding: var(--space-3); background: var(--paper-2); border: 1px solid var(--rule); border-radius: var(--radius-md); }
+/* Backup dialog (pm-sm). Shell, sections (.pm-section), confirm (.pm-confirm) and buttons come from dialog.css;
+   only content-specific bits live here. Action buttons are as tall as footer buttons (40 / 44 touch). */
 .bk-counts { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-4); font-size: var(--text-md); color: var(--ink-2); }
 .bk-counts b { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
 .bk-meta { margin: 0; font-size: var(--text-sm); color: var(--ink-3); }
 .bk-meta:empty { display: none; }
-.bk-primary { border-color: var(--seal-line); color: var(--seal); }
-.bk-primary:hover { background: var(--seal-soft); }
 .bk-file { position: relative; cursor: pointer; }
 .bk-file-input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; }
 .bk-file:focus-within { outline: 2px solid var(--seal); outline-offset: -2px; }
-.bk-preview { display: flex; flex-direction: column; gap: var(--space-2); width: 100%; padding-top: var(--space-2); border-top: 1px solid var(--rule); }
+.bk-preview { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-2); width: 100%; }
 .bk-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
-.bk-confirm { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-3); background: var(--seal-soft); border: 1px solid var(--seal-line); border-radius: var(--radius-md); font-size: var(--text-md); color: var(--ink); }
+.bk-dialog :is(.pm-section > .pm-btn, .bk-actions .pm-btn, .sy-code-actions .pm-btn) { height: var(--dlg-btn-h); }  /* confirm buttons keep the shared .pm-btn size */
 .bk-msg { min-height: 1.5em; font-size: var(--text-md); color: var(--tone-2); }
+.bk-msg:empty { min-height: 0; margin-top: calc(-1 * var(--space-4)); }  /* live region stays in the DOM but adds no gap while empty */
 .bk-msg-err { color: var(--seal); }
 @media (max-width: 600px) {
-  .bk-actions .pm-btn, .bk-primary, .bk-file { width: 100%; justify-content: center; }
+  .bk-actions .pm-btn, .bk-file, .bk-dialog .pm-section > .pm-btn { width: 100%; justify-content: center; }
 }

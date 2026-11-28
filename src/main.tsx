@@ -1,6 +1,8 @@
 import { Component, lazy, StrictMode, Suspense, type ReactNode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+// Dialog system first: every dialog's own stylesheet (imported via App) refines it at equal specificity.
+import './styles/dialog.css'
 import { App } from './App'
 // Self-hosted Chinese fonts: Google Fonts may be blocked on some networks
 import '@fontsource/ma-shan-zheng/chinese-simplified-400.css'

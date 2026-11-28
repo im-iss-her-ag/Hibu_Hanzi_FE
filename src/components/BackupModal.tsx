@@ -80,7 +80,7 @@ export function BackupModal({ favorites, onFavoritesChange, onClose }: BackupMod
       <div
         ref={dialogRef}
         {...dialogProps}
-        className="pm-dialog bk-dialog"
+        className="pm-dialog pm-sm bk-dialog"
         onClick={(e) => e.stopPropagation()}
         onTouchStart={(e) => e.stopPropagation()}
         onTouchEnd={(e) => e.stopPropagation()}
@@ -88,19 +88,20 @@ export function BackupModal({ favorites, onFavoritesChange, onClose }: BackupMod
         <div className="pm-header">
           <h2 className="pm-title" id={titleId}>Sao lưu</h2>
           <div className="pm-header-actions">
-            <button type="button" className="pm-icon-btn" onClick={onClose} aria-label="Đóng" title="Đóng (Esc)">
+            <button type="button" className="pm-icon-btn pm-close" onClick={onClose} aria-label="Đóng" title="Đóng (Esc)">
               <X size={18} />
             </button>
           </div>
         </div>
-        <div className="pm-body bk-body">
-          <p className="bk-note">
+        <div className="pm-body pm-stack bk-body">
+          <p className="pm-note">
             {syncOn
               ? 'Dữ liệu học được lưu trên máy này và đồng bộ (đã mã hoá) với các thiết bị dùng chung mã đồng bộ. Vẫn nên tải file sao lưu thỉnh thoảng phòng khi mất mã.'
               : 'Dữ liệu học của bạn chỉ nằm trên thiết bị này, không có tài khoản. Hãy tải file sao lưu định kỳ, hoặc bật đồng bộ, để không mất tiến độ khi đổi máy hoặc xoá dữ liệu trình duyệt.'}
           </p>
           <SyncSection />
-          <section className="bk-section" aria-label="Dữ liệu hiện có">
+          <section className="pm-section" aria-label="Dữ liệu hiện có">
+            <h3 className="pm-section-title">Dữ liệu hiện có</h3>
             {stat(nKnown, nReview, favorites.length)}
             <p className="bk-meta">
               {d.lastBackup ? `Sao lưu lần cuối: ${new Date(d.lastBackup).toLocaleString('vi-VN')}` : 'Chưa sao lưu'}
@@ -112,12 +113,13 @@ export function BackupModal({ favorites, onFavoritesChange, onClose }: BackupMod
                   ? 'Trình duyệt có thể xoá dữ liệu khi thiếu dung lượng'
                   : ''}
             </p>
-            <button type="button" className="pm-btn bk-primary" onClick={() => { downloadBackup(favorites); setMsg({ kind: 'ok', text: 'Đã tạo file sao lưu.' }) }}>
+            <button type="button" className="pm-btn pm-btn-accent" onClick={() => { downloadBackup(favorites); setMsg({ kind: 'ok', text: 'Đã tạo file sao lưu.' }) }}>
               <Download size={14} /> Tải file sao lưu
             </button>
           </section>
 
-          <section className="bk-section" aria-label="Nhập file">
+          <section className="pm-section" aria-label="Nhập file">
+            <h3 className="pm-section-title">Nhập file</h3>
             <label className="pm-btn bk-file">
               <Upload size={14} /> Nhập file sao lưu
               <input type="file" accept="application/json,.json" onChange={onFile} className="bk-file-input" />
@@ -129,7 +131,7 @@ export function BackupModal({ favorites, onFavoritesChange, onClose }: BackupMod
                 {pending.exportedAt > 0 && <div className="bk-meta">Tạo lúc {new Date(pending.exportedAt).toLocaleString('vi-VN')}</div>}
                 {confirmOver ? (
                   <div
-                    className="bk-confirm"
+                    className="pm-confirm"
                     role="alertdialog"
                     aria-label="Xác nhận ghi đè"
                     onKeyDown={(e) => {
@@ -142,14 +144,14 @@ export function BackupModal({ favorites, onFavoritesChange, onClose }: BackupMod
                     }}
                   >
                     <span>Ghi đè sẽ thay toàn bộ dữ liệu hiện có trên máy này. Không hoàn tác được.</span>
-                    <span className="bk-actions">
+                    <span className="pm-confirm-actions">
                       <button type="button" className="pm-btn" autoFocus onClick={() => setConfirmOver(false)}>Hủy</button>
                       <button type="button" className="pm-btn pm-btn-danger" onClick={() => apply('overwrite')}>Ghi đè</button>
                     </span>
                   </div>
                 ) : (
                   <span className="bk-actions">
-                    <button type="button" className="pm-btn bk-primary" onClick={() => apply('merge')}>Gộp (giữ lần ôn mới nhất)</button>
+                    <button type="button" className="pm-btn pm-btn-accent" onClick={() => apply('merge')}>Gộp (giữ lần ôn mới nhất)</button>
                     <button type="button" className="pm-btn" data-bk-over onClick={() => setConfirmOver(true)}>Ghi đè</button>
                   </span>
                 )}

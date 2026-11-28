@@ -220,19 +220,19 @@ export function StudioCenter({
             </>
           )}
         </div>
-        <div className="st-meta-actions">
-          {previousEntry && (
-            <nav className="st-trail" aria-label="Lịch sử vừa xem">
-              <button type="button" className="st-icon-btn" onClick={onGoBack} title={`Quay lại ${previousEntry.hanzi} (Backspace)`} aria-label={`Quay lại ${previousEntry.hanzi}`}>
-                <ArrowLeft size={16} />
+        {previousEntry && (
+          <nav className="st-trail" aria-label="Lịch sử vừa xem">
+            <button type="button" className="st-icon-btn" onClick={onGoBack} title={`Quay lại ${previousEntry.hanzi} (Backspace)`} aria-label={`Quay lại ${previousEntry.hanzi}`}>
+              <ArrowLeft size={16} />
+            </button>
+            {trail.map((entry) => (
+              <button key={entry.hanzi} type="button" lang="zh" className="st-chip" onClick={() => onSelectTrailEntry(entry)} title={`Mở lại ${entry.hanzi}`}>
+                {entry.hanzi}
               </button>
-              {trail.map((entry) => (
-                <button key={entry.hanzi} type="button" lang="zh" className="st-chip" onClick={() => onSelectTrailEntry(entry)} title={`Mở lại ${entry.hanzi}`}>
-                  {entry.hanzi}
-                </button>
-              ))}
-            </nav>
-          )}
+            ))}
+          </nav>
+        )}
+        <div className="st-actions">
           <button
             type="button"
             className={`st-icon-btn la-btn st-star${isFavorite ? ' saved' : ''}`}
@@ -241,7 +241,7 @@ export function StudioCenter({
             aria-label={isFavorite ? 'Bỏ lưu khỏi sổ tay' : 'Lưu vào sổ tay'}
             aria-pressed={isFavorite}
           >
-            <Star size={17} fill={isFavorite ? 'currentColor' : 'none'} aria-hidden="true" />
+            <Star size={16} fill={isFavorite ? 'currentColor' : 'none'} aria-hidden="true" />
             <span className="la-label" aria-hidden="true">{isFavorite ? 'Đã lưu' : 'Lưu'}</span>
           </button>
           <LearnActions hanzi={character.hanzi} hskWords={hskWords} />
@@ -255,21 +255,23 @@ export function StudioCenter({
           {/* Hán Việt leads: it is what sets this app apart, so it is the first thing read after the glyph. */}
           <div className="st-hv-block">
             <span className="label">Hán Việt</span>
-            <span className="st-hv">
-              {primary?.hanViet ? primary.hanViet.toUpperCase() : <span className="st-muted">—</span>}
-            </span>
-            {homophoneCount > 0 && (
-              <button
-                type="button"
-                className="hp-trigger"
-                aria-expanded={showHomophones}
-                aria-haspopup="dialog"
-                onClick={() => setShowHomophones((v) => !v)}
-                title={homophones.exact ? 'Chữ cùng âm Hán Việt / pinyin' : 'Chưa có chữ đồng âm — xem chữ gần âm (khác thanh)'}
-              >
-                {homophones.exact ? 'Đồng âm' : 'Gần âm'} ({homophoneCount})
-              </button>
-            )}
+            <div className="st-hv-line">
+              <span className="st-hv">
+                {primary?.hanViet ? primary.hanViet.toUpperCase() : <span className="st-muted">—</span>}
+              </span>
+              {homophoneCount > 0 && (
+                <button
+                  type="button"
+                  className="hp-trigger"
+                  aria-expanded={showHomophones}
+                  aria-haspopup="dialog"
+                  onClick={() => setShowHomophones((v) => !v)}
+                  title={homophones.exact ? 'Chữ cùng âm Hán Việt / pinyin' : 'Chưa có chữ đồng âm — xem chữ gần âm (khác thanh)'}
+                >
+                  {homophones.exact ? 'Đồng âm' : 'Gần âm'} ({homophoneCount})
+                </button>
+              )}
+            </div>
             {showHomophones && allCharacters && onSelectHomophone && (
               <HomophonePanel
                 characters={allCharacters}
@@ -307,7 +309,7 @@ export function StudioCenter({
 
           {others.length > 0 && (
             <div className="st-others">
-              <span className="label">Cách đọc khác</span>
+              <div className="sec-head"><h2 className="label">Cách đọc khác</h2></div>
               <ul>
                 {others.map((r, i) => {
                   const m = r.meaningVi?.trim()

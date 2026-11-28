@@ -8,31 +8,55 @@
   min-width: 0;
 }
 
-/* ---------- Meta row: one baseline ---------- */
+/* One control-height scale for the whole sheet: primary controls --h, secondary --h-sm.
+   Coarse pointers raise both through tokens.css; phones (<768) always get the touch sizes. */
+.st {
+  --h: var(--control-h);
+  --h-sm: var(--control-h-sm);
+}
+@media (max-width: 767px) {
+  .st { --h: var(--touch); --h-sm: 36px; }
+}
+
+/* ---------- Meta row ----------
+   One rule, two layouts, switched only by the sheet's own width (container st):
+   >= 800  one row: meta line | history | actions
+   <  800  row 1: meta line | history; row 2: the actions, spread evenly (same for 好 and 爱). */
 .st-meta {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 0 var(--space-3);
-  min-height: var(--control-h);
+  gap: var(--space-2) var(--space-3);
   margin-bottom: var(--space-4);
 }
 .st-meta-line {
+  grid-column: 1;
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 0 var(--space-2);
   min-width: 0;
+  min-height: var(--h-sm);
   font-size: var(--text-sm);
   color: var(--ink-3);
   line-height: 1;
   white-space: nowrap;
 }
 .st-dot { color: var(--ink-3); }
-.st-zh { font-family: var(--font-han); font-size: var(--text-md); color: var(--ink-2); margin-left: 2px; }
-.st-meta-actions { display: flex; align-items: center; gap: var(--space-2); flex: none; }
-.st-trail { display: flex; align-items: center; gap: var(--space-1); }
+.st-zh { font-family: var(--font-han); font-size: var(--text-md); color: var(--ink-2); }
+.st-trail { grid-column: 2; justify-self: end; display: flex; align-items: center; gap: var(--space-1); }
+.st-actions { grid-column: 1 / -1; display: flex; align-items: center; gap: var(--space-1); }
+.st-actions .la-btn { flex: 1 1 0; min-width: 0; }
+@container st (min-width: 560px) and (max-width: 799px) {
+  .st-actions { margin-left: calc(var(--space-2) * -1); }
+  .st-actions .la-btn { flex: none; }
+}
+@container st (min-width: 800px) {
+  .st-meta { grid-template-columns: minmax(0, 1fr) auto auto; }
+  /* Always the last track, so the row ends flush with the sheet's content edge whether or not the history trail is shown. */
+  .st-actions { grid-column: -2 / -1; justify-content: flex-end; }
+  .st-actions .la-btn { flex: none; }
+}
 
 .st-icon-btn, .st-chip, .st-sq, .st-tiny, .st-ctl, .st-segmented button {
   font: inherit;
@@ -41,21 +65,24 @@
 }
 .st-icon-btn {
   display: inline-grid; place-items: center;
-  width: var(--control-h); height: var(--control-h);
+  width: var(--h); height: var(--h); padding: 0;
   border: 0; background: transparent; color: var(--ink-3);
   border-radius: var(--radius-md);
 }
 .st-icon-btn:hover { background: var(--hover); color: var(--ink); }
 .st-icon-btn:active, .st-chip:active, .st-sq:active, .st-tiny:active, .st-ctl:active { background: var(--press); }
 .st-star.saved { color: var(--seal); }
-.st-chip {
+
+/* History trail: back arrow + chips are one small bordered group. */
+.st-chip, .st-trail .st-icon-btn {
+  position: relative;
   display: inline-grid; place-items: center;
-  width: var(--control-h-sm); height: var(--control-h-sm);
+  width: var(--h-sm); height: var(--h-sm); padding: 0;
   border: 1px solid var(--rule); background: transparent; color: var(--ink-2);
-  font-family: var(--font-han); font-size: 16px; line-height: 1;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
 }
-.st-chip:hover { background: var(--hover); border-color: var(--rule-strong); color: var(--ink); }
+.st-chip { font-family: var(--font-han); font-size: var(--text-lg); line-height: 1; }
+.st-chip:hover, .st-trail .st-icon-btn:hover { background: var(--hover); border-color: var(--rule-strong); color: var(--ink); }
 .st-icon-btn:focus-visible, .st-chip:focus-visible, .st-sq:focus-visible, .st-tiny:focus-visible,
 .st-ctl:focus-visible, .st-segmented button:focus-visible, .st-glyph:focus-visible {
   outline: 2px solid var(--seal); outline-offset: 2px;
@@ -105,7 +132,7 @@
 /* Segmented switch: Chữ | Nét | Viết, same width as the box */
 .st-segmented {
   display: grid; grid-template-columns: repeat(3, 1fr);
-  height: 32px;
+  height: var(--h);
   border: 1px solid var(--rule-strong);
   border-radius: var(--radius-md);
   overflow: hidden;
@@ -122,8 +149,8 @@
 /* Controls row: fixed height so modes never shift layout */
 .st-controls {
   position: absolute; left: 0; right: 0; bottom: 0; z-index: 1;
-  display: flex; align-items: center; gap: 2px; padding: 0 var(--space-1);
-  height: 28px;
+  display: flex; align-items: center; gap: var(--space-1); padding: 0 var(--space-1);
+  height: var(--space-6);
   background: var(--sheet); border-top: 1px solid var(--rule);
   visibility: hidden;
   min-width: 0;
@@ -133,7 +160,7 @@
 .st-ctl {
   flex: none;
   display: inline-grid; place-items: center;
-  min-width: 26px; height: 26px; padding: 0;
+  min-width: 28px; height: 28px; padding: 0;
   border: 0; background: transparent; color: var(--ink-2);
   border-radius: var(--radius-md);
 }
@@ -147,10 +174,11 @@
 .st-stroke-status b { color: var(--ink); font-weight: 600; }
 .st-ok { color: var(--tone-2); vertical-align: -2px; }
 
-/* ---------- Info column ---------- */
+/* ---------- Info column ----------
+   Rhythm: label -> value --space-1; groups (Hán Việt / pinyin / meaning / readings) --space-4. */
 .st-info {
   width: 100%; max-width: 480px; min-width: 0;
-  display: flex; flex-direction: column; align-items: center; gap: var(--space-3);
+  display: flex; flex-direction: column; align-items: center; gap: var(--space-4);
   animation: st-in var(--dur-2) var(--ease) both;
 }
 @keyframes st-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
@@ -162,48 +190,61 @@
   font-size: 26px; font-weight: 500; line-height: 1.15; letter-spacing: 0.01em;
   overflow-wrap: anywhere;
 }
-.st-audio { display: inline-flex; gap: var(--space-2); }
+.st-audio { display: inline-flex; align-items: center; gap: var(--space-2); }
 .st-sq {
+  position: relative;
   display: inline-grid; place-items: center;
-  width: 40px; height: 40px; padding: 0;
+  width: var(--h); height: var(--h); padding: 0;
   border: 1px solid var(--rule-strong); background: var(--sheet); color: var(--ink-2);
   border-radius: var(--radius-md);
 }
 .st-sq:hover { background: var(--hover); color: var(--ink); }
+/* Slow playback: a lone turtle glyph read as a glitch, so it carries a word. */
+.st-sq.st-sq-wide { display: inline-flex; align-items: center; gap: var(--space-1); width: auto; padding: 0 var(--space-3); font-size: var(--text-sm); font-weight: 500; }
 
-.st-hv-block { display: flex; flex-direction: column; align-items: inherit; gap: 2px; }
+.st-hv-block { display: flex; flex-direction: column; align-items: inherit; gap: var(--space-1); }
+.st-hv-block > .label { line-height: 1; }
+/* Value + the Đồng âm trigger share one line, so the trigger is a companion of the word, not a stray box. */
+.st-hv-line { display: flex; align-items: center; justify-content: inherit; flex-wrap: wrap; gap: var(--space-1) var(--space-3); }
+.st-hv-line .hp-trigger { height: var(--h-sm); }
 /* The signature line: Hán Việt is what this app has that others don't, so it outranks pinyin. */
 .st-hv {
+  min-width: 0;
   font-family: var(--font-display); font-weight: 700;
   font-size: clamp(40px, 13cqw, 56px);
   line-height: 1.12; letter-spacing: 0.04em; color: var(--seal);
-  padding-top: 0.06em; /* room for stacked marks on capitals (Ễ, Ẫ) */
+  padding-top: var(--space-1); /* room for stacked marks on capitals (Ễ, Ẫ) */
   overflow-wrap: anywhere;
 }
 .st-meaning {
   margin: 0; font-size: var(--text-xl); line-height: 1.4; color: var(--ink-2);
   min-height: 1.4em; /* one line reserved; longer meanings simply wrap */
   text-wrap: balance;
+  overflow-wrap: anywhere;
 }
 
-.st-others { width: 100%; display: flex; flex-direction: column; gap: var(--space-2); }
+/* Other readings: a section like Chiết tự (label + rule), rows always left-aligned. */
+.st-others { width: 100%; display: flex; flex-direction: column; gap: var(--space-2); text-align: left; }
 .st-others ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
 .st-others li {
-  display: flex; align-items: center; justify-content: center; flex-wrap: wrap;
-  gap: var(--space-1) var(--space-3);
-  padding: var(--space-2) 0; border-top: 1px solid var(--rule);
+  display: flex; align-items: center; flex-wrap: wrap;
+  gap: 0 var(--space-3);
+  padding: var(--space-1) 0;
   font-size: var(--text-md);
 }
+.st-others li + li { border-top: 1px solid var(--rule); }
 .st-o-py { font-size: var(--text-lg); font-weight: 500; }
 .st-o-hv { font-family: var(--font-display); font-size: var(--text-sm); letter-spacing: 0.06em; color: var(--ink); }
-.st-o-mean { color: var(--ink-2); min-width: 0; flex: 1 1 100%; text-align: center; }
+.st-o-mean { color: var(--ink-2); min-width: 0; flex: 1 1 100%; overflow-wrap: anywhere; }
 .st-tiny {
-  display: inline-grid; place-items: center; width: 28px; height: 28px; padding: 0;
+  position: relative;
+  display: inline-grid; place-items: center; width: var(--h-sm); height: var(--h-sm); padding: 0;
   border: 0; background: transparent; color: var(--ink-3); border-radius: var(--radius-md);
 }
 .st-tiny:hover { background: var(--hover); color: var(--ink); }
 
-/* ---------- Wide: glyph left, info right ---------- */
+/* ---------- Wide: glyph left, info right ----------
+   The info column is top-aligned with the tianzige's top edge (deterministic for every character). */
 @container st (min-width: 720px) {
   .st-hero {
     --box: clamp(220px, min(40cqw, 46vh), 360px);
@@ -213,17 +254,12 @@
     gap: var(--space-6);
     text-align: left;
   }
-  .st-info {
-    max-width: none; align-items: flex-start;
-    min-height: var(--box); justify-content: center;
-    align-self: start;
-  }
+  .st-info { max-width: none; align-items: flex-start; align-self: start; }
   .st-pinyin-row { justify-content: flex-start; }
   .st-pinyin { font-size: 28px; }
   .st-hv { font-size: clamp(48px, 7cqw, 64px); }
   .st-hv-block { align-items: flex-start; }
-  .st-others li { justify-content: flex-start; }
-  .st-o-mean { flex: 0 1 auto; text-align: left; }
+  .st-o-mean { flex: 0 1 auto; }
   .st-meaning { min-height: 0; text-wrap: pretty; }
 }
 
@@ -231,13 +267,11 @@
   .st-chip:nth-of-type(n+4) { display: none; }
 }
 
-@media (pointer: coarse) {
-    .st-icon-btn { width: var(--touch); height: var(--touch); }
-  .st-chip { width: 36px; height: 36px; min-width: 0; min-height: 0; }
-  .st-sq { width: var(--touch); height: var(--touch); }
-  .st-tiny { width: var(--touch); height: var(--touch); }
-  .st-segmented { height: var(--touch); }
-  .st-ctl { min-width: 32px; height: 28px; }
+/* Touch / phones: visible size follows the tokens; small ghost targets grow an invisible hit area to 44. */
+@media (pointer: coarse), (max-width: 767px) {
+  .st-chip::after, .st-trail .st-icon-btn::after, .st-tiny::after { content: ''; position: absolute; inset: -4px; }
+  .st-ctl { min-width: 32px; height: 32px; }
+  .st-controls { height: var(--h-sm); }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -248,7 +282,7 @@
 .st-word {
   display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center;
   gap: var(--space-4);
-  padding: 0 0 var(--space-3); margin-bottom: var(--space-3);
+  padding: 0 0 var(--space-3); margin-bottom: var(--space-4);
   border-bottom: 1px solid var(--rule);
   animation: st-in var(--dur-2) var(--ease) both;
 }
@@ -267,7 +301,8 @@
 .st-word-py { font-size: var(--text-xl); font-weight: 500; }
 .st-word-hv { font-family: var(--font-display); font-size: var(--text-md); letter-spacing: 0.06em; color: var(--ink); }
 .st-word-mean { font-size: var(--text-md); color: var(--ink-2); }
-.st-word-actions { display: flex; gap: 2px; }
+.st-word-actions { display: flex; align-items: center; gap: var(--space-1); }
+.st-word-actions .st-tiny { width: var(--h); height: var(--h); }
 .st-word-btn { color: var(--ink-3); }
 @container st (max-width: 560px) {
   .st-word { grid-template-columns: minmax(0, 1fr) auto; }
@@ -280,20 +315,5 @@
 .st-sq:disabled { color: var(--ink-4); cursor: not-allowed; background: transparent; }
 .st-nodata { margin-left: 0; text-align: left; }
 
-.st-segmented button:disabled { color: var(--ink-4); cursor: not-allowed; background: transparent; }
-.st-sq:disabled { color: var(--ink-4); cursor: not-allowed; background: transparent; }
-.st-nodata { margin-left: 0; text-align: left; }
-
 /* Space hint on the random button: keep legible */
 .sn-btn.sn-random kbd { font-size: 11px; }
-
-/* Mobile: tabs and audio buttons reach 44px touch height */
-@media (max-width: 767px) {
-  .st-segmented { height: var(--touch); }
-  .st-segmented button { min-height: var(--touch); }
-  .st-icon-btn, .st-sq, .st-tiny { width: var(--touch); height: var(--touch); min-width: var(--touch); }
-}
-
-/* Slow playback: a lone turtle glyph read as a glitch, so it carries a word. */
-.st-sq.st-sq-wide { display: inline-flex; align-items: center; gap: 4px; width: auto; min-width: 0; padding: 0 10px 0 8px; font-size: var(--text-sm); font-weight: 500; }
-@media (pointer: coarse), (max-width: 767px) { .st-sq.st-sq-wide { width: auto; min-width: var(--touch); } }

@@ -175,8 +175,8 @@ export function ReviewSession({ characters, onClose, onOpenCharacter, words, onO
   const newCapped = waitingNew > 0 && (learn.newIntroduced[dayKey()] ?? 0) >= NEW_PER_DAY
 
   return (
-    <div className="pm-backdrop rv-backdrop">
-      <div ref={dialogRef} {...dialogProps} className="pm-dialog rv-dialog">
+    <div className="pm-backdrop">
+      <div ref={dialogRef} {...dialogProps} className="pm-dialog pm-sm rv-dialog">
         <div className="pm-header">
           <h2 id={titleId} className="pm-title">Ôn tập</h2>
           {!done && (
@@ -186,14 +186,15 @@ export function ReviewSession({ characters, onClose, onOpenCharacter, words, onO
             </span>
           )}
           <div className="pm-header-actions">
-            <button type="button" className="pm-icon-btn" onClick={onClose} aria-label="Đóng" title="Đóng (Esc)">
+            <button type="button" className="pm-icon-btn pm-close" onClick={onClose} aria-label="Đóng" title="Đóng (Esc)">
               <X size={18} />
             </button>
           </div>
         </div>
 
         {done ? (
-          <div className="rv-body rv-summary">
+          <>
+          <div className="pm-body rv-body rv-summary">
             {queue.length === 0 ? (
               hasCards ? (
                 <>
@@ -258,26 +259,27 @@ export function ReviewSession({ characters, onClose, onOpenCharacter, words, onO
                 )}
               </>
             )}
-            <div className="rv-summary-actions">
-              {forgotten.length > 0 && (
-                <button type="button" className="rv-btn" onClick={() => startRound(forgotten, true)}>
-                  Ôn lại {forgotten.length} thẻ quên
-                </button>
-              )}
-              {remaining.length > 0 && queue.length > 0 ? (
-                <button type="button" className="rv-btn rv-btn-primary" onClick={() => startRound(remaining.slice(0, SESSION_SIZE), false)} autoFocus>
-                  Tiếp {Math.min(SESSION_SIZE, remaining.length)} thẻ
-                </button>
-              ) : (
-                <button type="button" className="rv-btn rv-btn-primary" onClick={onClose} autoFocus>
-                  Xong
-                </button>
-              )}
-            </div>
           </div>
+          <div className="pm-foot pm-foot-answers rv-actions">
+            {forgotten.length > 0 && (
+              <button type="button" className="pm-btn" onClick={() => startRound(forgotten, true)}>
+                Ôn lại {forgotten.length} thẻ quên
+              </button>
+            )}
+            {remaining.length > 0 && queue.length > 0 ? (
+              <button type="button" className="pm-btn pm-btn-primary" onClick={() => startRound(remaining.slice(0, SESSION_SIZE), false)} autoFocus>
+                Tiếp {Math.min(SESSION_SIZE, remaining.length)} thẻ
+              </button>
+            ) : (
+              <button type="button" className="pm-btn pm-btn-primary" onClick={onClose} autoFocus>
+                Xong
+              </button>
+            )}
+          </div>
+          </>
         ) : (
           <>
-            <div className="rv-body">
+            <div className="pm-body rv-body">
               <div className={`rv-han${isWord ? ` rv-han-word${Array.from(hanzi!).length > 3 ? ' rv-han-long' : ''}` : ''}`} lang="zh">
                 {hanzi}
               </div>
@@ -320,19 +322,19 @@ export function ReviewSession({ characters, onClose, onOpenCharacter, words, onO
               )}
             </div>
 
-            <div className="rv-actions">
+            <div className="pm-foot pm-foot-answers rv-actions">
               {revealed ? (
                 <>
-                  <button type="button" className="rv-btn rv-btn-forget" onClick={() => answer(1)}>
-                    Quên <kbd className="rv-kbd">1</kbd>
+                  <button type="button" className="pm-btn" onClick={() => answer(1)}>
+                    Quên <kbd>1</kbd>
                   </button>
-                  <button type="button" className="rv-btn rv-btn-primary" onClick={() => answer(2)}>
-                    Nhớ <kbd className="rv-kbd">2</kbd>
+                  <button type="button" className="pm-btn pm-btn-primary" onClick={() => answer(2)}>
+                    Nhớ <kbd>2</kbd>
                   </button>
                 </>
               ) : (
-                <button type="button" className="rv-btn rv-btn-primary rv-btn-wide" onClick={reveal} autoFocus>
-                  Lật thẻ <kbd className="rv-kbd">Space</kbd>
+                <button type="button" className="pm-btn pm-btn-primary" onClick={reveal} autoFocus>
+                  Lật thẻ <kbd>Space</kbd>
                 </button>
               )}
             </div>

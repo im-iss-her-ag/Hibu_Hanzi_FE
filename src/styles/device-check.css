@@ -2,13 +2,14 @@
    Device check (dc-*) — inline panel inside the tone trainer dialog.
    Status is never colour-only: every row has an icon + a text label.
    ===================================================================== */
-.pm-dialog.tt-dialog .tt-body:has(> .dc) { display: flex; }   /* beat the landscape two-column grid rule */
 .dc { display: flex; flex-direction: column; gap: var(--space-3); min-width: 0; }
-.dc-head { display: flex; align-items: center; gap: var(--space-3); }
-.dc-title { margin: 0; font-family: var(--font-display); font-size: var(--text-xl); color: var(--ink); outline: none; }
+.dc-head { display: flex; align-items: center; gap: var(--space-3); min-height: var(--dlg-btn-h); }
+.dc-title { margin: 0; font-family: var(--font-display); font-size: var(--text-lg); font-weight: 700; line-height: 1.3; color: var(--ink); outline: none; }
+.dc-title:focus-visible { outline: none; }  /* programmatic focus target only */
 .dc-lead { margin: 0; font-size: var(--text-sm); color: var(--ink-3); line-height: var(--leading); }
+.dc-head .pm-btn, .dc-actions .pm-btn { height: var(--dlg-btn-h); }   /* same height as the dialog footer buttons (40 / 44 touch) */
 .dc-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
-.dc-actions .tt-btn { white-space: normal; text-align: left; }
+.dc-actions .pm-btn { height: auto; min-height: var(--dlg-btn-h); padding-block: var(--space-1); white-space: normal; text-align: left; }
 
 .dc-list { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--rule); }
 .dc-row { display: grid; grid-template-columns: 18px minmax(0, 1fr); gap: var(--space-3); padding: var(--space-3) 0; border-bottom: 1px solid var(--rule); --dc-c: var(--ink-3); }
@@ -35,8 +36,7 @@
 .dc-box { width: 100%; box-sizing: border-box; font: 12px/1.4 ui-monospace, Menlo, Consolas, monospace; color: var(--ink); background: var(--paper-2); border: 1px solid var(--rule-strong); border-radius: var(--radius-md); padding: var(--space-2); resize: vertical; }
 
 /* entry points inside the tone trainer */
-.dc-open { margin: 0; padding: 0; border: 0; background: none; color: var(--ink-2); font: inherit; text-decoration: underline; cursor: pointer; min-height: 28px; display: inline-flex; align-items: center; }
-.dc-open:hover { color: var(--ink); }
-.tt-foot .dc-open { margin-left: var(--space-2); }
-@media (pointer: coarse) { .dc-open, .dc-more summary { min-height: var(--touch); } }
+.tt-foot .dc-open { margin: 0 0 0 var(--space-2); padding: 0; border: 0; background: none; color: var(--ink-2); font: inherit; text-decoration: underline; cursor: pointer; min-height: 28px; display: inline-flex; align-items: center; }
+.tt-foot .dc-open:hover { color: var(--ink); }
+@media (pointer: coarse) { .tt-foot .dc-open, .dc-more summary { min-height: var(--touch); } }
 @media (prefers-reduced-motion: reduce) { .dc-track > span { transition: none; } }

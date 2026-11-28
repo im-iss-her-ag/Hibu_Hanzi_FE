@@ -58,7 +58,7 @@ export function LearnActions({ hanzi, hskWords }: { hanzi: string; hskWords?: re
         title={known ? 'Bỏ đánh dấu đã thuộc (K)' : 'Đánh dấu đã thuộc (K)'}
         aria-pressed={known}
       >
-        <Check size={17} aria-hidden="true" />
+        <Check size={16} aria-hidden="true" />
         <span className="la-label">Đã thuộc</span>
       </button>
       )}
@@ -70,7 +70,7 @@ export function LearnActions({ hanzi, hskWords }: { hanzi: string; hskWords?: re
         aria-label={inReview ? 'Bỏ khỏi ôn tập' : 'Thêm vào ôn tập'}
         aria-pressed={inReview}
       >
-        {inReview ? <CalendarCheck size={17} aria-hidden="true" /> : <CalendarPlus size={17} aria-hidden="true" />}
+        {inReview ? <CalendarCheck size={16} aria-hidden="true" /> : <CalendarPlus size={16} aria-hidden="true" />}
         <span className="la-label" aria-hidden="true">Ôn tập</span>
       </button>
       {!isWord && !!hskWords?.length && (
@@ -81,7 +81,7 @@ export function LearnActions({ hanzi, hskWords }: { hanzi: string; hskWords?: re
           title={`Thêm cả ${hskWords.length} từ HSK chứa ${hanzi} vào ôn tập`}
           aria-label={`Thêm cả ${hskWords.length} từ HSK chứa ${hanzi} vào ôn tập`}
         >
-          <ListPlus size={17} aria-hidden="true" />
+          <ListPlus size={16} aria-hidden="true" />
           <span className="la-label" aria-hidden="true">Từ HSK</span>
         </button>
       )}

@@ -1,42 +1,16 @@
-/* Hán Việt quiz. Uses the pm-* modal shell; everything here is prefixed hq-. */
-.pm-dialog.hq-dialog { max-width: 640px; }
-.hq-body { padding: var(--space-4); }
+/* Hán Việt quiz. Uses the pm-* shell (pm-md, pm-seg, pm-btn, pm-foot); only content-specific rules live here (hq-*). */
 .hq-live { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-.hq-count { margin-left: auto; font-variant-numeric: tabular-nums; }
-.hq-count + .pm-header-actions { margin-left: 0; }
-
-.hq-desc { margin: 0 0 var(--space-4); color: var(--ink-2); line-height: var(--leading); }
-.hq-label { margin-bottom: var(--space-2); }
-.hq-scope-count { margin: var(--space-3) 0 var(--space-4); color: var(--ink-3); font-size: var(--text-sm); }
-
-.hq-seg { display: flex; flex-wrap: wrap; border: 1px solid var(--rule-strong); border-radius: var(--radius-md); overflow: hidden; }
-.hq-seg-btn {
-  flex: 1 1 auto; min-height: var(--touch); padding: 0 var(--space-3);
-  border: 0; border-left: 1px solid var(--rule-strong); background: var(--sheet); color: var(--ink);
-  font: inherit; font-size: var(--text-md); cursor: pointer;
+/* While a session runs the dialog keeps ONE height (question -> reveal -> result), so the pinned footer never
+   jumps; only the body scrolls when an explanation is long. Setup keeps its natural height. */
+@media (min-width: 768px) {
+  .hq-dialog.hq-playing { height: min(700px, calc(100dvh - var(--dlg-top) - var(--space-4))); }
 }
-.hq-seg-btn:first-child { border-left: 0; }
-.hq-seg-btn:hover:not(:disabled):not(.is-active) { background: var(--hover); }
-.hq-seg-btn.is-active { background: var(--ink); color: var(--sheet); }
-.hq-seg-btn:disabled { color: var(--ink-4); cursor: not-allowed; }
-.hq-seg-btn:focus-visible { outline-offset: -2px; }
 
-.hq-btn {
-  display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2);
-  min-height: var(--touch); padding: 0 var(--space-4);
-  border: 1px solid var(--rule-strong); border-radius: var(--radius-md);
-  background: var(--sheet); color: var(--ink); font: inherit; font-size: var(--text-md); font-weight: 600; cursor: pointer;
-  transition: background-color var(--dur-1) var(--ease);
-}
-.hq-btn:hover:not(:disabled) { background: var(--hover); }
-.hq-btn:active:not(:disabled) { background: var(--press); }
-.hq-btn:disabled { color: var(--ink-4); cursor: not-allowed; }
-.hq-primary { background: var(--seal); border-color: var(--seal); color: var(--seal-ink); }
-.hq-primary:hover:not(:disabled) { background: var(--seal); filter: brightness(1.08); }
-.hq-primary:disabled { background: var(--hover); border-color: var(--rule-strong); }
-.hq-primary .kbd { opacity: 0.8; }
-.hq-hint { min-height: var(--control-h); font-size: var(--text-sm); font-weight: 500; color: var(--ink-2); }
+.hq-scope { align-self: stretch; }
+.hq-scope-count { color: var(--ink-3); font-size: var(--text-sm); }
+.hq-hint { height: var(--control-h); font-weight: 500; color: var(--ink-2); }
 .hq-hint[aria-pressed='true'] { background: var(--seal-soft); border-color: var(--seal-line); }
+.hq-question > .hq-hint { display: flex; margin: 0 auto var(--space-4); }
 
 .hq-progress { height: 2px; background: var(--rule); margin-bottom: var(--space-4); }
 .hq-progress-fill { height: 100%; background: var(--ink-2); transition: width var(--dur-2) var(--ease); }
@@ -46,7 +20,6 @@
 .hq-han { font-family: var(--font-han); font-size: 64px; line-height: 1.15; color: var(--ink); }
 .hq-hv { font-family: var(--font-display); font-weight: 700; font-size: var(--text-md); letter-spacing: var(--tracking-label); text-transform: uppercase; color: var(--seal); }
 .hq-gloss { margin-top: 2px; max-width: 120px; font-size: var(--text-sm); color: var(--ink-3); }
-.hq-question > .hq-hint { display: flex; margin: 0 auto var(--space-4); }
 
 .hq-options { display: flex; flex-direction: column; gap: var(--space-2); }
 .hq-option {
@@ -66,10 +39,11 @@
 .hq-option.is-wrong .hq-mark { color: var(--seal); }
 .hq-option.is-dim { color: var(--ink-3); }
 
+/* Explanation: one hairline section, no boxes (the trap / lệch notes are a left rule, not a card). */
 .hq-reveal { margin-top: var(--space-4); padding-top: var(--space-4); border-top: 1px solid var(--rule); }
 .hq-reveal-head { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
 .hq-pinyin { font-size: var(--text-xl); }
-.hq-badge { margin-left: auto; display: inline-flex; align-items: center; height: 20px; padding: 0 6px; border-radius: var(--radius-sm); background: var(--hover); color: var(--ink-2); font-size: var(--text-xs); font-weight: 600; }
+.hq-badge { margin-left: auto; display: inline-flex; align-items: center; height: 18px; padding: 0 6px; border-radius: var(--radius-sm); background: var(--hover); color: var(--ink-2); font-size: var(--text-xs); font-weight: 600; }
 .hq-badge-bay { background: var(--seal-soft); color: var(--seal); }
 .hq-badge-lech { background: var(--hover); color: var(--mnemonic); }
 .hq-badge-trong-suot { color: var(--tone-2); }
@@ -82,17 +56,14 @@
 .hq-part-hv { font-family: var(--font-display); font-weight: 700; font-size: var(--text-sm); letter-spacing: var(--tracking-label); text-transform: uppercase; color: var(--ink); }
 .hq-part-mean { color: var(--ink-3); font-size: var(--text-md); min-width: 0; }
 
-.hq-note { margin: 0 0 var(--space-3); color: var(--ink-2); line-height: var(--leading); }
-.hq-card { margin: 0 0 var(--space-3); padding: var(--space-3); border: 1px solid var(--rule); border-left: 3px solid var(--rule-strong); border-radius: var(--radius-sm); background: var(--paper-2); line-height: var(--leading); }
+.hq-card { padding: var(--space-1) 0 var(--space-1) var(--space-3); border-left: 3px solid var(--rule-strong); line-height: var(--leading); }
 .hq-card p { margin: var(--space-1) 0 0; color: var(--ink-2); }
 .hq-card-title { font-weight: 700; margin-bottom: var(--space-1); }
-.hq-card-bay { border-left-color: var(--mnemonic); border-left-width: 4px; }
+.hq-card-bay { border-left-color: var(--mnemonic); }
 .hq-card-bay .hq-card-title { color: var(--mnemonic); }
-.hq-card-lech { border-left-color: var(--rule-strong); }
-
-.hq-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); justify-content: flex-end; margin-top: var(--space-4); }
 
 .hq-score { font-family: var(--font-display); font-size: var(--text-2xl); font-weight: 700; margin-bottom: var(--space-4); }
+.hq-mistakes-title { margin-bottom: var(--space-2); }
 .hq-mistakes { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--rule); }
 .hq-mistake {
   display: flex; align-items: baseline; gap: var(--space-3); width: 100%; min-height: var(--touch);
@@ -101,12 +72,17 @@
 }
 .hq-mistake:hover { background: var(--hover); }
 .hq-mistake:focus-visible { outline-offset: -2px; }
+.hq-mistake .hq-part-han { white-space: nowrap; flex-shrink: 0; }
 
 @media (max-width: 767px) {
   .hq-han { font-size: 56px; }
-  .hq-btn { min-height: var(--touch); }
-  .hq-actions .hq-btn { flex: 1 1 auto; }
+  /* Four scopes do not fit side by side on a phone: stack them as one segmented column. */
+  .hq-scope { flex-direction: column; }
+  .hq-scope .pm-seg-btn { flex: none; }
+  .pm-seg.hq-scope .pm-seg-btn + .pm-seg-btn { border-left: 0; border-top: 1px solid var(--rule-strong); }
+  .hq-hint { height: var(--touch); }
 }
+@media (hover: none) { .hq-dialog .kbd { display: none; } }
 @media (prefers-reduced-motion: reduce) {
   .hq-progress-fill { transition: none; }
 }
@@ -117,7 +93,6 @@
   background: transparent; color: var(--ink-2); font: inherit; font-size: var(--text-sm); cursor: pointer;
 }
 .hq-entry:hover { color: var(--ink); border-color: var(--ink-3); }
-.hq-mistake .hq-part-han { white-space: nowrap; flex-shrink: 0; }
 
 @media (pointer: coarse) {
   .hq-entry { position: relative; min-height: 32px; }

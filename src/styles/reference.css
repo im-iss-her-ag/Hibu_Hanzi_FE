@@ -1,73 +1,7 @@
 /* reference.css: pinyin chart, pronunciation modal, tone and mouth diagrams ("Mực & Giấy").
-   Rendered inside the shared modal shell (pm-*); this file only adds a size modifier (.rf-dialog) and its own content. */
+   Rendered inside the shared dialog system (dialog.css): pm-xl (chart) / pm-lg (pronunciation), .pm-tabs, .pm-body; this file only holds content. */
 
-/* ---------- dialog size modifier ---------- */
-@media (min-width: 768px) {
-  .pm-backdrop:has(> .rf-dialog) { align-items: center; padding: var(--space-4); }
-}
-.pm-dialog.rf-dialog {
-  display: flex;
-  flex-direction: column;
-  width: min(1180px, 96vw);
-  max-width: none;
-  height: min(860px, 92vh);
-  max-height: 92vh;
-  overflow: hidden;
-}
-.pm-dialog.rf-dialog.rf-dialog-narrow {
-  width: min(840px, 96vw);
-  height: min(800px, 92vh);
-}
-.rf-dialog .pm-header { flex: none; }
-
-/* ---------- tabs: underline ---------- */
-.rf-tabs {
-  flex: none;
-  display: flex;
-  gap: var(--space-5);
-  padding: 0 var(--space-5);
-  border-bottom: 1px solid var(--rule);
-  overflow-x: auto;
-  scrollbar-width: none;
-  -webkit-overflow-scrolling: touch;
-}
-.rf-tabs::-webkit-scrollbar { display: none; }
-.rf-tab {
-  position: relative;
-  flex: none;
-  height: 44px;
-  padding: 0;
-  border: 0;
-  background: none;
-  color: var(--ink-3);
-  font: 500 var(--text-md) var(--font-ui);
-  white-space: nowrap;
-  cursor: pointer;
-  transition: color var(--dur-1) var(--ease);
-}
-.rf-tab:hover { color: var(--ink); }
-.rf-tab.active { color: var(--ink); font-weight: 600; }
-.rf-tab.active::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: -1px;
-  height: 2px;
-  background: var(--seal);
-}
-.rf-tab:focus-visible { outline-offset: -2px; }
-
-/* ---------- body ---------- */
-.rf-body {
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow: auto;
-  padding: var(--space-5);
-  scrollbar-width: thin;
-  scrollbar-color: var(--rule-strong) transparent;
-  overscroll-behavior: contain;
-}
+/* ---------- body (.pm-body rf-body: the one scroller; matrix tab fills it edge to edge) ---------- */
 .rf-body.rf-body-fill { padding: 0; overflow: hidden; display: flex; flex-direction: column; }
 .rf-body code {
   font-family: var(--font-ui);
@@ -109,23 +43,6 @@
   cursor: pointer;
 }
 .rf-link:hover { color: var(--seal); text-decoration-color: var(--seal-line); }
-.rf-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  height: var(--control-h);
-  padding: 0 var(--space-3);
-  border: 1px solid var(--rule-strong);
-  border-radius: var(--radius-md);
-  background: var(--sheet);
-  color: var(--ink);
-  font: 500 var(--text-md) var(--font-ui);
-  white-space: nowrap;
-  cursor: pointer;
-  transition: background-color var(--dur-1) var(--ease);
-}
-.rf-btn:hover { background: var(--hover); }
-.rf-btn:active { background: var(--press); }
 .rf-say {
   flex: none;
   display: inline-flex;
@@ -149,7 +66,7 @@
   display: flex;
   align-items: center;
   gap: var(--space-4);
-  padding: var(--space-3) var(--space-5) 0;
+  padding: var(--dlg-pad) var(--dlg-pad) 0;
 }
 .rf-search {
   flex: none;
@@ -189,36 +106,33 @@
   cursor: pointer;
 }
 .rf-search-clear:hover { background: var(--hover); color: var(--ink); }
-.rf-filters {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  gap: var(--space-1);
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-.rf-filters::-webkit-scrollbar { display: none; }
-.rf-filter {
+.rf-filters { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; gap: var(--space-1); }
+.rf-filter-select {
+  display: none;
   flex: none;
-  height: var(--control-h-sm);
-  padding: 0 var(--space-3);
-  border: 1px solid transparent;
+  width: 9rem;
+  height: var(--control-h);
+  padding: 0 var(--space-2);
+  border: 1px solid var(--rule-strong);
   border-radius: var(--radius-md);
-  background: none;
-  color: var(--ink-3);
-  font: 500 var(--text-sm) var(--font-ui);
-  white-space: nowrap;
-  cursor: pointer;
+  background: var(--sheet);
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--text-md);
 }
-.rf-filter:hover { background: var(--hover); color: var(--ink); }
-.rf-filter.active { background: var(--ink); color: var(--sheet); }
+.rf-filter-select:focus-visible { outline-offset: -2px; }
+@media (max-width: 767px), (max-height: 520px) {
+  .rf-filters { display: none; }
+  .rf-filter-select { display: block; margin-left: auto; }
+  .rf-search { flex: 1 1 0; min-width: 0; width: auto; }
+}
 
 .rf-inspector {
   flex: none;
   display: flex;
   align-items: center;
   gap: var(--space-4);
-  padding: var(--space-3) var(--space-5);
+  padding: var(--space-3) var(--dlg-pad);
 }
 .rf-inspector-syl {
   min-width: 80px;
@@ -249,7 +163,7 @@
   align-items: baseline;
   gap: var(--space-4);
   margin: 0;
-  padding: 0 var(--space-5) var(--space-2);
+  padding: 0 var(--dlg-pad) var(--space-2);
   color: var(--ink-3);
   font-size: var(--text-sm);
 }
@@ -337,7 +251,7 @@
 .rf-cell:not(.empty):hover { background: var(--seal); color: var(--seal-ink); }
 .rf-cell.sel,
 .rf-cell.sel:hover { background: var(--ink); color: var(--sheet); font-weight: 600; }
-.rf-empty { margin: 0; padding: var(--space-5); color: var(--ink-3); position: sticky; left: 0; }
+.rf-empty { margin: 0; padding: var(--dlg-pad); color: var(--ink-3); position: sticky; left: 0; }
 
 /* ---------- initials / finals ---------- */
 .rf-prose-wrap { max-width: 1040px; margin: 0; }
@@ -518,18 +432,13 @@
 .rf-phoneme-titles { flex: 1; min-width: 0; }
 .rf-phoneme-titles h3 { margin: 0; font: 600 var(--text-xl) / 1.3 var(--font-display); color: var(--ink); }
 .rf-phoneme-titles p { margin: 2px 0 0; color: var(--ink-3); font-size: var(--text-md); }
-.rf-notice { max-width: 56ch; padding: var(--space-5); border: 1px solid var(--rule); color: var(--ink-2); font-size: var(--text-lg); line-height: 1.65; }
+.rf-notice { max-width: 56ch; color: var(--ink-2); font-size: var(--text-lg); line-height: 1.65; }
 .rf-notice h3 { margin: 0 0 var(--space-2); font: 600 var(--text-xl) var(--font-display); color: var(--ink); }
 .rf-notice p { margin: 0 0 var(--space-4); }
-
-/* Search modal minimum sizes (override library.css, which sets kbd to 10px) */
-.sm-dialog .sm-footer kbd { font-size: var(--text-xs); }
-.sm-dialog .pm-tag { font-size: var(--text-xs); }
 
 /* ---------- touch ---------- */
 @media (pointer: coarse) {
   .rf-link, .rf-say { min-height: var(--touch); min-width: var(--touch); }
-  .rf-filter { height: var(--touch); }
   .rf-matrix th, .rf-matrix td { height: 40px; }
   .rf-matrix thead tr:nth-child(2) th { top: 40px; }
 }
@@ -539,29 +448,17 @@
   .rf-tone-top { grid-template-columns: minmax(0, 1fr); }
 }
 
-/* ---------- mobile: full-screen sheet ---------- */
+/* ---------- phones (dialog chrome comes from dialog.css) ---------- */
 @media (max-width: 767px) {
-  .pm-dialog.rf-dialog,
-  .pm-dialog.rf-dialog.rf-dialog-narrow {
-    width: 100%;
-    max-width: none;
-    height: 100dvh;
-    max-height: none;
-    border-radius: 0;
-  }
   .rf-head-meta { display: none; }
-  .rf-tabs { gap: var(--space-4); padding: 0 var(--space-4); }
-  .rf-body { padding: var(--space-4); }
-  .rf-body.rf-body-fill { padding: 0; }
-  .rf-toolbar { flex-direction: column; align-items: stretch; gap: var(--space-2); padding: var(--space-3) var(--space-4) 0; }
-  .rf-search { width: auto; }
+  .rf-toolbar { gap: var(--space-2); }
   .rf-search input { font-size: 16px; }
-  .rf-inspector { flex-wrap: wrap; gap: var(--space-2) var(--space-3); padding: var(--space-3) var(--space-4); }
+  .rf-filter-select { font-size: 16px; }
+  .rf-inspector { flex-wrap: wrap; gap: var(--space-2) var(--space-3); }
   .rf-inspector-syl { min-width: 0; }
   .rf-inspector-tones { flex: 1 1 100%; order: 3; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .rf-tone-chip { justify-content: center; padding: 0 var(--space-1); }
   .rf-inspector .rf-link { margin-left: auto; }
-  .rf-count { padding: 0 var(--space-4) var(--space-2); }
   .rf-count-hint { display: none; }
   .rf-entry { grid-template-columns: 52px minmax(0, 1fr); }
   .rf-entry-sym { font-size: 26px; }
@@ -570,7 +467,7 @@
   .rf-tone-card { padding: var(--space-4); }
   .rf-phoneme { flex-wrap: wrap; gap: var(--space-3); }
   .rf-phoneme-sym { min-width: 60px; height: 60px; font-size: 30px; }
-  .rf-phoneme .rf-btn { width: 100%; justify-content: center; height: var(--touch); }
+  .rf-phoneme .pm-btn { width: 100%; justify-content: center; }
   .rf-pn-sub strong { display: none; }
   .rf-pn-han { font-size: 24px; }
 }
