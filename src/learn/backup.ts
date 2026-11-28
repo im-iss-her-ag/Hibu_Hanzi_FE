@@ -1,7 +1,11 @@
 import { getLearnData, markBackedUp, normalize, replaceLearnData } from './srs'
 import type { LearnData, RevlogEntry, SrsCard } from './srs'
+import { mergeSnapshots, snapshotOf } from './merge'
+import { getDaily, mergeDaily, normalizeDaily, replaceDaily } from './daily'
+import type { DailyData } from './daily'
 
 export const SETTING_KEYS = ['hibu_theme', 'hibu_display_mode', 'hibu_rail_collapsed'] as const
+export const SETTINGS_RESTORED_EVENT = 'hibu:settings-restored'
 
 export interface BackupFile {
   app: 'hibu-hanzi'
@@ -11,6 +15,8 @@ export interface BackupFile {
   known: Record<string, number>
   favorites: string[]
   settings: Record<string, string>
+  /** "Học hôm nay" store (hibu_daily_v1). Optional: older files lack it and older builds ignore it. */
+  daily?: DailyData
 }
 
 function readSettings(): Record<string, string> {
@@ -36,6 +42,7 @@ export function buildBackup(favorites: string[]): BackupFile {
     known: d.known,
     favorites: [...favorites],
     settings: readSettings(),
+    daily: getDaily(),
   }
 }
 
@@ -61,6 +68,11 @@ export const MAX_BACKUP_BYTES = 10 * 1024 * 1024
 const MAX_T = 1e13
 const okNum = (v: unknown, lo: number, hi: number) => typeof v === 'number' && Number.isFinite(v) && v >= lo && v <= hi
 const badKey = (o: Record<string, unknown>) => Object.keys(o).includes('__proto__')
+/** Card keys are one character or a short word: non-empty, at most 16 code points, no control characters. */
+// eslint-disable-next-line no-control-regex
+const CONTROL = /[\u0000-\u001f\u007f-\u009f]/
+const MAX_KEY_POINTS = 16
+const okCardKey = (k: string) => k !== '' && k !== '__proto__' && Array.from(k).length <= MAX_KEY_POINTS && !CONTROL.test(k)
 
 export function parseBackup(text: string): BackupFile {
   if (typeof text !== 'string' || text.length > MAX_BACKUP_BYTES) throw new Error('File sao lưu quá lớn.')
@@ -79,12 +91,14 @@ export function parseBackup(text: string): BackupFile {
   if (!Array.isArray(raw.favorites) || !raw.favorites.every((f) => typeof f === 'string'))
     throw new Error('Danh sách chữ đã lưu trong file bị hỏng.')
   if (badKey(srs.cards) || badKey(raw.known) || badKey(srs.newIntroduced)) throw new Error('File sao lưu chứa khóa không hợp lệ.')
-  for (const c of Object.values(srs.cards)) {
+  for (const [key, c] of Object.entries(srs.cards)) {
     if (
+      !okCardKey(key) ||
       !isObj(c) ||
+      (c.m != null && !okNum(c.m, 0, MAX_T)) ||
       !okNum(c.due, 0, MAX_T) ||
       !okNum(c.interval, 0, 3650) ||
-      !okNum(c.step, -1, 6) ||
+      !okNum(c.step, -1, 6) || !Number.isInteger(c.step) ||
       (c.lastReview != null && !okNum(c.lastReview, 0, MAX_T)) ||
       (c.reps != null && !okNum(c.reps, 0, 1e6)) ||
       (c.lapses != null && !okNum(c.lapses, 0, 1e6))
@@ -96,8 +110,17 @@ export function parseBackup(text: string): BackupFile {
   const revlog = (srs.revlog as unknown[]).filter(
     (e): e is RevlogEntry => isObj(e) && typeof e.h === 'string' && okNum(e.t, 0, MAX_T) && (e.g === 1 || e.g === 2),
   )
+  if (raw.daily !== undefined && !isObj(raw.daily)) throw new Error('Dữ liệu "Học hôm nay" trong file bị hỏng.')
   const settings: Record<string, string> = {}
-  if (isObj(raw.settings)) for (const [k, v] of Object.entries(raw.settings)) if (typeof v === 'string' && v.length <= 200 && k !== '__proto__') settings[k] = v
+  // Only known keys with values the app understands (a stray "hibu_theme": "<script>" is dropped).
+  const SETTING_VALUES: Record<string, readonly string[]> = {
+    hibu_theme: ['light', 'dark'],
+    hibu_display_mode: ['modern', 'components'],
+    hibu_rail_collapsed: ['0', '1'],
+  }
+  if (isObj(raw.settings))
+    for (const [k, v] of Object.entries(raw.settings))
+      if (typeof v === 'string' && Object.hasOwn(SETTING_VALUES, k) && SETTING_VALUES[k].includes(v)) settings[k] = v
   return {
     app: 'hibu-hanzi',
     version: 1,
@@ -110,13 +133,16 @@ export function parseBackup(text: string): BackupFile {
     known: raw.known as Record<string, number>,
     favorites: raw.favorites as string[],
     settings,
+    // normalizeDaily keeps only valid goal/track/level/minutes and yyyy-mm-dd counters.
+    ...(isObj(raw.daily) ? { daily: normalizeDaily(raw.daily) } : {}),
   }
 }
 
 export function applyBackup(file: BackupFile, mode: 'merge' | 'overwrite', currentFavorites: string[]): string[] {
   const local = getLearnData()
   // Re-sanitize regardless of caller: only known fields, valid ranges, no __proto__.
-  const f = normalize({ cards: file.srs.cards, known: file.known, revlog: file.srs.revlog, newIntroduced: file.srs.newIntroduced })
+  const keyed = Object.fromEntries(Object.entries(file.srs.cards ?? {}).filter(([k]) => okCardKey(k)))
+  const f = normalize({ cards: keyed, known: file.known, revlog: file.srs.revlog, newIntroduced: file.srs.newIntroduced })
   file = { ...file, srs: { cards: f.cards, revlog: f.revlog, newIntroduced: f.newIntroduced }, known: f.known }
   const favs = [...new Set((file.favorites ?? []).filter((x): x is string => typeof x === 'string'))]
   if (mode === 'overwrite') {
@@ -129,6 +155,7 @@ export function applyBackup(file: BackupFile, mode: 'merge' | 'overwrite', curre
       lastBackup: local.lastBackup,
     })
     replaceLearnData(next)
+    if (file.daily) replaceDaily(file.daily)
     for (const [k, v] of Object.entries(file.settings)) {
       if ((SETTING_KEYS as readonly string[]).includes(k)) {
         try {
@@ -138,35 +165,28 @@ export function applyBackup(file: BackupFile, mode: 'merge' | 'overwrite', curre
         }
       }
     }
+    // The open app holds these in React state: tell it to re-read them (theme, display, rail).
+    window.dispatchEvent(new Event(SETTINGS_RESTORED_EVENT))
     return favs
   }
 
-  const cards = { ...local.cards }
-  for (const [h, c] of Object.entries(file.srs.cards)) {
-    const l = cards[h]
-    if (!l) cards[h] = c
-    else {
-      const a = c.lastReview ?? -1
-      const b = l.lastReview ?? -1
-      // Most recent review wins; on a tie the more advanced card (step, then reps) wins.
-      if (a > b || (a === b && (c.step > l.step || (c.step === l.step && c.reps > l.reps)))) cards[h] = c
-    }
-  }
-  const known = { ...local.known }
-  for (const [h, t] of Object.entries(file.known)) if (!(h in known) || t < known[h]) known[h] = t
-  const seen = new Set<string>()
-  const revlog: RevlogEntry[] = []
-  for (const e of [...local.revlog, ...file.srs.revlog]) {
-    const key = `${e.h}|${e.t}`
-    if (seen.has(key)) continue
-    seen.add(key)
-    revlog.push(e)
-  }
-  revlog.sort((a, b) => a.t - b.t)
-  const newIntroduced = { ...local.newIntroduced }
-  for (const [d, n] of Object.entries(file.srs.newIntroduced)) newIntroduced[d] = Math.max(newIntroduced[d] ?? 0, n)
-  replaceLearnData({ version: 1, cards, known, revlog, newIntroduced, lastBackup: local.lastBackup })
-  return [...currentFavorites, ...favs.filter((x) => !currentFavorites.includes(x))]
+  // File merge and cross-device sync share one semantic (merge.ts): no base, so a union where the
+  // newer card (by `m`) wins, known keeps the earliest time, revlog is unioned by (h, t).
+  const merged = mergeSnapshots(
+    snapshotOf(local, currentFavorites),
+    { cards: file.srs.cards, known: file.known, revlog: file.srs.revlog, newIntroduced: file.srs.newIntroduced, favorites: favs },
+    null,
+  )
+  replaceLearnData({
+    version: 1,
+    cards: merged.cards,
+    known: merged.known,
+    revlog: merged.revlog,
+    newIntroduced: merged.newIntroduced,
+    lastBackup: local.lastBackup,
+  })
+  if (file.daily) replaceDaily(mergeDaily(getDaily(), normalizeDaily(file.daily)))
+  return merged.favorites
 }
 
 export async function requestPersist(): Promise<boolean | null> {

@@ -170,6 +170,12 @@ body {
   outline-offset: 2px;
 }
 
+/* Touch screens of any width (tablets, landscape phones): standard controls reach the 44px target.
+   Phones (<768) already size these explicitly; this covers the drawer/rail layouts on touch. */
+@media (pointer: coarse) {
+  :root { --control-h: var(--touch); --control-h-sm: 36px; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

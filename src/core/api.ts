@@ -21,7 +21,17 @@ export function createApi(baseUrl?: string) {
     if (!url) {
       throw new Error('No base URL provided')
     }
-    const res = await fetch(`${url}${path}`)
+    // A server that accepts the connection but never answers would otherwise leave the app on the
+    // placeholder sample forever (no error -> no offline flag -> no retry). Time out waiting for the
+    // response headers only, so a slow but progressing bundle download is never cut off.
+    const ctrl = new AbortController()
+    const timer = setTimeout(() => ctrl.abort(), 12_000)
+    let res: Response
+    try {
+      res = await fetch(`${url}${path}`, { signal: ctrl.signal })
+    } finally {
+      clearTimeout(timer)
+    }
     if (!res.ok) {
       const body = (await res.json().catch(() => null)) as { error?: string } | null
       throw new ApiError(res.status, body?.error ?? res.statusText)

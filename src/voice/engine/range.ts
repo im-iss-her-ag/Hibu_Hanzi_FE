@@ -3,6 +3,7 @@
  * Persisted in localStorage "hibu_voice_range_v1".
  */
 import type { PitchFrame, SpeakerRange } from '../types'
+import { extractContour } from '../scoring/chao'
 
 export const RANGE_STORAGE_KEY = 'hibu_voice_range_v1'
 export type VoiceGuess = 'unknown' | 'male' | 'female' | 'child'
@@ -73,10 +74,44 @@ export function getRange(): SpeakerRange { return { ...load().range } }
 /** Explicit calibration from a few utterances (e.g. user says ma1 ma2 ma3 ma4). Replaces the history. */
 export function calibrate(utterances: PitchFrame[][]): SpeakerRange {
   const hz = utterances.flatMap(voicedHz)
-  const r = rangeFromHz(hz, 'calibrated')
+  const r = rangeFromCalibration(utterances) ?? rangeFromHz(hz, 'calibrated')
   const st = load()
   if (r) { st.range = r; st.history = hz.slice(-MAX_HISTORY); save() }
   return getRange()
+}
+
+const REF: SpeakerRange = { lowHz: 100, highHz: 400, source: 'default' }
+const semis = (u: PitchFrame[]) => extractContour(u, REF, { points: 32 }).semis
+const med = (a: number[]) => { const s = [...a].sort((x, y) => x - y); return s.length ? percentile(s, 0.5) : NaN }
+
+/**
+ * Tone-anchored range from the calibration syllables mā má mǎ mà (in that order):
+ * Chao 5 = the tone-1 level (with tone-2 end / tone-4 onset as fallbacks), Chao 1 = the tone-3 bottom
+ * (tone-4 end as fallback). Uses cleaned contours, so a tone-4 onset spike or an octave error
+ * cannot inflate the range the way raw percentiles do. Returns null when the input doesn't look
+ * like 4 tone utterances.
+ */
+export function rangeFromCalibration(utterances: PitchFrame[][]): SpeakerRange | null {
+  if (utterances.length !== 4) return null
+  const c = utterances.map(semis)
+  if (c.some((x) => x.length < 8)) return null
+  const [t1, t2, t3, t4] = c
+  const n = t1.length, q = Math.round(n * 0.2)
+  const t1Level = med(t1)
+  const t2End = med(t2.slice(n - q)), t4Start = med(t4.slice(0, q))
+  const t3Min = Math.min(...t3), t4End = med(t4.slice(n - q))
+  // high anchor (Chao 5): median of tone-1 level, tone-2 end and tone-4 onset — all ≈5, so one odd
+  // syllable (a low mā, a tone-4 onset spike) can't skew it
+  const hi = med([t1Level, t2End, t4Start])
+  // tone 4 ends ~1–2: if it ends below tone 3's bottom, the dip was shallow → meet halfway
+  let lo = t4End < t3Min ? (t3Min + t4End) / 2 : t3Min
+  let span = hi - lo
+  if (!(span > 0)) return null
+  // keep the scale sane: 7..24 semitones for 4 Chao steps
+  if (span < 7) { lo = hi - 7; span = 7 }
+  if (span > 24) { lo = hi - 24; span = 24 }
+  const toHz = (x: number) => Math.round(REF.lowHz * Math.pow(2, x / 12))
+  return { lowHz: toHz(lo), highHz: toHz(hi), source: 'calibrated' }
 }
 
 /** Adaptive update after every utterance; only moves once enough data exists. */
@@ -85,8 +120,8 @@ export function observeUtterance(frames: PitchFrame[]): SpeakerRange {
   const hz = voicedHz(frames)
   if (!hz.length) return getRange()
   st.history = st.history.concat(hz).slice(-MAX_HISTORY)
-  if (st.history.length >= 60) {
-    const r = rangeFromHz(st.history, st.range.source === 'default' ? 'adaptive' : st.range.source === 'calibrated' ? 'calibrated' : 'adaptive')
+  if (st.history.length >= 60 && st.range.source !== 'calibrated') {
+    const r = rangeFromHz(st.history, 'adaptive')
     if (r) {
       // smooth towards the new estimate (in log domain) so one odd utterance can't jerk the scale
       const a = st.range.source === 'default' ? 1 : 0.3

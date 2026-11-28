@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { ReviewEntry } from './ReviewEntry'
-import { Star, DatabaseBackup, Moon, Sun, Search, MoreHorizontal, Keyboard, ChevronDown, LayoutGrid } from 'lucide-react'
+import { TodayEntry } from '../today/TodayEntry'
+import type { BundleCharacter } from '../core'
+import { BarChart3, BookMarked, Compass, DatabaseBackup, Moon, Sun, Search, MoreHorizontal, Keyboard, ChevronDown, LayoutGrid } from 'lucide-react'
 
 interface NavbarProps {
   displayMode: 'modern' | 'components'
@@ -15,6 +17,12 @@ interface NavbarProps {
   onOpenBackup?: () => void
   onOpenQuiz?: () => void
   onOpenToneTrainer?: () => void
+  // "Học hôm nay": header entry (with what is left today as a badge) + stats / onboarding in the "…" menu.
+  characters?: BundleCharacter[]
+  todayActive?: boolean
+  onOpenToday?: () => void
+  onOpenStats?: () => void
+  onOpenOnboarding?: () => void
   // "Danh sách" button: shown while the character list is not permanently visible (drawer / collapsed rail).
   showListButton?: boolean
   listOpen?: boolean
@@ -35,6 +43,7 @@ const SHORTCUTS: { keys: string[]; desc: string }[] = [
   { keys: ['M'], desc: 'Đổi Hiện đại / Thành phần' },
   { keys: ['G'], desc: 'Lưu / bỏ lưu' },
   { keys: ['K'], desc: 'Đánh dấu đã thuộc / chưa thuộc' },
+  { keys: ['T'], desc: 'Học hôm nay' },
   { keys: ['R'], desc: 'Ôn tập' },
   { keys: ['F', 'Ctrl+K'], desc: 'Tìm kiếm' },
   { keys: ['P'], desc: 'Bảng Pinyin' },
@@ -55,6 +64,11 @@ export function Navbar({
   onOpenQuiz,
   onOpenToneTrainer,
   onOpenBackup,
+  characters,
+  todayActive = false,
+  onOpenToday,
+  onOpenStats,
+  onOpenOnboarding,
   showListButton = false,
   listOpen = false,
   onOpenList,
@@ -90,7 +104,7 @@ export function Navbar({
   const focusables = () =>
     Array.from(
       popoverRef.current?.querySelectorAll<HTMLElement>('button:not(:disabled), a[href]') ?? [],
-    )
+    ).filter((el) => el.getClientRects().length > 0) // skip items hidden at this width (ArrowDown used to stall on them)
 
   const onMenuKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Escape') {
@@ -159,16 +173,20 @@ export function Navbar({
           <Search size={18} aria-hidden="true" />
         </button>
 
+        {onOpenToday && characters && <TodayEntry characters={characters} active={todayActive} onOpen={onOpenToday} />}
+
         {onOpenReview && <ReviewEntry onOpen={onOpenReview} />}
 
         <button
           type="button"
-          className="sh-icon-btn"
+          className="sh-icon-btn rv-entry"
           onClick={onOpenFavorites}
           title="Sổ tay chữ đã lưu"
           aria-label={`Sổ tay chữ đã lưu${favoritesCount > 0 ? ` (${favoritesCount})` : ''}`}
         >
-          <Star size={18} aria-hidden="true" />
+          {/* A book, not a star: the star on the study sheet is the "Lưu" action, this opens the notebook. */}
+          <BookMarked size={18} aria-hidden="true" />
+          <span className="rv-entry-label sh-notebook-label" aria-hidden="true">Sổ tay</span>
           {favoritesCount > 0 && <span className="sh-badge">{favoritesCount > 99 ? '99+' : favoritesCount}</span>}
         </button>
 
@@ -265,6 +283,23 @@ export function Navbar({
                 <span>{isDarkMode ? 'Giao diện sáng' : 'Giao diện tối'}</span>
               </button>
             </div>
+
+            {(onOpenStats || onOpenOnboarding) && (
+              <div className="sh-menu-section">
+                {onOpenStats && (
+                  <button type="button" className="sh-menu-item" role="menuitem" data-menu-close data-testid="menu-stats" onClick={onOpenStats}>
+                    <BarChart3 size={16} aria-hidden="true" />
+                    <span>Thống kê học tập</span>
+                  </button>
+                )}
+                {onOpenOnboarding && (
+                  <button type="button" className="sh-menu-item" role="menuitem" data-menu-close data-testid="menu-onboarding" onClick={onOpenOnboarding}>
+                    <Compass size={16} aria-hidden="true" />
+                    <span>Hướng dẫn bắt đầu</span>
+                  </button>
+                )}
+              </div>
+            )}
 
             {onOpenBackup && (
               <div className="sh-menu-section">

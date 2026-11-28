@@ -1,11 +1,12 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import HanziWriter from 'hanzi-writer'
+import { createWriter } from '../utils/hanziWriter'
 import type { BundleCharacter, HskLevel } from '../core'
 import { pickRandom } from '../core'
 import { Pin, PinOff, Minus, X, Volume2 } from 'lucide-react'
 import { api } from '../api'
-import { speakChinese } from '../utils/speech'
+import { speakChinese, prefetchChinese } from '../utils/speech'
 import { TonePinyin } from '../components/TonePinyin'
 
 // Frameless, always-on-top widget page for the Electron shell in desktop/.
@@ -57,8 +58,20 @@ const WRITE_HOLD_MS = 5000
 function loadSettings(): WidgetSettings {
   const fallback: WidgetSettings = { source: 'hsk', levels: [1], intervalSec: 30, size: 'm', theme: 'auto', pinned: true, write: false }
   try {
-    const saved = localStorage.getItem(SETTINGS_KEY)
-    return saved ? { ...fallback, ...JSON.parse(saved) } : fallback
+    const raw: unknown = JSON.parse(localStorage.getItem(SETTINGS_KEY) ?? 'null')
+    if (!raw || typeof raw !== 'object') return fallback
+    const s = { ...fallback, ...(raw as Partial<WidgetSettings>) }
+    // Hand-edited / stale values must not crash render (levels.includes, SIZES[size]).
+    const levels = Array.isArray(s.levels) ? s.levels.filter((l) => LEVELS.includes(l)) : fallback.levels
+    return {
+      source: s.source === 'favorites' ? 'favorites' : 'hsk',
+      levels,
+      intervalSec: Number.isFinite(s.intervalSec) && s.intervalSec > 0 ? s.intervalSec : fallback.intervalSec,
+      size: s.size in SIZES ? s.size : fallback.size,
+      theme: s.theme in THEMES ? s.theme : fallback.theme,
+      pinned: typeof s.pinned === 'boolean' ? s.pinned : fallback.pinned,
+      write: typeof s.write === 'boolean' ? s.write : fallback.write,
+    }
   } catch {
     return fallback
   }
@@ -195,6 +208,7 @@ export function DesktopWidget() {
   }
 
   const primary = current?.readings.find((r) => r.isPrimary) ?? current?.readings[0]
+  useEffect(() => { prefetchChinese(primary?.pinyin) }, [primary?.pinyin])
 
   return (
     <div
@@ -460,7 +474,7 @@ function WritingGlyph({
     const css = (name: string, fallback: string) => getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback
     let timer = 0
     let cancelled = false
-    const writer = HanziWriter.create(el, hanzi, {
+    const { writer, release } = createWriter(el, hanzi, {
       width: size,
       height: size,
       padding: 4,
@@ -483,6 +497,7 @@ function WritingGlyph({
     return () => {
       cancelled = true
       window.clearTimeout(timer)
+      release()
       el.innerHTML = ''
     }
   }, [hanzi, size, paused])

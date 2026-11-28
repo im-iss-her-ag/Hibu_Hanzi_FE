@@ -1,11 +1,12 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
-import { Search, X, Volume2, History } from 'lucide-react'
+import { Search, X, Volume2, History, CalendarPlus, CalendarCheck } from 'lucide-react'
 import type { BundleCharacter, RadicalFamily, Word } from '../core'
 import { RADICAL_CHARACTERS } from '../core'
 import { speakChinese } from '../utils/speech'
-import { filterAndSortCharacters, filterAndSortWords } from '../utils/search'
+import { filterAndSortCharacters, filterAndSortWords, normalizeFolded, scoreCharacterMatch } from '../utils/search'
 import { charsByHanViet } from '../utils/homophones'
-import { useModalA11y } from '../utils/useModalA11y'
+import { useModalDialog } from '../utils/useModalA11y'
+import { addToReview, isInReview, removeFromReview, useLearnData } from '../learn/srs'
 import { CharRowBody, TonePinyin, highlight } from './CharRowBody'
 
 interface SearchModalProps {
@@ -40,11 +41,27 @@ export function SearchModal({
   recent = [],
   onSelectWord,
 }: SearchModalProps) {
-  const dialogRef = useModalA11y<HTMLDivElement>(onClose)
+  const { ref: dialogRef, titleId, dialogProps } = useModalDialog<HTMLDivElement>(onClose, { initialFocus: '#global-hanzi-search' })
   const [query, setQuery] = useState('')
   const [tab, setTab] = useState<'chars' | 'words'>('chars')
   const [cursor, setCursor] = useState(0)
   const listRef = useRef<HTMLDivElement>(null)
+  const learn = useLearnData()
+  // Adding a word to review changes nothing visible in the row but the icon: say it too.
+  const [note, setNote] = useState('')
+  const noteTimer = useRef<number | undefined>(undefined)
+  useEffect(() => () => window.clearTimeout(noteTimer.current), [])
+  const toggleReview = (word: string) => {
+    window.clearTimeout(noteTimer.current)
+    if (isInReview(word)) {
+      removeFromReview(word)
+      setNote(`Đã bỏ ${word} khỏi danh sách ôn tập`)
+    } else {
+      addToReview(word)
+      setNote(`Đã thêm ${word} vào ôn tập — mở “Ôn tập” để học`)
+    }
+    noteTimer.current = window.setTimeout(() => setNote(''), 2800)
+  }
 
   // Merge HSK characters with standalone radicals so searching "mịch", "trảo", "氵" also works
   const searchableCharacters = useMemo(() => {
@@ -85,6 +102,28 @@ export function SearchModal({
     }
   }, [filteredChars.length, filteredWords.length, tab])
 
+  // A query that names a whole word ("cảm ơn", "xiexie", "tạ tạ", "học sinh") opens on the word, so Enter
+  // lands on 谢谢 rather than 谢. A character that matches on its own reading ("hao" → 好) keeps priority,
+  // and a one-syllable meaning ("nước") stays on characters.
+  const preferWords = useMemo(() => {
+    const raw = query.trim()
+    const q = normalizeFolded(raw)
+    if (!q || filteredWords.length === 0) return false
+    if (filteredChars[0] && scoreCharacterMatch(filteredChars[0], raw) >= 90) return false
+    const compact = q.replace(/\s+/g, '')
+    const multi = /\s/.test(q)
+    return filteredWords.slice(0, 20).some(
+      (w) =>
+        w.word === raw ||
+        normalizeFolded(w.pinyin).replace(/\s+/g, '') === compact ||
+        (w.hanViet && normalizeFolded(w.hanViet) === q) ||
+        (multi && w.meaningVi.split(/[,;/]/).some((m) => normalizeFolded(m) === q)),
+    )
+  }, [query, filteredChars, filteredWords])
+  useEffect(() => {
+    if (preferWords) setTab('words')
+  }, [preferWords])
+
   const shownChars = filteredChars.slice(0, 60)
   const shownWords = filteredWords.slice(0, 60)
   const recentChars = useMemo(() => {
@@ -118,15 +157,23 @@ export function SearchModal({
   }
 
   const onKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Escape') {
-      e.preventDefault()
-      onClose()
-    } else if (e.key === 'ArrowDown' && rowCount > 0) {
+    // Keys that commit/cancel an IME composition (Chinese pinyin IME, Telex) are not commands.
+    if (e.nativeEvent.isComposing || e.keyCode === 229) return
+    // Esc is handled once, by useModalDialog (window listener, top-most dialog only).
+    if (e.key === 'ArrowDown' && rowCount > 0) {
       e.preventDefault()
       setCursor((c) => Math.min(rowCount - 1, c + 1))
     } else if (e.key === 'ArrowUp' && rowCount > 0) {
       e.preventDefault()
       setCursor((c) => Math.max(0, c - 1))
+    } else if (e.key === 'Enter' && rowCount === 0 && tab === 'chars' && matchedFamilies[0] && onBrowseRadical) {
+      // "bộ nữ" ⏎ opens the radical itself when no character matches.
+      e.preventDefault()
+      onBrowseRadical(matchedFamilies[0].key)
+    } else if (e.key === 'Enter' && (e.ctrlKey || e.metaKey) && rowCount > 0 && tab === 'words') {
+      // Ctrl+Enter adds / removes the highlighted word for review without leaving the search.
+      e.preventDefault()
+      toggleReview(shownWords[cursor].word)
     } else if (e.key === 'Enter' && rowCount > 0) {
       e.preventDefault()
       if (tab === 'chars') pickChar(shownChars[cursor].hanzi)
@@ -146,17 +193,16 @@ export function SearchModal({
       onKeyDown={onKeyDown}
       onTouchStart={(e) => e.stopPropagation()}
       onTouchEnd={(e) => e.stopPropagation()}
-      role="dialog"
-      aria-modal="true"
-      aria-label="Tra cứu chữ Hán và từ ghép"
     >
       <div
         ref={dialogRef}
+        {...dialogProps}
         className="pm-dialog sm-dialog"
         onClick={(e) => e.stopPropagation()}
         onTouchStart={(e) => e.stopPropagation()}
         onTouchEnd={(e) => e.stopPropagation()}
       >
+        <h2 id={titleId} className="sr-only">Tra cứu chữ Hán và từ ghép</h2>
         <div className="sm-head">
           <Search size={20} className="sm-search-icon" aria-hidden />
           <input
@@ -253,8 +299,17 @@ export function SearchModal({
           ) : tab === 'chars' ? (
             shownChars.length === 0 ? (
               <div className="sm-empty">
-                <p className="sm-empty-title">Không có chữ nào khớp “{query.trim()}”</p>
-                <p>Thử pinyin không dấu (“hao”), âm Hán Việt (“hảo”) hoặc nghĩa (“tốt”).</p>
+                {matchedFamilies.length > 0 && onBrowseRadical ? (
+                  <>
+                    <p className="sm-empty-title">“{query.trim()}” là tên bộ thủ</p>
+                    <p>Chọn bộ thủ ở trên để xem mọi chữ chứa bộ đó.</p>
+                  </>
+                ) : (
+                  <>
+                    <p className="sm-empty-title">Không có chữ nào khớp “{query.trim()}”</p>
+                    <p>Thử pinyin không dấu (“hao”), âm Hán Việt (“hảo”) hoặc nghĩa (“tốt”).</p>
+                  </>
+                )}
               </div>
             ) : (
               shownChars.map((c, i) => {
@@ -281,12 +336,13 @@ export function SearchModal({
           ) : shownWords.length === 0 ? (
             <div className="sm-empty">
               <p className="sm-empty-title">Không có từ ghép nào khớp “{query.trim()}”</p>
-              <p>Thử gõ cả từ (“你好”), pinyin liền (“nihao”), âm Hán Việt (“nhĩ hảo”) hoặc nghĩa (“xin chào”). Nếu từ chưa có trong dữ liệu, hãy tra từng chữ ở tab “Chữ”.</p>
+              <p>Thử gõ cả từ (“谢谢”), pinyin liền (“xiexie”), âm Hán Việt (“tạ tạ”) hoặc nghĩa (“cảm ơn”). Nếu từ chưa có trong dữ liệu, hãy tra từng chữ ở tab “Chữ”.</p>
             </div>
           ) : (
             shownWords.map((w, i) => {
               const active = i === cursor
               const tag = levelTag(w.hsk3Level)
+              const inReview = isInReview(w.word, learn)
               return (
                 <div
                   key={w.id}
@@ -303,6 +359,21 @@ export function SearchModal({
                   <span className="sm-mean" title={w.meaningVi}>{highlight(w.meaningVi, query)}</span>
                   <span className="sm-end">
                     {tag && <span className="pm-tag sm-tag">{tag}</span>}
+                    <button
+                      type="button"
+                      className={`pm-icon-btn sm-speak sm-review${inReview ? ' on' : ''}`}
+                      tabIndex={-1}
+                      onMouseDown={(e) => e.preventDefault()} // keep focus (and arrow keys) in the search box
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        toggleReview(w.word)
+                      }}
+                      title={inReview ? 'Đang trong ôn tập — bấm để bỏ ra (Ctrl+Enter)' : 'Thêm vào ôn tập (Ctrl+Enter)'}
+                      aria-label={inReview ? `Bỏ ${w.word} khỏi ôn tập` : `Thêm ${w.word} vào ôn tập`}
+                      aria-pressed={inReview}
+                    >
+                      {inReview ? <CalendarCheck size={14} aria-hidden="true" /> : <CalendarPlus size={14} aria-hidden="true" />}
+                    </button>
                     <button
                       type="button"
                       className="pm-icon-btn sm-speak"
@@ -322,10 +393,12 @@ export function SearchModal({
             })
           )}
         </div>
+        <div className="sm-note" role="status" aria-live="polite">{note}</div>
         <div className="sm-footer">
           <span><kbd>↑</kbd><kbd>↓</kbd> chọn</span>
           <span><kbd>Enter</kbd> mở</span>
           {hasQuery && <span><kbd>Tab</kbd> đổi loại</span>}
+          {hasQuery && tab === 'words' && <span><kbd>Ctrl</kbd><kbd>Enter</kbd> ôn tập</span>}
           <span><kbd>Esc</kbd> đóng</span>
         </div>
       </div>

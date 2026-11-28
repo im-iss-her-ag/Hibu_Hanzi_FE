@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { X, Star, Trash2 } from 'lucide-react'
 import type { BundleCharacter } from '../core'
 import { RADICAL_CHARACTERS } from '../core'
-import { useModalA11y } from '../utils/useModalA11y'
+import { useModalDialog } from '../utils/useModalA11y'
 import { CharRowBody } from './CharRowBody'
 
 interface FavoritesModalProps {
@@ -23,7 +23,7 @@ export function FavoritesModal({
   onClose,
 }: FavoritesModalProps) {
   const [confirmClear, setConfirmClear] = useState(false)
-  const dialogRef = useModalA11y<HTMLDivElement>(onClose)
+  const { ref: dialogRef, titleId, dialogProps } = useModalDialog<HTMLDivElement>(onClose)
 
   const favoriteChars = favorites
     .map((f) => characters.find((c) => c.hanzi === f) ?? RADICAL_CHARACTERS.find((r) => r.hanzi === f))
@@ -47,23 +47,21 @@ export function FavoritesModal({
       onClick={onClose}
       onTouchStart={(e) => e.stopPropagation()}
       onTouchEnd={(e) => e.stopPropagation()}
-      role="dialog"
-      aria-modal="true"
-      aria-label="Sổ tay chữ đã lưu"
     >
       <div
         ref={dialogRef}
+        {...dialogProps}
         className="pm-dialog fm-dialog"
         onClick={(e) => e.stopPropagation()}
         onTouchStart={(e) => e.stopPropagation()}
         onTouchEnd={(e) => e.stopPropagation()}
       >
         <div className="pm-header">
-          <h2 className="pm-title">Sổ tay</h2>
+          <h2 className="pm-title" id={titleId}>Sổ tay</h2>
           <span className="pm-meta">{favoriteChars.length} chữ</span>
           <div className="pm-header-actions">
             {favorites.length > 0 && !confirmClear && (
-              <button type="button" className="pm-btn pm-btn-ghost" onClick={() => setConfirmClear(true)} title="Xóa toàn bộ sổ tay">
+              <button type="button" className="pm-btn pm-btn-ghost" data-fm-clear onClick={() => setConfirmClear(true)} title="Xóa toàn bộ sổ tay">
                 <Trash2 size={14} /> Xóa hết
               </button>
             )}
@@ -74,7 +72,19 @@ export function FavoritesModal({
         </div>
 
         {confirmClear && (
-          <div className="fm-confirm" role="alertdialog" aria-label="Xác nhận xóa hết">
+          <div
+            className="fm-confirm"
+            role="alertdialog"
+            aria-label="Xác nhận xóa hết"
+            onKeyDown={(e) => {
+              // Esc backs out of the confirmation first; the dialog only closes on the next Esc.
+              if (e.key === 'Escape') {
+                e.preventDefault()
+                setConfirmClear(false)
+                requestAnimationFrame(() => dialogRef.current?.querySelector<HTMLElement>('[data-fm-clear]')?.focus())
+              }
+            }}
+          >
             <span>Xóa hết {favorites.length} chữ đã lưu? Không hoàn tác được.</span>
             <span className="fm-confirm-actions">
               <button type="button" className="pm-btn" autoFocus onClick={() => setConfirmClear(false)}>Hủy</button>

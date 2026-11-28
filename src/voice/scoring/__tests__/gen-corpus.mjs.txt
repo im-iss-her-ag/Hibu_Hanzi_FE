@@ -1,0 +1,56 @@
+// Native corpus: fetch MP3 → headless Chromium decodeAudioData → Team A PitchTracker (offline) → PitchFrame[] JSON
+import fs from 'node:fs'
+import os from 'node:os'
+import { createRequire } from 'node:module'
+import { PitchTracker } from '/mnt/sda1/hieubm/Hibu_Hanzi/FE/src/voice/engine/tracker.ts'
+const require = createRequire(import.meta.url)
+const { chromium } = require('/mnt/sda1/hieubm/WATER_DEMAND_FE/node_modules/playwright-core')
+const S = '/tmp/claude-1000/-mnt-sda1-hieubm-Hibu-Hanzi/88cd1e47-1511-4ce0-b36f-1dc12fc21aa0/scratchpad/tone'
+const SY = 'ma ba pa fa da ta na la ga ka ha ji qi xi zhi chi shi ri zi ci si yi wu yu bu pu mu fu du tu nu lu gu ku hu zhu chu shu zu cu su yao you yan yin yang ying yong yuan yue bi pi mi di ti li ni ju qu xu bai pai mai dai tai nai lai gai kai hai cai wai bei pei mei fei lei wei bao pao mao dao tao nao lao gao kao hao zhao shao zao cao dou tou lou gou kou hou zhou chou shou rou zou ban pan man fan dan tan nan lan gan kan han chan shan ran can wan ben pen men fen gen hen zhen chen shen ren wen bang pang mang fang dang tang lang gang hang zhang chang shang wang beng peng meng feng deng teng leng heng zheng cheng sheng bian pian mian dian tian lian jian qian xian bin pin min ping ming ding ting ling qing xing guo duo tuo luo kuo huo zhuo shuo zuo suo wo bo po mo ge ke he zhe che she de le gua hua shua zhuang chuang shuang guang kuang huang wa'.split(' ')
+const SETS: Record<string, string> = {
+  jsd: 'https://cdn.jsdelivr.net/gh/davinfifield/mp3-chinese-pinyin-sound@master/mp3/',
+  allset: 'https://resources.allsetlearning.com/pronwiki/resources/pinyin-audio/',
+}
+async function get(u: string, file: string): Promise<Buffer | null> {
+  if (fs.existsSync(file)) return fs.statSync(file).size ? fs.readFileSync(file) : null
+  for (let i = 0; i < 3; i++) {
+    try { const r = await fetch(u); if (r.status === 404) break; if (r.ok) { const b = Buffer.from(await r.arrayBuffer()); fs.writeFileSync(file, b); return b } } catch {}
+  }
+  fs.writeFileSync(file, ''); return null
+}
+const b = await chromium.launch({ executablePath: os.homedir() + '/.cache/ms-playwright/chromium-1200/chrome-linux64/chrome' })
+const p = await b.newPage(); await p.goto('about:blank')
+const stats: Record<string, number> = {}
+for (const [set, base] of Object.entries(SETS)) {
+  fs.mkdirSync(`${S}/mp3/${set}`, { recursive: true }); fs.mkdirSync(`${S}/frames/${set}`, { recursive: true })
+  stats[set] = 0
+  for (const s of SY) {
+    const bufs = await Promise.all([1, 2, 3, 4].map((t) => get(`${base}${s}${t}.mp3`, `${S}/mp3/${set}/${s}${t}.mp3`)))
+    if (bufs.some((x) => !x)) continue
+    for (let t = 1; t <= 4; t++) {
+      const out = `${S}/frames/${set}/${s}${t}.json`
+      if (fs.existsSync(out)) continue
+      const r = await p.evaluate(async (b64: string) => {
+        const bin = atob(b64), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i)
+        const ac = new AudioContext(); const buf = await ac.decodeAudioData(u.buffer); await ac.close()
+        const n = buf.length, ch = buf.numberOfChannels, x = new Float32Array(n)
+        for (let c = 0; c < ch; c++) { const d = buf.getChannelData(c); for (let i = 0; i < n; i++) x[i] += d[i] / ch }
+        let pk = 1e-6; for (const v of x) pk = Math.max(pk, Math.abs(v)); for (let i = 0; i < n; i++) x[i] *= 0.5 / pk // mimic mic AGC
+        const by = new Uint8Array(x.buffer); let s = ''; for (let i = 0; i < by.length; i += 8192) s += String.fromCharCode.apply(null, by.subarray(i, i + 8192) as any)
+        return { sr: buf.sampleRate, b64: btoa(s) }
+      }, bufs[t - 1]!.toString('base64'))
+      const raw = Buffer.from(r.b64, 'base64'); const x = new Float32Array(raw.buffer, raw.byteOffset, raw.byteLength / 4)
+      const utts: any[][] = []
+      const tr = new PitchTracker({ sampleRate: r.sr }, { onUtterance: (f) => utts.push(f) })
+      const pad = (ms: number) => new Float32Array(Math.round((r.sr * ms) / 1000))
+      const all = [pad(300), x, pad(600)]
+      for (const a of all) for (let i = 0; i < a.length; i += 128) tr.push(a.subarray(i, i + 128))
+      tr.flush()
+      if (!utts.length) continue
+      const best = utts.reduce((a, c) => (c.length > a.length ? c : a))
+      fs.writeFileSync(out, JSON.stringify(best)); stats[set]++
+    }
+  }
+  console.log(set, stats[set])
+}
+await b.close()

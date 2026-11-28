@@ -73,6 +73,7 @@
 .hq-badge-bay { background: var(--seal-soft); color: var(--seal); }
 .hq-badge-lech { background: var(--hover); color: var(--mnemonic); }
 .hq-badge-trong-suot { color: var(--tone-2); }
+.hq-badge-mot-phan { color: var(--tone-1); }
 .hq-meaning { margin: var(--space-2) 0 var(--space-3); font-size: var(--text-xl); line-height: 1.35; }
 
 .hq-parts { list-style: none; margin: 0 0 var(--space-3); padding: 0; border-top: 1px solid var(--rule); }
@@ -117,3 +118,8 @@
 }
 .hq-entry:hover { color: var(--ink); border-color: var(--ink-3); }
 .hq-mistake .hq-part-han { white-space: nowrap; flex-shrink: 0; }
+
+@media (pointer: coarse) {
+  .hq-entry { position: relative; min-height: 32px; }
+  .hq-entry::after { content: ''; position: absolute; inset: -6px 0; }
+}

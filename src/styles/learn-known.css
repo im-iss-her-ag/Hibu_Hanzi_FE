@@ -12,4 +12,4 @@
 .kn-bulk-btn:hover { background: var(--hover); color: var(--ink); }
 .kn-bulk-ok { color: var(--seal-ink); background: var(--seal); border-color: var(--seal); }
 .kn-bulk-ok:hover { background: var(--seal); color: var(--seal-ink); filter: brightness(1.08); }
-@media (pointer: coarse) { .kn-seg-btn, .kn-bulk-btn { height: 40px; } }
+@media (pointer: coarse) { .kn-seg-btn, .kn-bulk-btn { height: var(--touch); } }

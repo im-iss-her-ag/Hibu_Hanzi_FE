@@ -1,0 +1,40 @@
+Pinyin syllable recordings (FE/public/audio/pinyin/*.mp3)
+
+Source:   mp3-chinese-pinyin-sound by davinfifield
+          https://github.com/davinfifield/mp3-chinese-pinyin-sound
+Commit:   aa25ecce7b7fb02757b2c2b8e3c01aa975812edc
+License:  The Unlicense (public domain dedication)
+
+The recordings were trimmed (leading/trailing silence), loudness-normalised
+(ITU-R BS.1770-4, -20 LUFS, peak-limited) and re-encoded (MP3 mono 48 kbps, 32000 Hz)
+by data-tools/build-pinyin-audio.mts. The file names are unchanged except:
+toneless variants (de, luun, ma, zi) are dropped, zhai -> zhai4 and nue1 -> nuue1
+are renamed (mislabelled), and mislabelled copies (ao4, lian4 = tone 1; de5, le5,
+ma5, ne5 = copies of tone 1; dei5) are not shipped.
+
+----- Original LICENSE (verbatim) -----
+
+This is free and unencumbered software released into the public domain.
+
+Anyone is free to copy, modify, publish, use, compile, sell, or
+distribute this software, either in source code form or as a compiled
+binary, for any purpose, commercial or non-commercial, and by any
+means.
+
+In jurisdictions that recognize copyright laws, the author or authors
+of this software dedicate any and all copyright interest in the
+software to the public domain. We make this dedication for the benefit
+of the public at large and to the detriment of our heirs and
+successors. We intend this dedication to be an overt act of
+relinquishment in perpetuity of all present and future rights to this
+software under copyright law.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+IN NO EVENT SHALL THE AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR
+OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+OTHER DEALINGS IN THE SOFTWARE.
+
+For more information, please refer to <http://unlicense.org>

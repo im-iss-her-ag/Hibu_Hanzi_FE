@@ -11,6 +11,9 @@ export const NEW_PER_DAY = 10
 export const LEECH_LAPSES = 8
 /** Marking a character known schedules a long check instead of never reviewing it again. */
 export const KNOWN_START_STEP = 4 // 30 days
+export const KNOWN_SPREAD_PER_DAY = 20
+/** Cards per review session; the end screen offers the next chunk. */
+export const SESSION_SIZE = 20
 const DAY = 86_400_000
 
 export type CardState = 'new' | 'review'
@@ -28,6 +31,12 @@ export interface SrsCard {
   /** epoch ms, null if never reviewed */
   lastReview: number | null
   added: number
+  /**
+   * epoch ms of the last change to this card (add / grade / known). Used by cross-device sync to
+   * pick the newer copy. Optional for backward compatibility: normalize() fills it from
+   * lastReview ?? added for data written by older builds.
+   */
+  m?: number
 }
 
 export interface RevlogEntry {
@@ -78,6 +87,7 @@ function sanitizeCard(c: unknown, now: number): SrsCard | null {
     lapses: int(c.lapses, 0, 1e6) ?? 0,
     lastReview: num(c.lastReview, 0, MAX_T),
     added: num(c.added, 0, MAX_T) ?? now,
+    m: num(c.m, 0, MAX_T) ?? num(c.lastReview, 0, MAX_T) ?? num(c.added, 0, MAX_T) ?? now,
   }
 }
 
@@ -189,30 +199,35 @@ function endOfToday(now = Date.now()): number {
 // ---------- known ----------
 
 export function isKnown(h: string, d = data) {
-  return h in d.known
+  return Object.hasOwn(d.known, h)
 }
 
 export function setKnown(hanzi: string[], known: boolean) {
   const now = Date.now()
   const next: LearnData = { ...data, known: { ...data.known }, cards: { ...data.cards } }
+  // Bulk marking (a whole HSK level) would make every check fall due on the same day 30 days later
+  // ("1 / 300"). Spread them: at most KNOWN_SPREAD_PER_DAY checks land on any one day.
+  let scheduled = 0
   for (const h of hanzi) {
     if (known) {
-      if (h in next.known) continue
+      if (Object.hasOwn(next.known, h)) continue
       next.known[h] = now
       const c = next.cards[h]
       // Schedule a long-interval check; never shorten an already longer interval.
       const step = Math.max(KNOWN_START_STEP, c?.step ?? -1)
       const interval = LADDER_DAYS[step]
       if (!c || c.state === 'new' || c.interval < interval) {
+        const spread = Math.floor(scheduled++ / KNOWN_SPREAD_PER_DAY)
         next.cards[h] = {
           state: 'review',
           step,
           interval,
-          due: now + interval * DAY,
+          due: now + (interval + spread) * DAY,
           reps: c?.reps ?? 0,
           lapses: c?.lapses ?? 0,
           lastReview: c?.lastReview ?? null,
           added: c?.added ?? now,
+          m: now,
         }
       }
     } else {
@@ -242,7 +257,8 @@ export function restoreSnapshot(s: ReturnType<typeof snapshotFor>) {
     if (s.known[h] === undefined) delete next.known[h]
     else next.known[h] = s.known[h]!
     if (s.cards[h] === undefined) delete next.cards[h]
-    else next.cards[h] = s.cards[h]!
+    // Fresh m: the undo is the newest change, so sync must not let the pre-undo copy win.
+    else next.cards[h] = { ...s.cards[h]!, m: Date.now() }
   }
   commit(next)
 }
@@ -250,16 +266,37 @@ export function restoreSnapshot(s: ReturnType<typeof snapshotFor>) {
 // ---------- srs ----------
 
 export function isInReview(h: string, d = data) {
-  return h in d.cards
+  return Object.hasOwn(d.cards, h)
 }
+
+/**
+ * Card keys are either one character ("好") or a multi-character word ("谢谢", "学生").
+ * Word cards share the same SrsCard shape and scheduler; only the review UI differs.
+ */
+export function isWordKey(k: string): boolean {
+  return Array.from(k).length > 1
+}
+
+const newCard = (now: number): SrsCard => ({ state: 'new', due: now, interval: 0, step: -1, reps: 0, lapses: 0, lastReview: null, added: now, m: now })
 
 export function addToReview(h: string) {
   if (data.cards[h]) return
   const now = Date.now()
-  commit({
-    ...data,
-    cards: { ...data.cards, [h]: { state: 'new', due: now, interval: 0, step: -1, reps: 0, lapses: 0, lastReview: null, added: now } },
-  })
+  commit({ ...data, cards: { ...data.cards, [h]: newCard(now) } })
+}
+
+/** Adds every key not already in review (one commit); returns how many were added. */
+export function addManyToReview(keys: string[]): number {
+  const now = Date.now()
+  const cards = { ...data.cards }
+  let n = 0
+  for (const k of keys) {
+    if (!k || k === '__proto__' || Object.hasOwn(cards, k)) continue
+    // Distinct `added` keeps the given order for the oldest-first new-card queue.
+    cards[k] = newCard(now + n++)
+  }
+  if (n) commit({ ...data, cards })
+  return n
 }
 
 export function removeFromReview(h: string) {
@@ -275,7 +312,7 @@ export function isLeech(c: SrsCard | undefined) {
 
 /** Pure scheduler: next card state after a grade. */
 export function schedule(c: SrsCard, grade: 1 | 2, now = Date.now()): SrsCard {
-  const base = { ...c, reps: c.reps + 1, lastReview: now }
+  const base = { ...c, reps: c.reps + 1, lastReview: now, m: now }
   if (grade === 2) {
     const step = Math.min(c.step + 1, LADDER_DAYS.length - 1)
     const interval = LADDER_DAYS[step]
@@ -325,13 +362,14 @@ export function buildQueue(d = data, now = Date.now()): string[] {
   return [...due.map((x) => x[0]), ...fresh.slice(0, room).map((x) => x[0])]
 }
 
-/** Cards actually due right now (due <= now) plus today's remaining new-card allowance. */
+/** Size of today's queue (same cutoff as buildQueue, so the badge matches "1 / N" in the session). */
 export function dueCount(d = data, now = Date.now()) {
+  const cutoff = endOfToday(now)
   let n = 0
   let fresh = 0
   for (const c of Object.values(d.cards)) {
     if (c.state === 'new' && c.reps === 0) fresh++
-    else if (c.due <= now) n++
+    else if (c.due <= cutoff) n++
   }
   const room = Math.max(0, NEW_PER_DAY - (d.newIntroduced[dayKey(now)] ?? 0))
   return n + Math.min(fresh, room)
@@ -350,4 +388,35 @@ export function nextDueAt(d = data): number | null {
 
 export function markBackedUp(t = Date.now()) {
   commit({ ...data, lastBackup: t })
+}
+
+// ---------- "Học hôm nay" (Team Today; additive) ----------
+
+/** Subscribe to learn-state changes outside React (daily activity log). Returns an unsubscribe. */
+export function subscribeLearnData(l: () => void): () => void {
+  listeners.add(l)
+  return () => {
+    listeners.delete(l)
+  }
+}
+
+/**
+ * First guided exposure of a new character in "Học hôm nay". Counts toward today's new-card
+ * allowance (newIntroduced) but writes no revlog entry: seeing a character is not a review, so it
+ * must not inflate retention. remembered = first check tomorrow (step 0); otherwise the card joins
+ * TODAY's review queue as an already-introduced new card (state 'new', reps 1, due now): it is not
+ * limited by NEW_PER_DAY again, and "Quên" on it is not a lapse.
+ */
+export function introduceCard(h: string, remembered: boolean) {
+  if (!h || h === '__proto__') return
+  const prev = data.cards[h]
+  // Already studied (graded or introduced): never reset its schedule.
+  if (prev && (prev.reps > 0 || prev.state === 'review')) return
+  const now = Date.now()
+  const card: SrsCard = remembered
+    ? { state: 'review', step: 0, interval: LADDER_DAYS[0], due: now + LADDER_DAYS[0] * DAY, reps: 1, lapses: 0, lastReview: now, added: prev?.added ?? now, m: now }
+    : { state: 'new', step: -1, interval: 0, due: now, reps: 1, lapses: 0, lastReview: now, added: prev?.added ?? now, m: now }
+  const today = dayKey(now)
+  const newIntroduced = { ...data.newIntroduced, [today]: (data.newIntroduced[today] ?? 0) + 1 }
+  commit({ ...data, cards: { ...data.cards, [h]: card }, newIntroduced })
 }

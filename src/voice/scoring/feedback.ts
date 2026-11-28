@@ -21,7 +21,6 @@ const TARGET_TEXT: Partial<Record<Tone, Partial<Record<FeedbackCode, string>>>> 
   1: { 'start-higher': 'Thanh 1 phải cao hơn: giữ ở mức cao trong giọng của bạn (như thanh ngang nhưng cao hẳn).' },
   4: { 'start-higher': 'Bắt đầu từ mức cao nhất rồi mới rơi.' },
   5: {
-    'too-short': 'Thanh nhẹ cần ngắn và nhẹ hơn.',
     'end-lower': 'Thanh nhẹ đọc thấp và nhẹ, không nhấn.',
   },
 }

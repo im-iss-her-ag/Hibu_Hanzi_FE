@@ -1,5 +1,11 @@
 /* learn-review.css — ReviewSession (rv-*). Sits inside the pm-* modal shell; tokens only. */
-.rv-dialog { max-width: 520px; max-height: 92vh; min-height: 480px; }
+/* The backdrop pads 8vh on top and --space-4 below; never let min-height push the action bar off a
+   short screen (landscape phones are ≥768 wide, so the phone rule below does not apply to them). */
+.rv-dialog {
+  max-width: 520px;
+  max-height: min(92vh, calc(100dvh - 8vh - var(--space-4)));
+  min-height: min(480px, calc(100dvh - 8vh - var(--space-4)));
+}
 .rv-body {
   flex: 1 1 auto;
   min-height: 0;
@@ -105,3 +111,15 @@
   .rv-hv { font-size: 44px; }
   .rv-kbd { display: none; }
 }
+
+/* End of session: forgotten characters + next actions. */
+.rv-forgot { display: flex; flex-direction: column; align-items: center; gap: var(--space-2); width: 100%; }
+.rv-forgot-list { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-2); }
+.rv-forgot-chip {
+  display: inline-grid; place-items: center; width: var(--touch); height: var(--touch);
+  border: 1px solid var(--rule-strong); border-radius: var(--radius-sm); background: var(--sheet);
+  font-family: var(--font-han); font-size: 24px; color: var(--ink); cursor: pointer;
+}
+.rv-forgot-chip:hover:not(:disabled) { border-color: var(--seal); background: var(--hover); }
+.rv-summary-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-2); width: 100%; margin-top: var(--space-2); }
+.rv-summary .rv-summary-actions .rv-btn { flex: 1 1 160px; max-width: 240px; margin-top: 0; }

@@ -31,6 +31,8 @@ export interface ContourOptions {
 export interface Contour {
   /** resampled Chao values (length = points), empty when not enough voice */
   y: number[]
+  /** Chao values clamped only to [-1, 7] (for analysis; the display y is clamped to [0.5, 5.5]) */
+  yWide: number[]
   /** same in semitones relative to range.lowHz */
   semis: number[]
   /** voiced duration in ms (before trimming) */
@@ -82,8 +84,8 @@ export function extractContour(frames: PitchFrame[], range: SpeakerRange, opts: 
   const minClarity = opts.minClarity ?? 0.5
   const trim = opts.trim ?? 0.1
   const n = opts.points ?? 32
-  const maxGap = opts.maxGapMs ?? 120
-  const empty: Contour = { y: [], semis: [], durationMs: 0, voicedFrames: 0 }
+  const maxGap = opts.maxGapMs ?? 220
+  const empty: Contour = { y: [], yWide: [], semis: [], durationMs: 0, voicedFrames: 0 }
   const v = frames.filter((f) => f.hz != null && f.hz > 40 && f.hz < 1200 && f.clarity >= minClarity)
   if (v.length < 3) return { ...empty, voicedFrames: v.length }
 
@@ -98,11 +100,13 @@ export function extractContour(frames: PitchFrame[], range: SpeakerRange, opts: 
 
   const ts = run.map((f) => f.t)
   let s: number[] = run.map((f) => st(f.hz as number, range.lowHz))
-  // octave repair: a frame-to-frame jump of ~an octave (>9 st) is a detector error, not a tone
-  // (real tone-4 falls are steep but continuous). Fold it back towards the previous frame.
+  // octave repair: a frame-to-frame jump of ~an octave is a detector error, not a tone.
+  // Only adjacent frames (≤ 45 ms apart) with a jump of 10.5–13.5 st are folded; across null gaps a
+  // large change is usually a real fall (tone 4 loses frames mid-fall), so it is kept and interpolated.
   for (let i = 1; i < s.length; i++) {
-    while (s[i] - s[i - 1] > 9) s[i] -= 12
-    while (s[i - 1] - s[i] > 9) s[i] += 12
+    const j = s[i] - s[i - 1]
+    if (ts[i] - ts[i - 1] <= 45 && Math.abs(j) > 10.5 && Math.abs(j) < 13.5) s[i] -= Math.sign(j) * 12
+    else if (Math.abs(j) > 13.5 && Math.abs(j) < 25) s[i] -= Math.sign(j) * 12 * Math.round(Math.abs(j) / 12)
   }
   // if the folding drifted the whole contour off by an octave, re-centre on the raw median
   const rawMed = median(run.map((f) => st(f.hz as number, range.lowHz)))
@@ -123,8 +127,9 @@ export function extractContour(frames: PitchFrame[], range: SpeakerRange, opts: 
   ss = movingAvg(medianFilter(ss, 3), 3)
   const semis = resample(tt, ss, n)
   const span = Math.max(3, st(range.highHz, range.lowHz))
-  const y = semis.map((x) => Math.min(5.5, Math.max(0.5, 1 + (4 * x) / span)))
-  return { y, semis, durationMs, voicedFrames: run.length }
+  const yWide = semis.map((x) => Math.min(7, Math.max(-1, 1 + (4 * x) / span)))
+  const y = yWide.map((v) => Math.min(5.5, Math.max(0.5, v)))
+  return { y, yWide, semis, durationMs, voicedFrames: run.length }
 }
 
 export function toContourPoints(y: number[]): ContourPoint[] {

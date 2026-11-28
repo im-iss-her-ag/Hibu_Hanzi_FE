@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import HanziWriter from 'hanzi-writer'
+import { createWriter } from '../utils/hanziWriter'
 import { Play, Pause, RotateCcw, CheckCircle, ChevronLeft, ChevronRight } from 'lucide-react'
 import { inferStrokeName, type StrokeNameInfo } from '../utils/strokeNames'
 
@@ -115,7 +116,7 @@ export function HanziWriterCanvas({
     let isSubscribed = true
     const ink = cssVar(host, '--ink', '#1d1a16')
 
-    const writer = HanziWriter.create(host, hanzi, {
+    const { writer, release } = createWriter(host, hanzi, {
       width: boxPx,
       height: boxPx,
       padding: Math.round(boxPx * 0.11),
@@ -157,6 +158,7 @@ export function HanziWriterCanvas({
     return () => {
       isSubscribed = false
       writerRef.current = null
+      release()
     }
   }, [hanzi, mode, speed, boxPx, dark, onCompleteQuiz, displayMode, showStatic, noData])
 

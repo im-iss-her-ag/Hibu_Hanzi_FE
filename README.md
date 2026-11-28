@@ -46,7 +46,7 @@ Dự án được tối ưu 100% để chạy tĩnh (Static SPA) trên **Cloudfl
   - Chữ Hán to rõ, hỗ trợ chuyển đổi font: **Thư pháp** (`Ma Shan Zheng`), **Khải thư** (`Noto Serif SC`), hoặc Không chân.
   - **Âm Hán Việt viết hoa nổi bật**: Giúp nhận biết ngay nghĩa quen thuộc trong vốn từ tiếng Việt (好 = HẢO, 明 = MINH, 银行 = NGÂN HÀNG, 问题 = VẤN ĐỀ...).
   - **Pinyin** kèm dấu thanh điệu chuẩn.
-  - **Phát âm Audio**: Đọc chuẩn tiếng Trung qua Web Speech Synthesis (`zh-CN`).
+  - **Phát âm Audio**: âm tiết pinyin dùng bản ghi người bản ngữ đóng gói cùng app (`public/audio/pinyin/`); từ nhiều âm tiết đọc qua Web Speech Synthesis (`zh-CN`).
 - **Nét viết bút thuận (Hanzi Writer)**:
   - Xem animation thứ tự từng nét viết chuẩn trên ô kẻ mễ tự/điền tự.
   - Tùy chỉnh tốc độ (0.75x, 1x, 1.5x) và làm nổi bật bộ thủ.
@@ -94,3 +94,11 @@ Hibu_Hanzi/
 ├─ data-tools/          # Công cụ xử lý & kiểm thử dữ liệu
 └─ DESIGN.md            # Tài liệu thiết kế kỹ thuật và lộ trình sản phẩm
 ```
+
+---
+
+## 📜 Ghi công
+
+- Bản ghi âm tiết pinyin trong `public/audio/pinyin/`: [davinfifield/mp3-chinese-pinyin-sound](https://github.com/davinfifield/mp3-chinese-pinyin-sound),
+  **The Unlicense** (phạm vi công cộng); đã cắt lặng, chuẩn hoá âm lượng và mã hoá lại bằng
+  `data-tools/build-pinyin-audio.mts`. Chi tiết: [public/audio/pinyin/LICENSE.txt](public/audio/pinyin/LICENSE.txt).

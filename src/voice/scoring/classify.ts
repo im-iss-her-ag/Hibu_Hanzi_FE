@@ -84,32 +84,36 @@ export function features(y: number[], durationMs: number): ToneFeatures {
   }
 }
 
+/**
+ * Thresholds sit just outside the native-speaker distribution (2nd/98th percentile over 1640
+ * calibrated native tokens), so natives get 'good' while clear learner errors are still caught.
+ */
 function feedbackFor(target: Tone, f: ToneFeatures, detected: T4): FeedbackCode[] {
   const fb: FeedbackCode[] = []
   const rise = f.end - f.min
+  const fallIn = f.start - f.min
   switch (target) {
     case 1:
-      if (f.mean < 4) fb.push('start-higher')
-      if (f.wobble > 0.3 || Math.abs(f.slope) > 0.9) fb.push('flatter')
+      if (Math.abs(f.slope) > 1.3) fb.push('flatter') // clearly moving: say "keep it level" first
+      if (f.mean < 3.6) fb.push('start-higher')
+      if (f.wobble > 0.25 && !fb.includes('flatter')) fb.push('flatter')
       break
     case 2:
       if (f.start > 3.8) fb.push('start-lower')
-      if (rise < 1.3 || f.slope < 1) fb.push('rise-more')
-      else if (f.minPos > 0.45) fb.push('rise-more') // rising too late → sounds like tone 3
-      if (f.end < 4.2 && !fb.includes('rise-more')) fb.push('end-higher')
+      if (rise < 0.6 || f.slope < 0.4 || detected === 3) fb.push('rise-more') // too weak, or so late it sounds like tone 3
+      else if (f.end < 2.9) fb.push('end-higher')
       break
     case 3:
-      if (f.min > 1.8) fb.push('dip-lower')
+      if (f.min > 1.8 || detected === 2) fb.push('dip-lower')
       if (f.start > 3.3) fb.push('start-lower')
-      if (detected === 2 && !fb.includes('dip-lower')) fb.push('dip-lower')
       break
     case 4:
-      if (f.start < 4.2) fb.push('start-higher')
-      if (f.start - f.end < 2.5) fb.push('fall-deeper')
-      else if (f.end > 2.3) fb.push('end-lower')
+      if (f.start < 4) fb.push('start-higher')
+      if (fallIn < 2.2) fb.push('fall-deeper')
+      else if (f.end > 4 && fallIn < 3) fb.push('end-lower')
       break
     case 5:
-      if (f.durationMs > 350) fb.push('too-short') // reused: neutral tone should be short; UI text explains
+      // too long only lowers the score; no FeedbackCode for 'shorter' in the contract
       if (f.mean > 3.5) fb.push('end-lower')
       break
   }
@@ -128,8 +132,8 @@ export function scoreTone(frames: PitchFrame[], target: Tone, range: SpeakerRang
     return { target, detected: null, score: 0, similarity: zero, contour, feedback: ['too-short'] }
   }
   const d = {} as Record<T4, number>
-  for (const k of [1, 2, 3, 4] as T4[]) d[k] = Math.min(...TEMPLATES[k].map((t) => dist(c.y, t)))
-  const f = features(c.y, c.durationMs)
+  for (const k of [1, 2, 3, 4] as T4[]) d[k] = Math.min(...TEMPLATES[k].map((t) => dist(c.yWide, t)))
+  const f = features(c.yWide, c.durationMs)
   // Tone 2 vs 3 disambiguation: a late, deep minimum is tone 3; an early shallow one is tone 2.
   const fallIn = f.start - f.min, riseOut = f.end - f.min
   if (fallIn > 0.7 && f.minPos > 0.35) d[2] += 0.3
@@ -142,16 +146,19 @@ export function scoreTone(frames: PitchFrame[], target: Tone, range: SpeakerRang
   for (const k of [1, 2, 3, 4] as T4[]) similarity[k] = Math.round(Math.exp(-(d[k] ** 2) / (2 * SIGMA * SIGMA)) * 1000) / 1000
   const detected = ([1, 2, 3, 4] as T4[]).reduce((a, b) => (d[b] < d[a] ? b : a))
 
+  let feedback = feedbackFor(target, f, detected)
+  const fixes = feedback.length
+  if (fixes === 0) feedback = ['good']
   let score: number
   if (target === 5) {
     // neutral tone: short and not high/dynamic
     score = Math.round(100 * Math.min(1, 250 / Math.max(250, c.durationMs)) * (f.mean > 3.5 ? 0.6 : 1))
   } else {
-    score = Math.round(100 * Math.exp(-(d[target] ** 2) / (2 * 0.9 * 0.9)))
-    if (detected !== target) score = Math.min(score, 55)
+    const fit = Math.exp(-(d[target] ** 2) / (2 * 0.9 * 0.9)) // 0..1 closeness to the template
+    if (detected !== target) score = Math.round(Math.min(55, 100 * fit) - 5 * fixes)
+    else if (fixes === 0) score = Math.round(90 + 10 * fit) // right tone, nothing to fix → 90..100
+    else score = Math.round(Math.min(85, 60 + 40 * fit) - 7 * (fixes - 1))
+    score = Math.max(0, score)
   }
-  let feedback = feedbackFor(target, f, detected)
-  if (feedback.length === 0) feedback = score >= 70 || target === 5 ? ['good'] : (target === 1 ? ['flatter'] : [])
-  if (feedback.length === 0) feedback = ['good']
   return { target, detected, score, similarity, contour, feedback }
 }

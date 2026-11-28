@@ -3,7 +3,10 @@ import type { Word, BundleCharacter } from '../core'
 import { TRAP_BY_WORD } from './hanVietTraps'
 import type { HanVietTrap } from './hanVietTraps'
 
-export type WordClass = 'trong-suot' | 'lech' | 'bay'
+// 'lech' (meaning drifted) and 'bay' (false friend) come only from the curated HAN_VIET_TRAPS list.
+// Uncurated words that the Hán Việt does not spell out are 'mot-phan' (some syllable hints at the
+// meaning: 房间 phòng gian → căn phòng) or 'can-nho' (休息 hưu tức → nghỉ ngơi): not drifted, just opaque.
+export type WordClass = 'trong-suot' | 'mot-phan' | 'can-nho' | 'lech' | 'bay'
 export interface CharPart { hanzi: string; hanViet: string | null; meaning: string | null }
 export interface QuizQuestion {
   word: Word
@@ -120,11 +123,12 @@ export function classifyWord(word: Word): WordClass {
   const trap = TRAP_BY_WORD.get(word.word)
   if (trap) return trap.kind
   const { hv, mean } = info(word)
-  if (!hv) return 'lech'
+  if (!hv) return 'can-nho'
   if (hasPhrase(mean, hv)) return 'trong-suot'
   const syl = hv.split(' ')
   if (syl.length >= 2 && syl.every((s) => hasPhrase(mean, s))) return 'trong-suot'
-  return 'lech'
+  if (syl.some((s) => hasPhrase(mean, s))) return 'mot-phan'
+  return 'can-nho'
 }
 
 // ---------- char parts ----------
@@ -149,7 +153,16 @@ function readWrong(): WrongMap {
     const raw = localStorage.getItem(KEY)
     if (!raw) return {}
     const o = JSON.parse(raw)
-    return o && o.v === 1 && o.wrong && typeof o.wrong === 'object' ? (o.wrong as WrongMap) : {}
+    if (!o || o.v !== 1 || !o.wrong || typeof o.wrong !== 'object' || Array.isArray(o.wrong)) return {}
+    // Keep only well-formed entries: a null/partial one would crash the sort in loadWrongWords.
+    const out: WrongMap = {}
+    for (const [k, e] of Object.entries(o.wrong as Record<string, unknown>)) {
+      const v = e as { n?: unknown; t?: unknown } | null
+      if (v && typeof v.n === 'number' && Number.isFinite(v.n) && typeof v.t === 'number' && Number.isFinite(v.t)) {
+        out[k] = { n: v.n, t: v.t }
+      }
+    }
+    return out
   } catch { return {} }
 }
 function writeWrong(wrong: WrongMap): void {

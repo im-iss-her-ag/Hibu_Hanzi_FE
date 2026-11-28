@@ -135,7 +135,16 @@ export function CharacterEditor({ item, onCancel, onSave }: Props) {
         <textarea value={mnemonic} onChange={(e) => setMnemonic(e.target.value)} rows={4} aria-label="Mẹo nhớ nhanh" />
       </fieldset>
 
-      <EditorFooter onCancel={onCancel} onSave={(andReview) => onSave(input(), andReview)} />
+      <EditorFooter
+        onCancel={onCancel}
+        onSave={async (andReview) => {
+          // The buttons are type=button, so the input's min/max never run; the server would
+          // silently store null for 1.5 / 0 / -3.
+          const n = strokes.trim() ? Number(strokes) : null
+          if (n !== null && !(Number.isInteger(n) && n >= 1 && n <= 64)) throw new Error('Số nét phải là số nguyên từ 1 đến 64.')
+          await onSave(input(), andReview)
+        }}
+      />
     </form>
   )
 }

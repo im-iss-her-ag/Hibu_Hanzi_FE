@@ -31,7 +31,10 @@ export function normalizeFolded(text: string): string {
 export function scoreCharacterMatch(c: BundleCharacter, rawQuery: string): number {
   const q = rawQuery.trim().toLowerCase()
   if (!q) return 1
-  const qFold = normalizeFolded(q).replace(/v/g, 'u')
+  const qFold = normalizeFolded(q)
+  // Pinyin-only variant: "v" typed for ü (nv, lv) and tone digits (hao3, ni3hao3) are dropped.
+  // Hán Việt and meanings keep the v (việt, viễn, văn).
+  const qPy = qFold.replace(/v/g, 'u').replace(/([a-z])[1-5]/g, '$1')
   // A verbatim match only outranks a folded one when the user actually typed tone marks/diacritics;
   // "hao" should treat hảo (好) and hao (耗) alike and let the HSK level decide.
   const exactScore = q === normalizeFolded(q) ? 90 : 95
@@ -49,10 +52,10 @@ export function scoreCharacterMatch(c: BundleCharacter, rawQuery: string): numbe
     const meanFold = normalizeFolded(meanRaw)
 
     if (pyRaw === q || hvRaw === q) best = Math.max(best, exactScore)
-    else if (pyFold === qFold || (hvFold && hvFold === qFold)) best = Math.max(best, 90)
-    else if (pyFold.startsWith(qFold) || (hvFold && hvFold.startsWith(qFold))) best = Math.max(best, 75)
+    else if (pyFold === qPy || (hvFold && hvFold === qFold)) best = Math.max(best, 90)
+    else if (pyFold.startsWith(qPy) || (hvFold && hvFold.startsWith(qFold))) best = Math.max(best, 75)
     else if (pyRaw.includes(q) || hvRaw.includes(q)) best = Math.max(best, 60)
-    else if (pyFold.includes(qFold) || (hvFold && hvFold.includes(qFold))) best = Math.max(best, 50)
+    else if (pyFold.includes(qPy) || (hvFold && hvFold.includes(qFold))) best = Math.max(best, 50)
     else if (meanRaw.includes(q)) best = Math.max(best, 40)
     else if (meanFold.includes(qFold)) best = Math.max(best, 30)
   }
@@ -94,7 +97,8 @@ export function filterAndSortCharacters(
 export function filterAndSortWords(words: readonly Word[], rawQuery: string): Word[] {
   const q = rawQuery.trim().toLowerCase()
   if (!q) return [...words]
-  const qFold = normalizeFolded(q).replace(/\s+/g, '')
+  // Compact pinyin form: tone digits dropped (ni3hao3 -> nihao)
+  const qFold = normalizeFolded(q).replace(/\s+/g, '').replace(/([a-z])[1-5]/g, '$1')
   const qFoldSpaced = normalizeFolded(q)
 
   const scored: { word: Word; score: number }[] = []

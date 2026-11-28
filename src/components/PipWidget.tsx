@@ -43,8 +43,16 @@ interface Glyph {
 function loadSettings(): WidgetSettings {
   const fallback: WidgetSettings = { source: 'hsk', levels: [1], intervalSec: 30 }
   try {
-    const saved = localStorage.getItem(SETTINGS_KEY)
-    return saved ? { ...fallback, ...JSON.parse(saved) } : fallback
+    const raw: unknown = JSON.parse(localStorage.getItem(SETTINGS_KEY) ?? 'null')
+    if (!raw || typeof raw !== 'object') return fallback
+    const s = { ...fallback, ...(raw as Partial<WidgetSettings>) }
+    // Hand-edited / stale values must not crash render (levels.includes).
+    return {
+      ...s,
+      source: s.source === 'favorites' ? 'favorites' : 'hsk',
+      levels: Array.isArray(s.levels) ? s.levels.filter((l) => LEVELS.includes(l)) : fallback.levels,
+      intervalSec: Number.isFinite(s.intervalSec) && s.intervalSec > 0 ? s.intervalSec : fallback.intervalSec,
+    }
   } catch {
     return fallback
   }
@@ -234,7 +242,7 @@ export function PipWidget({ characters, favorites, onCharacterChange }: PipWidge
   const draw = useCallback(() => {
     const ctx = canvasRef.current?.getContext('2d')
     if (!ctx) return
-    const emptyText = settings.source === 'favorites' ? 'Chưa có chữ yêu thích' : 'Không có chữ ở cấp này'
+    const emptyText = settings.source === 'favorites' ? 'Sổ tay chưa có chữ nào' : 'Không có chữ ở cấp này'
     drawCard(ctx, current, glyph, Math.min(1, elapsed / settings.intervalSec), emptyText)
   }, [current, glyph, elapsed, settings.intervalSec, settings.source])
   const drawRef = useRef(draw)
@@ -312,10 +320,10 @@ export function PipWidget({ characters, favorites, onCharacterChange }: PipWidge
           role="menuitem"
           data-menu-close
           href={desktopDownloadUrl()}
-          title="Tải app widget cho máy tính: không viền, luôn nổi trên màn hình"
+          title="Tải ứng dụng cho máy tính: cửa sổ chữ Hán không viền, luôn nổi trên màn hình"
         >
           <Download size={16} aria-hidden="true" />
-          <span>Tải app</span>
+          <span>Tải ứng dụng máy tính</span>
         </a>
         <button
           type="button"
@@ -324,10 +332,10 @@ export function PipWidget({ characters, favorites, onCharacterChange }: PipWidge
           data-menu-close
           onClick={openPip}
           disabled={!supported}
-          title={supported ? 'Mở widget chữ Hán luôn nổi trên màn hình' : 'Trình duyệt chưa hỗ trợ Picture-in-Picture'}
+          title={supported ? 'Mở cửa sổ chữ Hán nhỏ, luôn nổi trên màn hình' : 'Trình duyệt chưa hỗ trợ Picture-in-Picture'}
         >
           <PictureInPicture2 size={16} aria-hidden="true" />
-          <span>{active ? 'Đóng widget' : 'Widget'}</span>
+          <span>{active ? 'Đóng cửa sổ nổi' : 'Cửa sổ nổi'}</span>
         </button>
         <button
           type="button"
@@ -337,13 +345,13 @@ export function PipWidget({ characters, favorites, onCharacterChange }: PipWidge
           onClick={() => setShowSettings((v) => !v)}
         >
           <Settings size={16} aria-hidden="true" />
-          <span>Cài đặt widget</span>
+          <span>Cài đặt cửa sổ nổi</span>
         </button>
       </div>
       {showSettings && (
-        <div className="pip-settings" role="group" aria-label="Cài đặt widget">
+        <div className="pip-settings" role="group" aria-label="Cài đặt cửa sổ nổi">
           <div className="pip-settings-head">
-            <span>Cài đặt widget</span>
+            <span>Cài đặt cửa sổ nổi</span>
             <button type="button" className="pip-icon-btn" onClick={() => setShowSettings(false)} aria-label="Đóng">
               <X size={15} />
             </button>
@@ -363,7 +371,7 @@ export function PipWidget({ characters, favorites, onCharacterChange }: PipWidge
               className={`pip-chip ${settings.source === 'favorites' ? 'active' : ''}`}
               onClick={() => setSettings((s) => ({ ...s, source: 'favorites' }))}
             >
-              Yêu thích ({favorites.length})
+              Sổ tay ({favorites.length})
             </button>
           </div>
 

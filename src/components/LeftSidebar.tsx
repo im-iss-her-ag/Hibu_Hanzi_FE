@@ -22,6 +22,8 @@ interface LeftSidebarProps {
   radicalCharacters?: readonly BundleCharacter[] | null
   onBrowseRadical?: (form: string | null) => void
   onGridChange?: (cols: number, perPage: number) => void
+  /** The narrowed list (saved / known / text filter / sort) or null when the grid shows the plain pool. */
+  onListChange?: (list: BundleCharacter[] | null) => void
 }
 
 const familyName = (f: RadicalFamily) => f.info.nameVi ?? `Bộ ${f.info.hanViet ?? f.key}`
@@ -40,7 +42,7 @@ const KNOWN_OPTIONS: { id: KnownFilter; label: string }[] = [
 export type SortOrder = 'default' | 'strokeAsc' | 'strokeDesc' | 'pinyinAsc'
 
 const SORT_OPTIONS: { id: SortOrder; label: string }[] = [
-  { id: 'default', label: 'Mặc định (HSK)' },
+  { id: 'default', label: 'Mặc định (thông dụng trước)' },
   { id: 'strokeAsc', label: 'Số nét: ít → nhiều' },
   { id: 'strokeDesc', label: 'Số nét: nhiều → ít' },
   { id: 'pinyinAsc', label: 'Pinyin: A → Z' },
@@ -59,6 +61,7 @@ export function LeftSidebar({
   radicalCharacters = null,
   onBrowseRadical,
   onGridChange,
+  onListChange,
 }: LeftSidebarProps) {
   const [query, setQuery] = useState('')
   const [savedOnly, setSavedOnly] = useState(false)
@@ -121,6 +124,13 @@ export function LeftSidebar({
     [characters, selectedLevel],
   )
   const levelKnown = levelHanzi.filter((h) => isKnown(h, learn)).length
+
+  // Prev / next / random / ↑↓ follow what the grid shows, not the whole level.
+  const narrowed = !listingRadicals && (savedOnly || knownFilter !== 'all' || !!q || sortOrder !== 'default')
+  useEffect(() => {
+    onListChange?.(narrowed ? filteredList : null)
+  }, [onListChange, narrowed, filteredList])
+  useEffect(() => () => onListChange?.(null), [onListChange])
 
   const itemCount = listingRadicals ? familyList.length : filteredList.length
   const countLabel = listingRadicals ? `${itemCount} bộ (gộp biến thể)` : `${itemCount} chữ`
@@ -265,10 +275,10 @@ export function LeftSidebar({
                 className={`lib-tool ${savedOnly ? 'on' : ''}`}
                 onClick={() => setSavedOnly((v) => !v)}
                 aria-pressed={savedOnly}
-                title={savedOnly ? 'Đang chỉ hiện chữ đã lưu' : 'Chỉ hiện chữ đã lưu'}
+                title={savedOnly ? 'Đang chỉ hiện chữ trong sổ tay' : 'Chỉ hiện chữ trong sổ tay'}
               >
                 <Star size={14} fill={savedOnly ? 'currentColor' : 'none'} />
-                <span>Đã lưu</span>
+                <span>Sổ tay</span>
               </button>
               <div className="lib-menu-wrap" ref={menuRef}>
                 <button

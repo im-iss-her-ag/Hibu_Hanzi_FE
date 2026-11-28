@@ -1,0 +1,116 @@
+/* Thống kê học tập — rendered inside <main>. Colours: seal = primary series, ink-2 = second series, rule/ink-3 = axes. */
+.sv { display: flex; flex-direction: column; gap: var(--space-4); width: 100%; max-width: var(--content-max); margin: 0 auto; min-width: 0; }
+.sv * { min-width: 0; }
+
+.sv-head { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
+.sv-back { height: var(--control-h); }
+.sv-title { margin: 0; font-family: var(--font-display); font-size: var(--text-2xl); line-height: 1.2; font-weight: 700; color: var(--ink); }
+
+/* Stat tiles: no card chrome, a rule above each (a KPI row, not four boxes). */
+.sv-tiles { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-3) var(--space-5); }
+.sv-tile { display: flex; flex-direction: column; gap: 2px; padding-top: var(--space-3); border-top: 2px solid var(--ink); }
+.sv-num { font-size: 34px; line-height: 1.15; font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
+.sv-num small { font-size: var(--text-md); font-weight: 500; color: var(--ink-3); }
+.sv-sub { font-size: var(--text-sm); color: var(--ink-3); line-height: 1.4; }
+
+/* Sections: flat sheet panels */
+.sv-card { background: var(--sheet); border: 1px solid var(--rule); padding: var(--space-4); display: flex; flex-direction: column; gap: var(--space-3); }
+.sv-h { margin: 0; font-size: var(--text-lg); font-weight: 600; color: var(--ink); display: flex; align-items: baseline; gap: var(--space-2); flex-wrap: wrap; }
+.sv-h span { font-size: var(--text-sm); font-weight: 400; color: var(--ink-3); }
+
+/* Legend + keys */
+.sv-legend { display: flex; gap: var(--space-4); font-size: var(--text-sm); color: var(--ink-2); flex-wrap: wrap; }
+.sv-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.sv-key { display: inline-block; width: 10px; height: 10px; }
+.sv-key-rev { background: var(--seal); }
+.sv-key-new { background: var(--ink-2); }
+.sv-key-learning { background: var(--seal-line); }
+.sv-key-cal { background: var(--rule); }
+.sv-key-cal.on { background: var(--seal); }
+
+/* SVG charts */
+.sv-chartwrap { position: relative; display: flex; flex-direction: column; gap: var(--space-2); }
+.sv-chartbox { position: relative; width: 100%; }
+.sv-svg { display: block; max-width: 100%; overflow: visible; }
+.sv-grid { stroke: var(--rule); stroke-width: 1; }
+.sv-axis { stroke: var(--rule-strong); stroke-width: 1; }
+.sv-tick { fill: var(--ink-3); font-size: 11px; font-family: var(--font-ui); font-variant-numeric: tabular-nums; }
+.sv-bar-rev { fill: var(--seal); }
+.sv-bar-new { fill: var(--ink-2); }
+.sv-col { outline: none; cursor: default; }
+.sv-col:hover .sv-bar, .sv-col:focus .sv-bar { opacity: 0.78; }
+.sv-col:focus-visible .sv-hit { stroke: var(--seal); stroke-width: 2; }
+.sv-empty-chart {
+  position: absolute; left: 36px; right: 8px; top: 28%; margin: 0; text-align: center;
+  font-size: var(--text-sm); color: var(--ink-3); line-height: 1.5; pointer-events: none;
+}
+
+.sv-cell { fill: var(--rule); }
+.sv-cell.on { fill: var(--seal); }
+.sv-cell.today { stroke: var(--ink-2); stroke-width: 1.5; }
+.sv-cell:hover { stroke: var(--ink-3); stroke-width: 1.5; }
+.sv-rule { margin: 0; font-size: var(--text-sm); color: var(--ink-2); padding-top: var(--space-3); border-top: 1px solid var(--rule); }
+
+.sv-tip {
+  position: absolute; z-index: 5; transform: translate(-50%, calc(-100% - 6px)); pointer-events: none; white-space: nowrap;
+  padding: 6px 10px; background: var(--sheet); border: 1px solid var(--rule-strong); border-radius: var(--radius-md);
+  box-shadow: var(--shadow-float); display: flex; flex-direction: column; font-size: var(--text-sm); line-height: 1.35;
+}
+.sv-tip b { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+.sv-tip span { color: var(--ink-2); }
+
+/* Table view */
+.sv-table summary { cursor: pointer; font-size: var(--text-sm); color: var(--ink-2); padding: 4px 0; width: fit-content; }
+.sv-table-scroll { max-height: 220px; overflow-y: auto; margin-top: var(--space-2); border: 1px solid var(--rule); }
+.sv-table table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); font-variant-numeric: tabular-nums; }
+.sv-table th, .sv-table td { padding: 4px 10px; text-align: right; border-bottom: 1px solid var(--rule); color: var(--ink-2); }
+.sv-table th:first-child, .sv-table thead th { text-align: left; font-weight: 600; color: var(--ink); }
+.sv-table thead th { position: sticky; top: 0; background: var(--sheet); }
+.sv-table thead th:not(:first-child) { text-align: right; }
+
+/* Levels (meter list) */
+.sv-levels { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); }
+.sv-level { display: grid; grid-template-columns: 58px 1fr 76px; align-items: center; gap: var(--space-3); }
+.sv-level-name { font-size: var(--text-sm); font-weight: 600; color: var(--ink-2); }
+.sv-level-fig { text-align: right; font-size: var(--text-sm); color: var(--ink-3); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.sv-level-fig b { color: var(--ink); font-weight: 600; }
+.sv-meter { display: flex; height: 12px; background: var(--rule); gap: 2px; }
+.sv-meter-fill { display: block; height: 100%; }
+.sv-meter-learned { background: var(--seal); }
+.sv-meter-learning { background: var(--seal-line); }
+
+/* Hardest */
+.sv-empty { margin: 0; color: var(--ink-3); font-size: var(--text-md); padding: var(--space-3) 0; }
+.sv-hard { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr; gap: var(--space-2); }
+.sv-hard-item {
+  display: flex; align-items: center; gap: var(--space-3); width: 100%; min-height: 60px; padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--rule); border-radius: var(--radius-md); background: var(--sheet); color: var(--ink);
+  font: inherit; text-align: left; cursor: pointer; transition: background-color var(--dur-1) var(--ease);
+}
+.sv-hard-item:hover { background: var(--hover); }
+.sv-hard-item:active { background: var(--press); }
+.sv-hard-glyph {
+  flex: none; display: inline-flex; align-items: center; justify-content: center; min-width: 44px; height: 44px; padding: 0 4px;
+  border: 1px solid var(--rule-strong); background: var(--sheet); font-family: var(--font-han); font-size: 26px; line-height: 1;
+}
+.sv-hard-glyph.word { font-size: 20px; }
+.sv-hard-main { display: flex; flex-direction: column; gap: 1px; flex: 1; }
+.sv-hard-read { display: flex; flex-wrap: wrap; gap: 4px var(--space-2); font-size: var(--text-md); }
+.sv-hv { font-family: var(--font-display); font-weight: 700; text-transform: uppercase; letter-spacing: 0.02em; color: var(--ink); }
+.sv-hard-meta { font-size: var(--text-sm); color: var(--ink-3); }
+.sv-muted { color: var(--ink-3); }
+.sv-leech { flex: none; background: var(--seal-soft); color: var(--seal); }
+
+@media (min-width: 640px) {
+  .sv-hard { grid-template-columns: 1fr 1fr; }
+  .sv-card { padding: var(--space-5); }
+}
+@media (min-width: 768px) {
+  .sv-tiles { grid-template-columns: repeat(4, 1fr); }
+}
+@media (max-width: 767px) {
+  .sv-back { height: var(--touch); }
+  .sv-title { font-size: var(--text-xl); }
+  .sv-num { font-size: 30px; }
+  .sv-level { grid-template-columns: 52px 1fr 64px; gap: var(--space-2); }
+}

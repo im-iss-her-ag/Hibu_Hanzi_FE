@@ -1,13 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { X, Mic, MicOff, Volume2, RotateCcw, ArrowRight, SlidersHorizontal, ShieldCheck } from 'lucide-react'
+import { X, Mic, MicOff, Volume2, RotateCcw, ArrowRight, SlidersHorizontal, ShieldCheck, Stethoscope } from 'lucide-react'
 import type { EngineError, EngineState, PitchEngine, PitchFrame, SpeakerRange, ToneResult } from '../voice/types'
-import { useModalA11y } from '../utils/useModalA11y'
+import type { PitchEngineExt } from '../voice/engine'
+import { useModalDialog } from '../utils/useModalA11y'
 import { pinyinSyllables } from '../utils/tone'
 import { parsePinyin } from '../utils/pinyinData'
-import { speakChinese } from '../utils/speech'
-import { ToneTrainerCanvas, LIVE_WINDOW_MS, templateAt, type LiveTrace } from './ToneTrainerCanvas'
+import { speakChinese, prefetchChinese } from '../utils/speech'
+import { ToneTrainerCanvas, EXPECTED_MS, templateAt, type LiveTrace } from './ToneTrainerCanvas'
 import { makeEngine, getRange, calibrate, observeUtterance, hzToChao, scoreTone, feedbackText, resultMessages, usingMock } from './ToneTrainerVoice'
 import { mockPointer } from '../voice/mock'
+import { DeviceCheck } from './DeviceCheck'
 import '../styles/tone-trainer.css'
 
 type T4 = 1 | 2 | 3 | 4
@@ -34,13 +36,17 @@ const ERROR_TEXT: Record<EngineError, { title: string; body: string }> = {
     title: 'Không tìm thấy micro',
     body: 'Hãy cắm tai nghe có micro hoặc bật micro của máy, rồi thử lại.',
   },
+  'mic-busy': {
+    title: 'Micro đang được dùng hoặc không mở được',
+    body: 'Có ứng dụng khác (cuộc gọi, Zoom, Meet, tab khác) đang giữ micro, hoặc micro vừa bị rút/ngắt kết nối. Đóng ứng dụng đó, thử cắm lại tai nghe, rồi bấm Thử lại.',
+  },
   'insecure-context': {
     title: 'Cần kết nối bảo mật (HTTPS)',
     body: 'Trình duyệt chỉ cho dùng micro trên trang HTTPS hoặc localhost. Hãy mở ứng dụng qua địa chỉ https://.',
   },
   unsupported: {
     title: 'Trình duyệt chưa hỗ trợ',
-    body: 'Trình duyệt này không có Web Audio / micro. Hãy dùng Chrome, Edge, Firefox hoặc Safari bản mới.',
+    body: 'Trình duyệt này không có Web Audio / micro. Nếu bạn đang mở trong Zalo, Facebook hay Messenger, hãy chọn “Mở bằng trình duyệt”. Hoặc dùng Chrome, Edge, Firefox, Safari bản mới.',
   },
   unknown: {
     title: 'Không mở được micro',
@@ -50,7 +56,7 @@ const ERROR_TEXT: Record<EngineError, { title: string; body: string }> = {
 
 function precheck(): EngineError | null {
   if (typeof window === 'undefined') return 'unsupported'
-  if (!window.isSecureContext) return 'insecure-context'
+  if (window.isSecureContext === false) return 'insecure-context'
   if (!navigator.mediaDevices?.getUserMedia || !(window.AudioContext || (window as unknown as { webkitAudioContext?: unknown }).webkitAudioContext)) return 'unsupported'
   return null
 }
@@ -80,13 +86,14 @@ interface ToneTrainerProps {
 }
 
 export function ToneTrainer({ hanzi, pinyin, hanViet, initialMode = 'char', onNextChar, onClose }: ToneTrainerProps) {
-  const dialogRef = useModalA11y<HTMLDivElement>(onClose)
+  const { ref: dialogRef, titleId, dialogProps } = useModalDialog<HTMLDivElement>(onClose)
   const syllables = useMemo(() => pinyinSyllables(pinyin || ''), [pinyin])
   const chars = useMemo(() => Array.from(hanzi || ''), [hanzi])
   const [mode, setMode] = useState<Mode>(syllables.length ? initialMode : 'free')
   const [sylIdx, setSylIdx] = useState(0)
   const [freeBase, setFreeBase] = useState('ma')
   const [freeTone, setFreeTone] = useState<T4>(1)
+  const [devCheck, setDevCheck] = useState(false) // inline "Kiểm tra thiết bị" panel
 
   useEffect(() => setSylIdx(0), [pinyin])
 
@@ -99,6 +106,7 @@ export function ToneTrainer({ hanzi, pinyin, hanViet, initialMode = 'char', onNe
     return { text: freeVariants[freeTone - 1]?.pinyin ?? freeBase, tone: freeTone as 1 | 2 | 3 | 4 | 5, hanzi: '' }
   }, [mode, syllables, sylIdx, chars, freeVariants, freeTone, freeBase])
   const tone4: T4 | null = target.tone === 5 ? null : (target.tone as T4)
+  useEffect(() => { prefetchChinese(target.text) }, [target.text])
 
   const pre = useMemo(precheck, [])
   const [phase, setPhase] = useState<Phase>(() => (readLS(INTRO_KEY) ? (getRange().source === 'default' ? 'calibrate' : 'practice') : 'intro'))
@@ -108,9 +116,11 @@ export function ToneTrainer({ hanzi, pinyin, hanViet, initialMode = 'char', onNe
   const [range, setRange] = useState<SpeakerRange>(getRange)
   const [calibStep, setCalibStep] = useState(0)
   const [hint, setHint] = useState<'quiet' | 'noisy' | null>(null)
+  const [health, setHealth] = useState<'ok' | 'muted' | 'interrupted'>('ok') // mic muted by OS / audio interrupted (iOS)
+  const [lowBand, setLowBand] = useState(false) // Bluetooth headset in narrow-band hands-free mode
   const [steer, setSteer] = useState<'up' | 'down' | 'ok' | null>(null)
 
-  const live = useRef<LiveTrace>({ points: [], lastChao: null, lastAt: 0, level: 0 })
+  const live = useRef<LiveTrace>({ points: [], lastChao: null, lastAt: 0, level: 0, onset: null })
   const vuRef = useRef<HTMLSpanElement>(null)
   const engineRef = useRef<PitchEngine | null>(null)
   const ctx = useRef({ phase, tone4, range, resultShown: false, calibUtts: [] as PitchFrame[][], calibStep })
@@ -126,16 +136,21 @@ export function ToneTrainer({ hanzi, pinyin, hanViet, initialMode = 'char', onNe
     const eng = makeEngine(() => ctx.current.tone4 ?? 2)
     const isMock = usingMock()
     engineRef.current = eng
-    let lastSteer: string | null = null
+    let lastSteer: 'up' | 'down' | 'ok' | null = null
     const offState = eng.onState((s) => {
       setEngState(s)
       if (s === 'error') setError(eng.error ?? 'unknown')
       if (s === 'voiced' && !ctx.current.resultShown) {
-        live.current.points = []
+        live.current.points = []; live.current.onset = null
         setHint(null)
       }
-      if (s === 'listening') stats.current = { since: performance.now(), maxLevel: 0, noisy: 0, total: 0 }
+      if (s === 'listening') {
+        stats.current = { since: performance.now(), maxLevel: 0, noisy: 0, total: 0 }
+        setLowBand(!!(eng as Partial<PitchEngineExt>).stats?.lowBandMic)
+      }
+      if (s === 'idle' || s === 'error') { setHealth('ok'); setLowBand(false) }
     })
+    const offHealth = (eng as Partial<PitchEngineExt>).onHealth?.(setHealth)
     const offFrame = eng.onFrame((f) => {
       const L = live.current
       L.level = f.level
@@ -149,10 +164,13 @@ export function ToneTrainer({ hanzi, pinyin, hanViet, initialMode = 'char', onNe
         L.points.push({ t: f.t, chao })
         const tt = ctx.current.tone4
         if (tt && chao != null && ctx.current.phase === 'practice') {
-          const x = Math.min(1, f.t / (LIVE_WINDOW_MS * 0.58))
+          // Steer only on the onset: duration varies too much to compare later points in real time.
+          if (L.onset == null) L.onset = f.t
+          const rel = f.t - L.onset
+          const x = Math.min(1, rel / EXPECTED_MS)
           const d = chao - templateAt(tt, x)
-          const s = Math.abs(d) < 0.7 ? 'ok' : d > 0 ? 'down' : 'up'
-          if (s !== lastSteer) {
+          const s = rel > 320 ? lastSteer : Math.abs(d) < 0.8 ? 'ok' : d > 0 ? 'down' : 'up'
+          if (s && s !== lastSteer) {
             lastSteer = s
             setSteer(s)
           }
@@ -176,7 +194,6 @@ export function ToneTrainer({ hanzi, pinyin, hanViet, initialMode = 'char', onNe
       setSteer(null)
       if (c.resultShown) return
       if (c.phase === 'calibrate') {
-        if (import.meta.env.DEV) console.debug('[tt] calib utt', frames.length, frames.filter((f) => f.hz != null).length)
         if (frames.filter((f) => f.hz != null).length < 8) return
         c.calibUtts.push(frames)
         const next = c.calibStep + 1
@@ -186,7 +203,7 @@ export function ToneTrainer({ hanzi, pinyin, hanViet, initialMode = 'char', onNe
           setRange(r)
           setCalibStep(0)
           setPhase('practice')
-          live.current.points = []
+          live.current.points = []; live.current.onset = null
         } else setCalibStep(next)
         return
       }
@@ -197,6 +214,7 @@ export function ToneTrainer({ hanzi, pinyin, hanViet, initialMode = 'char', onNe
     })
     return () => {
       offState()
+      offHealth?.()
       offFrame()
       offUtt()
       eng.stop()
@@ -220,7 +238,7 @@ export function ToneTrainer({ hanzi, pinyin, hanViet, initialMode = 'char', onNe
   const toggle = useCallback(() => (listening ? stop() : start()), [listening, start, stop])
   const retry = useCallback(() => {
     setResult(null)
-    live.current.points = []
+    live.current.points = []; live.current.onset = null
     if (!listening) start()
   }, [listening, start])
 
@@ -244,7 +262,7 @@ export function ToneTrainer({ hanzi, pinyin, hanViet, initialMode = 'char', onNe
   // Changing the target clears the old verdict and keeps listening.
   useEffect(() => {
     setResult(null)
-    live.current.points = []
+    live.current.points = []; live.current.onset = null
   }, [target.text, target.tone])
 
   const hasNext = mode === 'char' ? sylIdx < syllables.length - 1 || !!onNextChar : true
@@ -262,6 +280,7 @@ export function ToneTrainer({ hanzi, pinyin, hanViet, initialMode = 'char', onNe
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape' || e.key === 'Tab' || e.ctrlKey || e.metaKey || e.altKey) return
       const k = keyRef.current
+      if (document.querySelector('.dc')) { e.stopPropagation(); return } // device check open: no Space/R shortcuts (would reopen the mic)
       const focused = document.activeElement as HTMLElement | null
       const onOtherButton = focused?.closest('button') && !focused.closest('[data-tt="mic"]')
       if (e.key === ' ' && !onOtherButton && k.phase !== 'intro' && !k.error) {
@@ -296,7 +315,7 @@ export function ToneTrainer({ hanzi, pinyin, hanViet, initialMode = 'char', onNe
             : result
               ? 'Micro đang mở — bấm Thử lại để đọc lần nữa'
               : `Đọc “${target.text}” khi sẵn sàng`
-          : 'Micro đang tắt — bấm nút micro hoặc phím Space'
+          : 'Micro đang tắt — bấm nút micro để bắt đầu'
 
   const resultLine = (() => {
     if (!result) return null
@@ -307,6 +326,10 @@ export function ToneTrainer({ hanzi, pinyin, hanViet, initialMode = 'char', onNe
     return { head, body, more: msgs.slice(1, 3) }
   })()
 
+  const openDevCheck = () => {
+    engineRef.current?.stop() // release the mic: the check opens its own stream
+    setDevCheck(true)
+  }
   const toneVar = (t: number) => ({ ['--tt-tone' as string]: `var(--tone-${t})` }) as React.CSSProperties
 
   return (
@@ -314,20 +337,25 @@ export function ToneTrainer({ hanzi, pinyin, hanViet, initialMode = 'char', onNe
       <div
         className="pm-dialog tt-dialog"
         ref={dialogRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="tt-title"
+        {...dialogProps}
+        onKeyDown={(e) => {
+          // The microphone check is a sub-panel: Esc steps back out of it before the dialog closes.
+          if (e.key === 'Escape' && devCheck) {
+            e.preventDefault()
+            setDevCheck(false)
+          }
+        }}
         data-state={engState}
         data-phase={phase}
         style={toneVar(target.tone)}
       >
         <header className="pm-header tt-header">
-          <h2 className="pm-title" id="tt-title">Nói thử thanh điệu</h2>
+          <h2 className="pm-title" id={titleId}>Nói thử thanh điệu</h2>
           {usingMock() && <span className="pm-tag" title="Đang dùng tín hiệu giả lập">mô phỏng</span>}
           <div className="pm-header-actions">
             {phase === 'practice' && !error && (
-              <button type="button" className="pm-btn pm-btn-ghost tt-hide-sm" onClick={recalibrate} title="Đo lại quãng giọng">
-                <SlidersHorizontal size={14} aria-hidden="true" /> Đo lại giọng
+              <button type="button" className="pm-btn pm-btn-ghost tt-recal" onClick={recalibrate} title="Đo lại quãng giọng" aria-label="Đo lại giọng">
+                <SlidersHorizontal size={14} aria-hidden="true" /> <span className="tt-hide-sm">Đo lại giọng</span>
               </button>
             )}
             <button type="button" className="pm-icon-btn tt-close" onClick={onClose} aria-label="Đóng" title="Đóng (Esc)">
@@ -337,16 +365,21 @@ export function ToneTrainer({ hanzi, pinyin, hanViet, initialMode = 'char', onNe
         </header>
 
         <div className="pm-body tt-body">
-          {error ? (
+          {devCheck ? (
+            <DeviceCheck onBack={() => setDevCheck(false)} />
+          ) : error ? (
             <section className="tt-state" data-tt-error={error} role="alert">
               <MicOff size={28} aria-hidden="true" className="tt-state-icon" />
               <h3>{ERROR_TEXT[error].title}</h3>
               <p>{ERROR_TEXT[error].body}</p>
-              {(error === 'permission-denied' || error === 'no-microphone' || error === 'unknown') && (
+              {(error === 'permission-denied' || error === 'no-microphone' || error === 'mic-busy' || error === 'unknown') && (
                 <button type="button" className="tt-primary" onClick={start} data-tt="enable">
                   Thử lại
                 </button>
               )}
+              <button type="button" className="tt-btn" onClick={openDevCheck} data-tt="devcheck">
+                <Stethoscope size={16} aria-hidden="true" /> Kiểm tra thiết bị
+              </button>
             </section>
           ) : phase === 'intro' ? (
             <section className="tt-state tt-intro">
@@ -360,6 +393,7 @@ export function ToneTrainer({ hanzi, pinyin, hanViet, initialMode = 'char', onNe
               <button type="button" className="tt-primary" onClick={enable} data-tt="enable">
                 <Mic size={18} aria-hidden="true" /> Bật micro
               </button>
+              <button type="button" className="dc-open" onClick={openDevCheck}>Kiểm tra thiết bị (micro, loa)</button>
             </section>
           ) : (
             <>
@@ -447,18 +481,24 @@ export function ToneTrainer({ hanzi, pinyin, hanViet, initialMode = 'char', onNe
                   <span className="tt-vu" aria-hidden="true" title="Âm lượng">
                     <span ref={vuRef} />
                   </span>
-                  {!result && listening && phase === 'practice' && steer && steer !== 'ok' && (
-                    <span className={`tt-steer is-${steer}`} aria-hidden="true">{steer === 'up' ? '↑ lên một chút' : '↓ hạ xuống một chút'}</span>
-                  )}
                 </div>
               )}
 
+              <div className="tt-feedback">
+              {!result && (
               <div className="tt-status" aria-live="polite">
                 <span className={`tt-dot ${listening ? 'is-on' : ''} ${engState === 'voiced' ? 'is-voiced' : ''}`} aria-hidden="true" />
                 <span>{statusText}</span>
-                {hint === 'quiet' && !result && <span className="tt-hint">Chưa nghe rõ — nói to hơn hoặc đưa micro lại gần.</span>}
+                {!result && listening && phase === 'practice' && steer && steer !== 'ok' && (
+                    <span className={`tt-steer is-${steer}`} aria-hidden="true">{steer === 'up' ? '↑ bắt đầu cao hơn một chút' : '↓ bắt đầu thấp hơn một chút'}</span>
+                  )}
+                {listening && health === 'muted' && <span className="tt-hint" data-tt-health="muted">Micro đang bị tắt tiếng (cuộc gọi hoặc nút tắt micro của máy). Bật lại micro rồi nói tiếp.</span>}
+                {listening && health === 'interrupted' && <span className="tt-hint" data-tt-health="interrupted">Âm thanh bị gián đoạn (cuộc gọi, Siri hoặc ứng dụng khác). Chạm vào màn hình để tiếp tục.</span>}
+                {listening && health === 'ok' && lowBand && <span className="tt-hint" data-tt-health="lowband">Tai nghe Bluetooth đang ở chế độ thoại chất lượng thấp nên đo cao độ kém chính xác. Dùng micro của máy hoặc tai nghe có dây sẽ tốt hơn.</span>}
+                {health === 'ok' && hint === 'quiet' && !result && <span className="tt-hint">Chưa nghe rõ — nói to hơn hoặc đưa micro lại gần.</span>}
                 {hint === 'noisy' && !result && <span className="tt-hint">Xung quanh hơi ồn — tìm chỗ yên tĩnh hơn.</span>}
               </div>
+              )}
 
               {result && resultLine && (
                 <section className="tt-result" aria-live="polite" style={toneVar(result.target)}>
@@ -472,6 +512,7 @@ export function ToneTrainer({ hanzi, pinyin, hanViet, initialMode = 'char', onNe
                     {resultLine.more.map((m) => (
                       <p key={m} className="tt-verdict-more">{m}</p>
                     ))}
+                  </div>
                     <div className="tt-sim" aria-label="Độ giống từng thanh">
                       {([1, 2, 3, 4] as const).map((t) => (
                         <span key={t} className={t === result.target ? 'is-target' : ''} style={toneVar(t)}>
@@ -480,14 +521,14 @@ export function ToneTrainer({ hanzi, pinyin, hanViet, initialMode = 'char', onNe
                         </span>
                       ))}
                     </div>
-                  </div>
                 </section>
               )}
+              </div>
             </>
           )}
         </div>
 
-        {!error && phase !== 'intro' && (
+        {!error && !devCheck && phase !== 'intro' && (
           <footer className="tt-actions">
             {phase === 'calibrate' ? (
               <>
@@ -520,10 +561,8 @@ export function ToneTrainer({ hanzi, pinyin, hanViet, initialMode = 'char', onNe
         )}
         <p className="tt-foot">
           <ShieldCheck size={12} aria-hidden="true" /> Âm thanh chỉ xử lý trên máy bạn, không gửi đi đâu.
+          {!devCheck && phase !== 'intro' && <button type="button" className="dc-open" onClick={openDevCheck}>Kiểm tra thiết bị</button>}
           <span className="tt-keys tt-hide-sm"><kbd>Space</kbd> bật/tắt micro · <kbd>R</kbd> thử lại · <kbd>Esc</kbd> đóng</span>
-          {phase === 'practice' && !error && (
-            <button type="button" className="tt-link tt-only-sm" onClick={recalibrate}>Đo lại giọng</button>
-          )}
         </p>
       </div>
     </div>

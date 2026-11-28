@@ -312,16 +312,19 @@
 @media (pointer: coarse), (max-width: 767px) {
   .lib-seg { height: var(--touch); }
   .lib-filter-input { height: var(--touch); font-size: 16px; }
-  .lib-filter-clear { width: 36px; height: 36px; }
-  .lib-tool { height: 40px; min-width: 40px; }
+  .lib-filter-clear { width: var(--touch); height: var(--touch); }
+  .lib-tool { height: var(--touch); min-width: var(--touch); }
   .lib-menu-item { height: var(--touch); }
-  .lib-back { height: 40px; }
+  .lib-back { height: var(--touch); }
+  .sm-example { height: 36px; position: relative; }
+  .sm-example::after { content: ''; position: absolute; inset: -4px 0; }
 }
 
 /* =====================================================================
    MODAL SHELL (pm-*) — shared with Pinyin chart & Pronunciation (workstream E)
    ===================================================================== */
 .pm-backdrop {
+  overscroll-behavior: contain;
   position: fixed;
   inset: 0;
   z-index: 100;
@@ -594,7 +597,10 @@
   .sm-esc, .sm-footer { display: none; }
   .sm-close { display: inline-flex; }
   .sm-tabs { padding-left: var(--space-4); }
-  .sm-radicals { display: none; }
+  /* Radical chips wrap onto their own row instead of disappearing on phones. */
+  .sm-tabs { flex-wrap: wrap; row-gap: 0; }
+  .sm-radicals { margin-left: 0; width: 100%; padding-bottom: var(--space-2); overflow-x: auto; scrollbar-width: none; }
+  .sm-chip { height: 36px; }
   .sm-tab { height: 44px; }
   .sm-row, .sm-row-word {
     grid-template-columns: 48px auto minmax(0, 1fr) auto;
@@ -645,3 +651,16 @@
 
 /* Section labels in the library: 12px (global .label is 11px) */
 .lib-levels .label { font-size: 12px; }
+
+/* Short screens (landscape phone, small phone, on-screen keyboard up): the level tabs, filter and
+   known/bulk controls took ~330px and left one row of characters (or none). Cap the controls at a
+   share of the panel and let them scroll on their own, so the grid always keeps most of the room. */
+@media (max-height: 700px) {
+  .rail[data-mode='drawer'] .lib-head,
+  .rail[data-mode='sheet'] .lib-head {
+    max-height: 42%;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+  }
+}

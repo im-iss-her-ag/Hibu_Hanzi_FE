@@ -111,7 +111,7 @@ export function RightBreakdown({
   const isComponents = displayMode === 'components'
   const [showAllWords, setShowAllWords] = useState(false)
   const [showAllFamily, setShowAllFamily] = useState(false)
-  const hanzi = detail?.character.hanzi
+  const hanzi = detail?.character?.hanzi
   useEffect(() => { setShowAllWords(false); setShowAllFamily(false) }, [hanzi])
 
   const words = useMemo(() => {

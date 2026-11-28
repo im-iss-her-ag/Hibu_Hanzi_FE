@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef, memo, useCallback } from 'react'
+import { useState, useMemo, useRef, memo, useCallback } from 'react'
 import { X, Search, Volume2 } from 'lucide-react'
 import {
   INITIALS_DATA,
@@ -7,10 +7,13 @@ import {
   parsePinyin,
   getFinalSampleSyllable,
 } from '../utils/pinyinData'
-import { speakChinese, getInitialSamplePinyin } from '../utils/speech'
+import { speakChinese, prefetchChinese, getInitialSamplePinyin } from '../utils/speech'
 import { TonePinyin } from './TonePinyin'
+import { useModalDialog } from '../utils/useModalA11y'
 import { ToneContourDiagram } from './ToneContourDiagram'
 import { INITIAL_EXAMPLES, FINAL_EXAMPLES, MOUTH_LABEL } from './pinyinExamples'
+import { INITIAL_GUIDE, FINAL_GUIDE } from './soundGuide'
+import { guideTraits } from './SoundGuide'
 
 interface PinyinChartModalProps {
   onClose: () => void
@@ -36,20 +39,20 @@ const INITIAL_GROUPS = [
     sub: 'Đầu lưỡi chạm nướu trên: d, t bật ra; n thoát hơi qua mũi; l thoát hơi hai bên lưỡi',
     initials: ['d', 't', 'n', 'l'],
   },
-  { id: 'velar', short: 'Gốc lưỡi', title: 'Âm cuống lưỡi (gốc lưỡi)', sub: 'Gốc lưỡi nâng lên ngạc mềm (g, k, h)', initials: ['g', 'k', 'h'] },
-  { id: 'palatal', short: 'Mặt lưỡi', title: 'Âm mặt lưỡi', sub: 'Mặt lưỡi áp sát ngạc cứng (j, q, x)', initials: ['j', 'q', 'x'] },
+  { id: 'velar', short: 'Gốc lưỡi', title: 'Âm cuống lưỡi (gốc lưỡi)', sub: 'Cuống lưỡi (phần lưỡi phía trong) nâng lên chặn hơi (g, k, h)', initials: ['g', 'k', 'h'] },
+  { id: 'palatal', short: 'Mặt lưỡi', title: 'Âm mặt lưỡi', sub: 'Đầu lưỡi giấu sau răng dưới, mặt lưỡi nâng lên vòm miệng, môi dẹt (j, q, x)', initials: ['j', 'q', 'x'] },
   {
     id: 'retroflex',
     short: 'Cuộn lưỡi',
     title: 'Âm đầu lưỡi sau (cuộn lưỡi)',
-    sub: 'Đầu lưỡi uốn cong lên chạm ngạc cứng (zh, ch, sh, r)',
+    sub: 'Đầu lưỡi cong lên phía vòm miệng; gần "tr", "s" uốn lưỡi của giọng Trung/Nam (zh, ch, sh, r)',
     initials: ['zh', 'ch', 'sh', 'r'],
   },
   {
     id: 'dental',
     short: 'Đầu lưỡi trước',
     title: 'Âm đầu lưỡi trước (âm răng)',
-    sub: 'Đầu lưỡi phẳng chạm mặt sau răng trên (z, c, s)',
+    sub: 'Đầu lưỡi phẳng, đặt sau răng cửa trên, không uốn (z, c, s)',
     initials: ['z', 'c', 's'],
   },
   { id: 'zero', short: 'Bán nguyên âm', title: 'Bán nguyên âm (zero initial)', sub: 'Khởi âm thay thế khi không có thanh mẫu (y, w)', initials: ['y', 'w'] },
@@ -164,6 +167,7 @@ function MatrixTab({ onInspectPinyin }: { onInspectPinyin: (p: string) => void }
   const onPointerOver = (e: React.PointerEvent) => {
     const td = (e.target as HTMLElement).closest<HTMLElement>('td[data-c]')
     if (!td) return
+    if (td.dataset.s) prefetchChinese(td.dataset.s) // warm the sound before the click lands
     const next = { r: td.dataset.r ?? '', c: Number(td.dataset.c) }
     setHot((h) => (h && h.r === next.r && h.c === next.c ? h : next))
   }
@@ -359,15 +363,16 @@ function InitialsTab({ onInspectPinyin }: { onInspectPinyin: (p: string) => void
               const data = INITIALS_DATA[k]
               if (!data) return null
               const reading = data.name.match(/\(([^)]+)\)/)?.[1].replace(/\s*-\s*(bật hơi|cuộn lưỡi)/i, '').trim()
+              const guide = INITIAL_GUIDE[k]
               const tags = [data.isAspirated ? 'Bật hơi' : '', data.group === 'retroflex' ? 'Cuộn lưỡi' : ''].filter(Boolean)
               return (
                 <Entry
                   key={k}
                   symbol={data.initial}
                   reading={reading ? `đọc: ${reading}` : undefined}
-                  type={data.soundType}
+                  type={guide ? guideTraits(guide, 'initial').slice(0, 2).join(' · ') : data.soundType}
                   tags={tags}
-                  note={data.vietnameseEquivalent}
+                  note={guide?.like ?? data.vietnameseEquivalent}
                   example={INITIAL_EXAMPLES[k]}
                   label={`phụ âm ${data.initial}`}
                   onSpeak={() => speakChinese(data.initial)}
@@ -405,7 +410,7 @@ function FinalsTab({ onInspectPinyin }: { onInspectPinyin: (p: string) => void }
                   key={k}
                   symbol={data.final}
                   type={MOUTH_LABEL[data.mouthShape]}
-                  note={data.vietnameseEquivalent}
+                  note={FINAL_GUIDE[k]?.like ?? data.vietnameseEquivalent}
                   example={FINAL_EXAMPLES[k]}
                   label={`vần ${data.final}`}
                   onSpeak={() => speakChinese(getFinalSampleSyllable(data.final))}
@@ -541,17 +546,17 @@ function RulesTab() {
         <h3 className="label">Quy tắc 5</h3>
         <h4>Cách đọc nguyên âm "i" sau 7 phụ âm răng và cuộn lưỡi</h4>
         <p>
-          Sau 7 phụ âm <code>zh, ch, sh, r</code> và <code>z, c, s</code>, chữ cái <code>i</code> không đọc là "i" dẹt môi mà đọc thành <strong>nguyên âm đầu lưỡi</strong> (舌尖元音 [ɿ] sau z, c, s và [ʅ] sau zh, ch, sh, r; nghe gần như "ư", giữ nguyên vị trí lưỡi của phụ âm đó và phát âm thoát hơi).
+          Sau 7 phụ âm <code>zh, ch, sh, r</code> và <code>z, c, s</code>, chữ cái <code>i</code> không đọc là "i" dẹt môi mà đọc thành <strong>nguyên âm đầu lưỡi</strong> (舌尖元音; IPA [ɹ̩] sau z, c, s và [ɻ̩] sau zh, ch, sh, r, sách Hán học ghi là ɿ và ʅ; nghe gần như "ư": giữ nguyên vị trí lưỡi của phụ âm đó rồi chỉ cho thêm tiếng).
         </p>
         <dl className="rf-deflist">
           <dt>
             <TonePinyin pinyin="zhī, chī, shī, rì" />
           </dt>
-          <dd>đọc tựa như "trư", "trư" bật hơi mạnh, "sư" (uốn lưỡi), "rư"</dd>
+          <dd>gần "trư", "trư" bật hơi, "sư" uốn lưỡi, "rư" (giữ lưỡi cong, KHÔNG đọc "chi, si")</dd>
           <dt>
             <TonePinyin pinyin="zī, cī, sī" />
           </dt>
-          <dd>đọc tựa như "chư" nhẹ (ts), "ts" + bật hơi mạnh, "xư" (đầu lưỡi sát răng)</dd>
+          <dd>gần "tsư", "tsư" bật hơi, "xư" (lưỡi phẳng sau răng trên, KHÔNG đọc "chi, xi")</dd>
         </dl>
       </section>
     </div>
@@ -562,18 +567,8 @@ export function PinyinChartModal({ onClose, onInspectPinyin }: PinyinChartModalP
   const [activeTab, setActiveTab] = useState<TabId>('matrix')
   const tabRefs = useRef<Record<string, HTMLButtonElement | null>>({})
 
-  // ESC to close; give focus back to whatever opened the chart.
-  useEffect(() => {
-    const opener = document.activeElement as HTMLElement | null
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
-    }
-    window.addEventListener('keydown', onKey)
-    return () => {
-      window.removeEventListener('keydown', onKey)
-      opener?.focus?.()
-    }
-  }, [onClose])
+  // Esc, Tab trap, scroll lock and focus return (also when a syllable's pronunciation modal is stacked on top).
+  const { ref: dialogRef, titleId, dialogProps } = useModalDialog<HTMLDivElement>(onClose)
 
   const onTabKey = (e: React.KeyboardEvent) => {
     const i = TABS.findIndex((t) => t.id === activeTab)
@@ -587,10 +582,10 @@ export function PinyinChartModal({ onClose, onInspectPinyin }: PinyinChartModalP
   }
 
   return (
-    <div className="pm-backdrop" onClick={onClose} onTouchStart={(e) => e.stopPropagation()} onTouchEnd={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="Bảng pinyin">
-      <div className="pm-dialog pc-dialog rf-dialog" onClick={(e) => e.stopPropagation()} onTouchStart={(e) => e.stopPropagation()} onTouchEnd={(e) => e.stopPropagation()}>
+    <div className="pm-backdrop" onClick={onClose} onTouchStart={(e) => e.stopPropagation()} onTouchEnd={(e) => e.stopPropagation()}>
+      <div ref={dialogRef} {...dialogProps} className="pm-dialog pc-dialog rf-dialog" onClick={(e) => e.stopPropagation()} onTouchStart={(e) => e.stopPropagation()} onTouchEnd={(e) => e.stopPropagation()}>
         <div className="pm-header">
-          <h2 className="pm-title">Bảng pinyin</h2>
+          <h2 className="pm-title" id={titleId}>Bảng pinyin</h2>
           <span className="pm-meta rf-head-meta">
             {TOTAL_FINALS} vận mẫu · 21 thanh mẫu · 4 thanh điệu
           </span>

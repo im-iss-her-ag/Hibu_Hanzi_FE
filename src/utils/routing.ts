@@ -48,6 +48,15 @@ export function parseRouteFromUrl(): RouteState {
  */
 export function buildCharacterUrl(hanzi: string | null, level: LevelFilter, word?: string | null): string {
   const params = new URLSearchParams()
+  // Flags that are not part of the character route survive navigation: ?mode=review (an open
+  // review session, so reload resumes it) and ?voicemock=1 (dev/QA voice mock).
+  if (typeof window !== 'undefined') {
+    const current = new URLSearchParams(window.location.search)
+    for (const key of ['mode', 'view', 'voicemock', 'mocktone']) {
+      const v = current.get(key)
+      if (v !== null) params.set(key, v)
+    }
+  }
   if (hanzi) {
     params.set('c', hanzi)
   }

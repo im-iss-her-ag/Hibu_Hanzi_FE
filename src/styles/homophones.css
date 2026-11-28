@@ -50,7 +50,8 @@
 .hp-lvl { font-size: var(--text-xs); color: var(--ink-3); white-space: nowrap; }
 .hp-empty, .hp-more { padding: var(--space-3); font-size: var(--text-sm); color: var(--ink-3); }
 
-@media (max-width: 767px) {
+/* Phones, and any screen too short for an anchored popover (landscape phone): bottom sheet. */
+@media (max-width: 767px), (max-height: 500px) {
   .hp-scrim { display: block; position: fixed; inset: 0; z-index: 90; background: rgba(0, 0, 0, 0.32); }
   .hp-panel {
     position: fixed; z-index: 91; top: auto; left: 0; right: 0; bottom: 0;
@@ -86,14 +87,19 @@
 
 /* Touch: ≥44px targets, safe-area aware sheet */
 @media (pointer: coarse) {
-  .hp-trigger { min-height: 32px; padding: 4px 10px; }
+  .hp-trigger { position: relative; min-height: 32px; padding: 4px 10px; }
+  /* 44px hit area without making the inline chip look bulky. */
+  .hp-trigger::after { content: ''; position: absolute; inset: -6px -2px; }
   .hp-close { width: 44px; height: 44px; }
   .hp-tabs button { min-height: 44px; }
   .hp-toggle { min-height: 44px; }
   .hp-toggle input { width: 18px; height: 18px; }
   .hp-row { min-height: 52px; }
 }
-@media (max-width: 767px) {
+@media (max-width: 767px), (max-height: 500px) {
   .hp-list { padding-bottom: calc(8px + env(safe-area-inset-bottom)); }
   .hp-panel { padding-bottom: 0; }
 }
+/* Group header when the character has several readings (好: HẢO hǎo / HIẾU hào). */
+.hp-group { display: flex; align-items: baseline; gap: var(--space-2); padding: var(--space-2) var(--space-3) 4px; font-size: var(--text-xs); font-weight: 600; letter-spacing: 0.04em; color: var(--ink-3); border-top: 1px solid var(--rule); }
+.hp-group:first-child { border-top: 0; }

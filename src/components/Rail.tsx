@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { PanelLeftClose, X } from 'lucide-react'
 import type { ShellMode } from './useShellMode'
+import { useModalDialog } from '../utils/useModalA11y'
 
 interface RailProps {
   mode: ShellMode
@@ -12,53 +13,16 @@ interface RailProps {
   headExtra?: React.ReactNode
 }
 
-const FOCUSABLE = 'button:not(:disabled), a[href], input:not(:disabled), select, textarea, [tabindex]:not([tabindex="-1"])'
-
 // The character list container. Same content everywhere; only the frame changes:
 // permanent rail (>=1200), left drawer (768-1199), bottom sheet (<768).
 export function Rail({ mode, open, collapsed, onClose, onCollapse, children, headExtra }: RailProps) {
   const overlay = mode !== 'rail'
   const hidden = overlay ? !open : collapsed
-  const ref = useRef<HTMLElement>(null)
-  const returnRef = useRef<HTMLElement | null>(null)
   const [drag, setDrag] = useState<number | null>(null)
   const dragStart = useRef(0)
 
-  // Focus handling for overlays: move focus in on open, hand it back on close.
-  useEffect(() => {
-    if (!overlay || !open) return
-    returnRef.current = document.activeElement as HTMLElement | null
-    const t = window.setTimeout(() => {
-      ref.current?.querySelector<HTMLElement>('.rail-close')?.focus({ preventScroll: true })
-    }, 30)
-    return () => {
-      window.clearTimeout(t)
-      returnRef.current?.focus?.({ preventScroll: true })
-    }
-  }, [overlay, open])
-
-  const onKeyDown = (e: React.KeyboardEvent) => {
-    if (!overlay) return
-    if (e.key === 'Escape') {
-      e.stopPropagation()
-      onClose()
-      return
-    }
-    if (e.key !== 'Tab') return
-    const items = Array.from(ref.current?.querySelectorAll<HTMLElement>(FOCUSABLE) ?? []).filter(
-      (el) => el.offsetParent !== null,
-    )
-    if (items.length === 0) return
-    const first = items[0]
-    const last = items[items.length - 1]
-    if (e.shiftKey && document.activeElement === first) {
-      e.preventDefault()
-      last.focus()
-    } else if (!e.shiftKey && document.activeElement === last) {
-      e.preventDefault()
-      first.focus()
-    }
-  }
+  // Overlay modes (drawer / sheet) are modal dialogs while open: focus in/out, Esc, Tab trap, scroll lock.
+  const { ref, titleId, dialogProps } = useModalDialog<HTMLElement>(onClose, { enabled: overlay && open, initialFocus: '.rail-close' })
 
   // Bottom sheet: drag the handle down to dismiss.
   const onPointerDown = (e: React.PointerEvent) => {
@@ -94,11 +58,11 @@ export function Rail({ mode, open, collapsed, onClose, onCollapse, children, hea
         data-collapsed={collapsed}
         data-dragging={drag !== null}
         style={drag ? { transform: `translateY(${drag}px)` } : undefined}
-        aria-label="Danh sách chữ"
-        role={overlay ? 'dialog' : undefined}
+        aria-label={overlay ? undefined : 'Danh sách chữ'}
+        aria-labelledby={overlay ? titleId : undefined}
+        role={overlay ? dialogProps.role : undefined}
         aria-modal={overlay && open ? true : undefined}
         inert={hidden}
-        onKeyDown={onKeyDown}
       >
         <div className="rail-inner">
           {mode === 'sheet' && (
@@ -113,7 +77,7 @@ export function Rail({ mode, open, collapsed, onClose, onCollapse, children, hea
             </div>
           )}
           <div className="rail-head">
-            <span className="label">Danh sách chữ</span>
+            <span className="label" id={titleId}>Danh sách chữ</span>
             {headExtra}
             {overlay ? (
               <button type="button" className="sh-icon-btn rail-close" onClick={onClose} aria-label="Đóng danh sách (Esc)" title="Đóng (Esc)">

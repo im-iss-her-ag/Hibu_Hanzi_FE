@@ -1,0 +1,42 @@
+/* =====================================================================
+   Device check (dc-*) — inline panel inside the tone trainer dialog.
+   Status is never colour-only: every row has an icon + a text label.
+   ===================================================================== */
+.pm-dialog.tt-dialog .tt-body:has(> .dc) { display: flex; }   /* beat the landscape two-column grid rule */
+.dc { display: flex; flex-direction: column; gap: var(--space-3); min-width: 0; }
+.dc-head { display: flex; align-items: center; gap: var(--space-3); }
+.dc-title { margin: 0; font-family: var(--font-display); font-size: var(--text-xl); color: var(--ink); outline: none; }
+.dc-lead { margin: 0; font-size: var(--text-sm); color: var(--ink-3); line-height: var(--leading); }
+.dc-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+.dc-actions .tt-btn { white-space: normal; text-align: left; }
+
+.dc-list { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--rule); }
+.dc-row { display: grid; grid-template-columns: 18px minmax(0, 1fr); gap: var(--space-3); padding: var(--space-3) 0; border-bottom: 1px solid var(--rule); --dc-c: var(--ink-3); }
+.dc-row[data-st='ok'] { --dc-c: var(--tone-2); }
+.dc-row[data-st='warn'] { --dc-c: var(--tone-3); }
+.dc-row[data-st='fail'] { --dc-c: var(--seal); }
+.dc-ico { color: var(--dc-c); margin-top: 1px; }
+.dc-main { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.dc-main p { margin: 0; }
+.dc-rt { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-2); font-size: var(--text-md); color: var(--ink); }
+.dc-st { font-size: var(--text-xs); font-weight: 600; letter-spacing: var(--tracking-label); text-transform: uppercase; color: var(--dc-c); }
+.dc-tx { font-size: var(--text-sm); color: var(--ink-2); line-height: var(--leading); overflow-wrap: anywhere; }
+.dc-help { margin-top: var(--space-1) !important; padding-left: var(--space-3); border-left: 2px solid var(--dc-c); font-size: var(--text-sm); color: var(--ink); line-height: var(--leading); }
+.dc-more { margin-top: var(--space-1); font-size: var(--text-sm); color: var(--ink-2); }
+.dc-more summary { cursor: pointer; min-height: 28px; display: flex; align-items: center; color: var(--ink-2); text-decoration: underline; }
+
+.dc-meter { display: flex; align-items: center; gap: var(--space-2); margin-top: var(--space-1); }
+.dc-track { flex: 1; height: 8px; border-radius: var(--radius-sm); background: var(--rule); overflow: hidden; }
+.dc-track > span { display: block; height: 100%; background: var(--ink-3); transform-origin: left; transform: scaleX(0); transition: transform 60ms linear; }
+.dc-track > span.is-ok { background: var(--tone-2); }
+.dc-db { flex: none; width: 64px; text-align: right; font-size: var(--text-xs); color: var(--ink-3); font-variant-numeric: tabular-nums; }
+
+.dc-copied { font-size: var(--text-sm); color: var(--ink-2); }
+.dc-box { width: 100%; box-sizing: border-box; font: 12px/1.4 ui-monospace, Menlo, Consolas, monospace; color: var(--ink); background: var(--paper-2); border: 1px solid var(--rule-strong); border-radius: var(--radius-md); padding: var(--space-2); resize: vertical; }
+
+/* entry points inside the tone trainer */
+.dc-open { margin: 0; padding: 0; border: 0; background: none; color: var(--ink-2); font: inherit; text-decoration: underline; cursor: pointer; min-height: 28px; display: inline-flex; align-items: center; }
+.dc-open:hover { color: var(--ink); }
+.tt-foot .dc-open { margin-left: var(--space-2); }
+@media (pointer: coarse) { .dc-open, .dc-more summary { min-height: var(--touch); } }
+@media (prefers-reduced-motion: reduce) { .dc-track > span { transition: none; } }

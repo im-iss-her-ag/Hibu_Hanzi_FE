@@ -1,10 +1,10 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Volume2, Star, ArrowLeft, X, Mic } from 'lucide-react'
-import type { BundleCharacter, CharacterDetail, LevelFilter } from '../core'
+import type { BundleCharacter, CharacterDetail, LevelFilter, Word } from '../core'
 import type { HistoryEntry } from '../App'
 import { HanziWriterCanvas } from './HanziWriterCanvas'
 import { LearnActions } from './LearnActions'
-import { speakChinese } from '../utils/speech'
+import { speakChinese, prefetchChinese } from '../utils/speech'
 import { pinyinSyllables } from '../utils/tone'
 import { HomophonePanel } from './HomophonePanel'
 import { findHomophones } from '../utils/homophones'
@@ -60,6 +60,8 @@ interface StudioCenterProps {
   /** Word the user came from (search / Từ ghép); shown as a banner above the hero. */
   wordInfo?: { word: string; pinyin: string; hanViet: string | null; meaningVi: string } | null
   onSelectWordChar?: (hanzi: string) => void
+  /** Full word list: powers "Từ HSK" (add this character's HSK words to review). */
+  allWords?: readonly Word[]
   onDismissWord?: () => void
   /** Full character list + navigation, for the "Đồng âm" panel. */
   allCharacters?: BundleCharacter[]
@@ -85,6 +87,7 @@ export function StudioCenter({
   onSelectTrailEntry,
   wordInfo,
   onSelectWordChar,
+  allWords,
   onDismissWord,
   allCharacters,
   onSelectHomophone,
@@ -99,10 +102,17 @@ export function StudioCenter({
     const next = typeof f === 'function' ? f(showHomophones) : f
     setHomophoneFor(next ? character.hanzi : null)
   }
-  const homophoneCount = useMemo(
-    () => (allCharacters && onSelectHomophone ? (['hv', 'hvLoose', 'py'] as const).map((m) => findHomophones(allCharacters, character, m).length).find((n) => n > 0) ?? 0 : 0),
-    [allCharacters, onSelectHomophone, character],
-  )
+  // True homophones (same Hán Việt, else same pinyin incl. tone) first; when there are none, offer the
+  // near-homophones (other tones) under an honest "Gần âm" label instead of inflating "Đồng âm".
+  const homophones = useMemo(() => {
+    if (!allCharacters || !onSelectHomophone) return { count: 0, exact: true }
+    for (const m of ['hv', 'py'] as const) {
+      const n = findHomophones(allCharacters, character, m).length
+      if (n > 0) return { count: n, exact: true }
+    }
+    return { count: findHomophones(allCharacters, character, 'hvLoose').length, exact: false }
+  }, [allCharacters, onSelectHomophone, character])
+  const homophoneCount = homophones.count
 
   // Other readings: skip the primary and anything that would repeat what is already shown
   const others = useMemo(() => {
@@ -132,13 +142,25 @@ export function StudioCenter({
   }, [recentTrail, character.hanzi])
 
   const levelLabel = selectedLevel === 'radicals' ? 'Bộ thủ' : `HSK ${selectedLevel}`
-  const strokeCount = detail?.character.strokeCount
-  const traditionalForm = detail?.character.traditional ?? character.traditional
+  const strokeCount = detail?.character?.strokeCount
+  const traditionalForm = detail?.character?.traditional ?? character.traditional
   const showTraditional = !!traditionalForm && traditionalForm !== character.hanzi
 
   const canSpeak = !!primary?.pinyin
   const speakText = primary?.pinyin || character.hanzi
+  // Warm the recordings for this character's readings so the speak buttons answer instantly.
+  useEffect(() => { prefetchChinese(primary?.pinyin, ...others.map((r) => r.pinyin)) }, [primary?.pinyin, others])
   const meaning = primary?.meaningVi?.trim()
+  // HSK words containing this character, easiest first (capped so one tap never floods the queue).
+  const hskWords = useMemo(() => {
+    if (!allWords) return []
+    const lv = (w: Word) => w.hsk3Level ?? w.hsk2Level ?? 99
+    return allWords
+      .filter((w) => lv(w) < 99 && Array.from(w.word).length > 1 && w.word.includes(character.hanzi))
+      .sort((a, b) => lv(a) - lv(b) || Array.from(a.word).length - Array.from(b.word).length)
+      .slice(0, 30)
+      .map((w) => w.word)
+  }, [allWords, character.hanzi])
 
   return (
     <section className="st">
@@ -166,6 +188,7 @@ export function StudioCenter({
             {wordInfo.meaningVi && <span className="st-word-mean">{wordInfo.meaningVi}</span>}
           </div>
           <div className="st-word-actions">
+            <LearnActions hanzi={wordInfo.word} />
             <button type="button" className="st-tiny st-word-btn" onClick={() => speakChinese(wordInfo.word, 1.0)} title="Phát âm từ" aria-label="Phát âm từ">
               <Volume2 size={16} />
             </button>
@@ -212,15 +235,16 @@ export function StudioCenter({
           )}
           <button
             type="button"
-            className={`st-icon-btn st-star${isFavorite ? ' saved' : ''}`}
+            className={`st-icon-btn la-btn st-star${isFavorite ? ' saved' : ''}`}
             onClick={onToggleFavorite}
             title={isFavorite ? 'Bỏ lưu khỏi sổ tay (G)' : 'Lưu vào sổ tay (G)'}
             aria-label={isFavorite ? 'Bỏ lưu khỏi sổ tay' : 'Lưu vào sổ tay'}
             aria-pressed={isFavorite}
           >
-            <Star size={17} fill={isFavorite ? 'currentColor' : 'none'} />
+            <Star size={17} fill={isFavorite ? 'currentColor' : 'none'} aria-hidden="true" />
+            <span className="la-label" aria-hidden="true">{isFavorite ? 'Đã lưu' : 'Lưu'}</span>
           </button>
-          <LearnActions hanzi={character.hanzi} />
+          <LearnActions hanzi={character.hanzi} hskWords={hskWords} />
         </div>
       </div>
 
@@ -241,9 +265,9 @@ export function StudioCenter({
                 aria-expanded={showHomophones}
                 aria-haspopup="dialog"
                 onClick={() => setShowHomophones((v) => !v)}
-                title="Chữ cùng âm Hán Việt / pinyin"
+                title={homophones.exact ? 'Chữ cùng âm Hán Việt / pinyin' : 'Chưa có chữ đồng âm — xem chữ gần âm (khác thanh)'}
               >
-                Đồng âm ({homophoneCount})
+                {homophones.exact ? 'Đồng âm' : 'Gần âm'} ({homophoneCount})
               </button>
             )}
             {showHomophones && allCharacters && onSelectHomophone && (
@@ -267,8 +291,9 @@ export function StudioCenter({
               <button type="button" className="st-sq" disabled={!canSpeak} onClick={() => speakChinese(speakText, 1.0)} title={canSpeak ? 'Phát âm' : 'Chưa có phiên âm'} aria-label="Phát âm">
                 <Volume2 size={18} />
               </button>
-              <button type="button" className="st-sq" disabled={!canSpeak} onClick={() => speakChinese(speakText, 0.65)} title={canSpeak ? 'Đọc chậm' : 'Chưa có phiên âm'} aria-label="Đọc chậm">
+              <button type="button" className="st-sq st-sq-wide" disabled={!canSpeak} onClick={() => speakChinese(speakText, 0.65)} title={canSpeak ? 'Đọc chậm' : 'Chưa có phiên âm'} aria-label="Đọc chậm">
                 <TurtleIcon size={18} />
+                <span aria-hidden="true">Chậm</span>
               </button>
               {onOpenToneTrainer && (
                 <button type="button" className="st-sq" disabled={!canSpeak} onClick={onOpenToneTrainer} title={canSpeak ? 'Nói thử: luyện thanh điệu (V)' : 'Chưa có phiên âm'} aria-label="Nói thử thanh điệu">

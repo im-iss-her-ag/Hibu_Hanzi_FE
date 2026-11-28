@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { X, Volume2 } from 'lucide-react'
 import type { BundleCharacter, Word } from '../core'
-import { useModalA11y } from '../utils/useModalA11y'
+import { useModalDialog } from '../utils/useModalA11y'
 import { speakChinese } from '../utils/speech'
 import { TonePinyin } from './TonePinyin'
 import {
@@ -27,7 +27,7 @@ interface HanVietQuizProps {
 
 type ScopeKey = 'char' | 'level' | 'learned' | 'favorites'
 
-const CLASS_LABEL = { 'trong-suot': 'Trong suốt', lech: 'Lệch nghĩa', bay: 'Bẫy' } as const
+const CLASS_LABEL = { 'trong-suot': 'Trong suốt', 'mot-phan': 'Gợi ý một phần', 'can-nho': 'Cần nhớ nghĩa', lech: 'Lệch nghĩa', bay: 'Bẫy' } as const
 
 function scopeKeyOf(s: QuizScope): ScopeKey {
   return s.kind
@@ -42,7 +42,7 @@ export function HanVietQuiz({
   onSelectWord,
   onClose,
 }: HanVietQuizProps) {
-  const dialogRef = useModalA11y<HTMLDivElement>(onClose)
+  const { ref: dialogRef, titleId, dialogProps } = useModalDialog<HTMLDivElement>(onClose)
   const [scopeKey, setScopeKey] = useState<ScopeKey>(() => {
     const k = scopeKeyOf(initialScope)
     if (k === 'level' && selectedLevel == null) return 'learned'
@@ -173,7 +173,7 @@ export function HanVietQuiz({
   if (initialScope.kind === 'char') scopes.push({ key: 'char', label: `Chữ ${initialScope.hanzi}` })
   if (selectedLevel != null) scopes.push({ key: 'level', label: `HSK ${selectedLevel}` })
   scopes.push({ key: 'learned', label: knownList ? `Đã thuộc (${knownList.length} chữ)` : `Đã học (HSK 1–${selectedLevel ?? 1})` })
-  scopes.push({ key: 'favorites', label: 'Yêu thích', disabled: favorites.length === 0 })
+  scopes.push({ key: 'favorites', label: 'Sổ tay', disabled: favorites.length === 0 })
 
   const liveText =
     q && picked !== null
@@ -186,13 +186,11 @@ export function HanVietQuiz({
     <div className="pm-backdrop" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
       <div
         className="pm-dialog hq-dialog"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="hq-title"
+        {...dialogProps}
         ref={dialogRef}
       >
         <div className="pm-header">
-          <h2 className="pm-title" id="hq-title">Đoán nghĩa qua Hán Việt</h2>
+          <h2 className="pm-title" id={titleId}>Đoán nghĩa qua Hán Việt</h2>
           {q && (
             <span className="pm-meta hq-count">
               {index + 1}/{total}
@@ -329,6 +327,10 @@ export function HanVietQuiz({
                         <p>Nghĩa của từ đã lệch đi so với nghĩa từng chữ ghép lại.</p>
                       )}
                     </div>
+                  ) : q.cls === 'mot-phan' ? (
+                    <p className="hq-note">Một phần âm Hán Việt gợi ra nghĩa; phần còn lại cần nhớ.</p>
+                  ) : q.cls === 'can-nho' ? (
+                    <p className="hq-note">Âm Hán Việt ít gợi ra nghĩa trong tiếng Việt hiện nay, nên hãy nhớ nghĩa của cả từ.</p>
                   ) : (
                     <p className="hq-note">Âm Hán Việt gần như chính là nghĩa.</p>
                   )}

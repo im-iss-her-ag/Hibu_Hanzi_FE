@@ -263,3 +263,10 @@ button.anat-wc:hover { color: var(--seal); }
 }
 .anat-word.is-link { cursor: pointer; }
 .anat-word.is-link:hover .anat-word-zh { color: var(--seal); }
+
+/* Touch: inline word glyphs and text links keep their look but get a taller hit area. */
+@media (pointer: coarse) {
+  .anat-wc, .anat-more { position: relative; }
+  .anat-wc::after { content: ''; position: absolute; inset: -9px 0; }
+  .anat-more { min-height: var(--touch); }
+}

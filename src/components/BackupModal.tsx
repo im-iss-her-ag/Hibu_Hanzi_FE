@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
 import { X, Download, Upload } from 'lucide-react'
-import { useModalA11y } from '../utils/useModalA11y'
+import { useModalDialog } from '../utils/useModalA11y'
 import { useLearnData } from '../learn/srs'
 import { MAX_BACKUP_BYTES, applyBackup, downloadBackup, parseBackup, requestPersist } from '../learn/backup'
 import type { BackupFile } from '../learn/backup'
+import { SyncSection } from './SyncSection'
+import { useSyncStatus } from '../learn/sync'
 
 interface BackupModalProps {
   favorites: string[]
@@ -12,8 +14,9 @@ interface BackupModalProps {
 }
 
 export function BackupModal({ favorites, onFavoritesChange, onClose }: BackupModalProps) {
-  const dialogRef = useModalA11y<HTMLDivElement>(onClose)
+  const { ref: dialogRef, titleId, dialogProps } = useModalDialog<HTMLDivElement>(onClose)
   const d = useLearnData()
+  const syncOn = useSyncStatus().enabled
   const [persist, setPersist] = useState<boolean | null>(null)
   const [pending, setPending] = useState<BackupFile | null>(null)
   const [confirmOver, setConfirmOver] = useState(false)
@@ -73,19 +76,17 @@ export function BackupModal({ favorites, onFavoritesChange, onClose }: BackupMod
       onClick={onClose}
       onTouchStart={(e) => e.stopPropagation()}
       onTouchEnd={(e) => e.stopPropagation()}
-      role="dialog"
-      aria-modal="true"
-      aria-label="Sao lưu dữ liệu"
     >
       <div
         ref={dialogRef}
+        {...dialogProps}
         className="pm-dialog bk-dialog"
         onClick={(e) => e.stopPropagation()}
         onTouchStart={(e) => e.stopPropagation()}
         onTouchEnd={(e) => e.stopPropagation()}
       >
         <div className="pm-header">
-          <h2 className="pm-title">Sao lưu</h2>
+          <h2 className="pm-title" id={titleId}>Sao lưu</h2>
           <div className="pm-header-actions">
             <button type="button" className="pm-icon-btn" onClick={onClose} aria-label="Đóng" title="Đóng (Esc)">
               <X size={18} />
@@ -94,8 +95,11 @@ export function BackupModal({ favorites, onFavoritesChange, onClose }: BackupMod
         </div>
         <div className="pm-body bk-body">
           <p className="bk-note">
-            Dữ liệu học của bạn chỉ nằm trên thiết bị này, không có tài khoản. Hãy tải file sao lưu định kỳ để không mất tiến độ khi đổi máy hoặc xoá dữ liệu trình duyệt.
+            {syncOn
+              ? 'Dữ liệu học được lưu trên máy này và đồng bộ (đã mã hoá) với các thiết bị dùng chung mã đồng bộ. Vẫn nên tải file sao lưu thỉnh thoảng phòng khi mất mã.'
+              : 'Dữ liệu học của bạn chỉ nằm trên thiết bị này, không có tài khoản. Hãy tải file sao lưu định kỳ, hoặc bật đồng bộ, để không mất tiến độ khi đổi máy hoặc xoá dữ liệu trình duyệt.'}
           </p>
+          <SyncSection />
           <section className="bk-section" aria-label="Dữ liệu hiện có">
             {stat(nKnown, nReview, favorites.length)}
             <p className="bk-meta">
@@ -124,7 +128,19 @@ export function BackupModal({ favorites, onFavoritesChange, onClose }: BackupMod
                 {stat(Object.keys(pending.known).length, Object.keys(pending.srs.cards).length, pending.favorites.length)}
                 {pending.exportedAt > 0 && <div className="bk-meta">Tạo lúc {new Date(pending.exportedAt).toLocaleString('vi-VN')}</div>}
                 {confirmOver ? (
-                  <div className="bk-confirm" role="alertdialog" aria-label="Xác nhận ghi đè">
+                  <div
+                    className="bk-confirm"
+                    role="alertdialog"
+                    aria-label="Xác nhận ghi đè"
+                    onKeyDown={(e) => {
+                      // Esc backs out of the confirmation first; the dialog only closes on the next Esc.
+                      if (e.key === 'Escape') {
+                        e.preventDefault()
+                        setConfirmOver(false)
+                        requestAnimationFrame(() => dialogRef.current?.querySelector<HTMLElement>('[data-bk-over]')?.focus())
+                      }
+                    }}
+                  >
                     <span>Ghi đè sẽ thay toàn bộ dữ liệu hiện có trên máy này. Không hoàn tác được.</span>
                     <span className="bk-actions">
                       <button type="button" className="pm-btn" autoFocus onClick={() => setConfirmOver(false)}>Hủy</button>
@@ -134,7 +150,7 @@ export function BackupModal({ favorites, onFavoritesChange, onClose }: BackupMod
                 ) : (
                   <span className="bk-actions">
                     <button type="button" className="pm-btn bk-primary" onClick={() => apply('merge')}>Gộp (giữ lần ôn mới nhất)</button>
-                    <button type="button" className="pm-btn" onClick={() => setConfirmOver(true)}>Ghi đè</button>
+                    <button type="button" className="pm-btn" data-bk-over onClick={() => setConfirmOver(true)}>Ghi đè</button>
                   </span>
                 )}
               </div>

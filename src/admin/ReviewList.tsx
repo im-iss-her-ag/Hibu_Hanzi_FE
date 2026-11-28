@@ -62,14 +62,34 @@ export function ReviewList({ filters, onPage, onUnauthorized }: Props) {
 
   async function reviewPage() {
     if (!window.confirm(`Duyệt ${ready.length} dòng đã đủ nội dung trên trang này?`)) return
-    const res = await review.mutateAsync({ ids: ready.map((it) => it.id), status: 'reviewed' })
-    setNotice(`Đã duyệt ${res.changed.length} dòng${res.refused.length ? `, ${res.refused.length} dòng chưa đủ nội dung` : ''}.`)
+    try {
+      const res = await review.mutateAsync({ ids: ready.map((it) => it.id), status: 'reviewed' })
+      setNotice(`Đã duyệt ${res.changed.length} dòng${res.refused.length ? `, ${res.refused.length} dòng chưa đủ nội dung` : ''}.`)
+    } catch (e) {
+      setNotice(`Không duyệt được: ${e instanceof Error ? e.message : String(e)}`)
+    }
+  }
+
+  // Single-row actions: a server error or a refusal must be visible, not silently ignored.
+  async function reviewOne(id: number, status: Parameters<typeof review.mutate>[0]['status']) {
+    try {
+      const res = await review.mutateAsync({ ids: [id], status })
+      setNotice(res.refused.length ? 'Chưa duyệt được: dòng này còn thiếu nội dung.' : null)
+    } catch (e) {
+      setNotice(`Không lưu được trạng thái: ${e instanceof Error ? e.message : String(e)}`)
+    }
   }
 
   if (!items.length) {
     return (
       <div className="adm-state" role="status">
         <p>{filters.status === 'draft' ? 'Không còn gì cần duyệt ở bộ lọc này.' : 'Không có dòng nào khớp bộ lọc.'}</p>
+        {filters.page > 0 && (
+          // An out-of-range ?page= (or the last page emptied by reviews) needs a way back.
+          <button type="button" className="adm-btn" onClick={() => onPage(Math.min(filters.page - 1, Math.max(0, pages - 1)))}>
+            Về trang trước
+          </button>
+        )}
       </div>
     )
   }
@@ -109,7 +129,7 @@ export function ReviewList({ filters, onPage, onUnauthorized }: Props) {
               key={it.id}
               item={it as AdminCharacter}
               busy={review.isPending}
-              onReview={(status) => review.mutate({ ids: [it.id], status })}
+              onReview={(status) => reviewOne(it.id, status)}
               onSave={(input: CharacterInput, andReview) => save(it.id, input, andReview)}
             />
           ) : (
@@ -117,7 +137,7 @@ export function ReviewList({ filters, onPage, onUnauthorized }: Props) {
               key={it.id}
               item={it as AdminWord}
               busy={review.isPending}
-              onReview={(status) => review.mutate({ ids: [it.id], status })}
+              onReview={(status) => reviewOne(it.id, status)}
               onSave={(input: WordInput, andReview) => save(it.id, input, andReview)}
             />
           ),

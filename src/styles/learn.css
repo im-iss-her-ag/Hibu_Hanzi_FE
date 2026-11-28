@@ -12,3 +12,31 @@
 @media (max-width: 767px) { .sh-bar .rv-entry .rv-entry-label { display: none; } }
 .kn-toggle.on { color: var(--tone-2); }
 .rv-add.on { color: var(--tone-1); }
+
+/* Labelled study actions (Lưu / Đã thuộc / Ôn tập): icon + word inline when the sheet is wide,
+   icon over a small word when narrow, so the meta row still fits on one line at 360px. */
+.la-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; width: auto; padding: 0 var(--space-2); }
+.la-label { font-size: var(--text-sm); white-space: nowrap; }
+@container st (max-width: 560px) {
+  .st-icon-btn.la-btn { flex-direction: column; gap: 2px; width: auto; min-width: var(--touch); height: var(--touch); padding: 0 4px; }
+  .la-btn .la-label { font-size: 10.5px; line-height: 1; }
+  .st-meta-actions { gap: 0; }
+}
+.la-toast { position: fixed; left: 50%; bottom: calc(var(--study-nav-h, 64px) + 16px + env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 70; pointer-events: none; width: max-content; max-width: calc(100vw - 32px); }
+.la-toast span {
+  display: block; padding: 10px 14px; border-radius: var(--radius-sm);
+  background: var(--ink); color: var(--paper); font-size: var(--text-sm); line-height: 1.4;
+  box-shadow: var(--shadow-float); text-align: center;
+  animation: la-toast-in var(--dur-2, 180ms) var(--ease, ease-out);
+}
+@keyframes la-toast-in { from { opacity: 0; transform: translateY(6px); } }
+@media (prefers-reduced-motion: reduce) { .la-toast span { animation: none; } }
+
+/* Word review: search-row toggle, status line, review-card word text. */
+.sm-review.on { color: var(--tone-1); }
+.sm-note { flex: none; min-height: 0; padding: 0 var(--space-4); font-size: var(--text-sm); color: var(--ink-2); background: var(--paper-2); }
+.sm-note:not(:empty) { padding-top: var(--space-2); }
+.rv-han-word { font-size: clamp(64px, 20vw, 110px); line-height: 1.15; overflow-wrap: anywhere; }
+.rv-han-word.rv-han-long { font-size: clamp(44px, 14vw, 80px); }
+.rv-hv-word { font-size: clamp(28px, 9vw, 44px); }
+.rv-forgot-chip-word { width: auto; min-width: var(--touch); padding: 0 var(--space-2); }

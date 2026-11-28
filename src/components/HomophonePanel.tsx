@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { X } from 'lucide-react'
 import type { BundleCharacter } from '../core'
-import { findHomophones, type HomophoneMode } from '../utils/homophones'
+import { findHomophones, type HomophoneHit, type HomophoneMode } from '../utils/homophones'
 import { TonePinyin } from './TonePinyin'
+import { useModalDialog } from '../utils/useModalA11y'
 
 interface Props {
   characters: BundleCharacter[]
@@ -16,15 +17,22 @@ const MAX = 60
 
 /** Compact list of characters that sound the same (Hán Việt or pinyin). Popover on desktop, bottom sheet on phones. */
 export function HomophonePanel({ characters, character, onSelect, onClose }: Props) {
-  // Open on the strictest view that has results: exact Hán Việt, then any-tone Hán Việt, then pinyin.
+  // Open on the strictest view that has results: exact Hán Việt, then exact pinyin (same tone). Only when
+  // neither has any does it open on other-tone readings (the trigger then says "Gần âm", not "Đồng âm").
   const [initial] = useState(() => {
     if (findHomophones(characters, character, 'hv').length) return { tab: 'hv' as const, loose: false }
-    if (findHomophones(characters, character, 'hvLoose').length) return { tab: 'hv' as const, loose: true }
-    return { tab: 'py' as const, loose: false }
+    if (findHomophones(characters, character, 'py').length) return { tab: 'py' as const, loose: false }
+    return { tab: 'hv' as const, loose: true }
   })
   const [tab, setTab] = useState<'hv' | 'py'>(initial.tab)
   const [loose, setLoose] = useState(initial.loose)
-  const ref = useRef<HTMLDivElement>(null)
+  // Phones and short (landscape) screens get a bottom sheet; portal it out so transformed ancestors can't trap position: fixed.
+  const [isSheet] = useState(() => window.matchMedia('(max-width: 767px), (max-height: 500px)').matches)
+  // Modal behaviour (Esc once, Tab trap, focus return) in both layouts; the page only scroll-locks as a sheet.
+  const { ref, titleId, dialogProps } = useModalDialog<HTMLDivElement>(onClose, {
+    lockScroll: isSheet,
+    initialFocus: '[role="tab"][aria-selected="true"]',
+  })
   const mode: HomophoneMode = tab === 'hv' ? (loose ? 'hvLoose' : 'hv') : loose ? 'pyLoose' : 'py'
 
   const counts = useMemo(
@@ -34,28 +42,31 @@ export function HomophonePanel({ characters, character, onSelect, onClose }: Pro
     }),
     [characters, character, loose],
   )
-  const hits = useMemo(() => findHomophones(characters, character, mode), [characters, character, mode])
+  // Grouped by the reading of this character they share (好: HẢO vs HIẾU), so readings never blur together.
+  const groups = useMemo(() => {
+    const seen = new Set<string>()
+    const out: { key: string; pinyin: string; hanViet: string | null; hits: HomophoneHit[] }[] = []
+    for (const r of character.readings) {
+      const hs = findHomophones(characters, character, mode, { pinyin: r.pinyin, hanViet: r.hanViet }).filter((h) => !seen.has(h.c.hanzi))
+      hs.forEach((h) => seen.add(h.c.hanzi))
+      if (hs.length) out.push({ key: `${r.pinyin}|${r.hanViet ?? ''}`, pinyin: r.pinyin, hanViet: r.hanViet, hits: hs })
+    }
+    return out
+  }, [characters, character, mode])
+  const hits = useMemo(() => groups.flatMap((g) => g.hits), [groups])
+  const main = character.readings.find((r) => r.isPrimary) ?? character.readings[0]
+  const mainKey = main ? `${main.pinyin}|${main.hanViet ?? ''}` : ''
 
   useEffect(() => {
-    // Modal while open: trap Tab, arrow through rows, and swallow app-wide letter shortcuts (D/K/arrows…).
+    // Arrow through rows and swallow app-wide letter shortcuts (D/K/arrows…). Esc and Tab (trap) are left to
+    // useModalDialog, which handles them once for the top-most dialog.
     const onKey = (e: KeyboardEvent) => {
       const panel = ref.current
       if (!panel) return
-      if (e.key === 'Escape') {
-        e.preventDefault()
-        e.stopPropagation()
-        onClose()
-        return
-      }
-      const focusables = [...panel.querySelectorAll<HTMLElement>('button, input')]
+      if (e.key === 'Escape' || e.key === 'Tab') return
       const rows = [...panel.querySelectorAll<HTMLElement>('.hp-row')]
       const active = document.activeElement as HTMLElement | null
-      if (e.key === 'Tab' && focusables.length) {
-        const i = focusables.indexOf(active as HTMLElement)
-        const next = e.shiftKey ? (i <= 0 ? focusables.length - 1 : i - 1) : i === focusables.length - 1 ? 0 : i + 1
-        e.preventDefault()
-        focusables[next].focus()
-      } else if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && rows.length) {
+      if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && rows.length) {
         e.preventDefault()
         const i = rows.indexOf(active as HTMLElement)
         const next = e.key === 'ArrowDown' ? (i < 0 ? 0 : Math.min(i + 1, rows.length - 1)) : i <= 0 ? 0 : i - 1
@@ -79,23 +90,18 @@ export function HomophonePanel({ characters, character, onSelect, onClose }: Pro
     }
     window.addEventListener('keydown', onKey, true)
     window.addEventListener('pointerdown', onDown)
-    const opener = document.activeElement as HTMLElement | null
-    ref.current?.focus()
     return () => {
-      if (opener?.isConnected) opener.focus()
       window.removeEventListener('keydown', onKey, true)
       window.removeEventListener('pointerdown', onDown)
     }
-  }, [onClose])
+  }, [onClose, ref])
 
-  // Phones get a bottom sheet; portal it out so transformed ancestors can't trap position: fixed.
-  const [isSheet] = useState(() => window.matchMedia('(max-width: 767px)').matches)
   const content = (
     <>
       <div className="hp-scrim" aria-hidden />
-      <div className="hp-panel" ref={ref} role="dialog" aria-label="Chữ đồng âm" tabIndex={-1}>
+      <div className="hp-panel" ref={ref} {...dialogProps} tabIndex={-1}>
         <div className="hp-head">
-          <span className="label">Đồng âm với {character.hanzi}</span>
+          <span className="label" id={titleId}>Đồng âm với {character.hanzi}</span>
           <button type="button" className="hp-close" onClick={onClose} aria-label="Đóng">
             <X size={16} />
           </button>
@@ -130,7 +136,16 @@ export function HomophonePanel({ characters, character, onSelect, onClose }: Pro
           <p className="hp-empty">Không có chữ đồng âm trong dữ liệu.</p>
         ) : (
           <ul className="hp-list">
-            {hits.slice(0, MAX).map((h) => {
+            {groups.flatMap((g) => [
+              // Header whenever it is not obvious which reading is shared (several, or not the main one).
+              groups.length > 1 || g.key !== mainKey ? (
+                <li key={`g:${g.key}`} className="hp-group">
+                  {g.hanViet ? g.hanViet.toUpperCase() : null} <TonePinyin pinyin={g.pinyin} className="hp-py" />
+                </li>
+              ) : null,
+              ...g.hits,
+            ]).filter((x) => x !== null).slice(0, MAX + groups.length).map((h) => {
+              if (!('c' in h)) return h
               const lvl = h.c.hsk3Level ?? h.c.hsk2Level
               return (
                 <li key={h.c.hanzi}>

@@ -62,7 +62,9 @@ function TokenGate({ onSignedIn }: { onSignedIn: () => void }) {
           ? 'Mã không đúng.'
           : err instanceof AdminError && err.status === 503
             ? 'Server chưa bật trang quản trị (thiếu ADMIN_TOKEN trong BE/.env).'
-            : 'Không kết nối được server.',
+            : /[^\x20-\x7e]/.test(value.trim())
+              ? 'Mã chỉ gồm ký tự ASCII (không dấu, không ký tự đặc biệt).'
+              : 'Không kết nối được server.',
       )
     } finally {
       setChecking(false)

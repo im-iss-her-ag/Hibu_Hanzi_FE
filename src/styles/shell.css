@@ -139,6 +139,9 @@
   line-height: 1;
 }
 .sh-brand-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
   /* Intentional wordmark: Noto Serif 700 (loaded in main.tsx) */
   font-family: var(--font-display);
   font-size: var(--text-lg);
@@ -588,7 +591,7 @@
   flex: none;
   display: flex;
   justify-content: center;
-  padding: var(--space-2) 0 var(--space-1);
+  padding: var(--space-3) 0 var(--space-2);
   touch-action: none;
   cursor: grab;
 }
@@ -718,24 +721,27 @@
   cursor: default;
 }
 .sn-btn.sn-random {
-  min-width: 164px;
+  border-color: var(--rule-strong);
+}
+/* "Tiếp" (in learning order) is the main path; "Ngẫu nhiên" is the secondary one. */
+.sn-btn.sn-next {
+  min-width: 132px;
   border-color: var(--seal);
   background: var(--seal);
   color: var(--seal-ink);
   font-weight: 600;
 }
-.sn-btn.sn-random:hover:not(:disabled) {
+.sn-btn.sn-next:hover:not(:disabled) {
   background: var(--seal);
   filter: brightness(1.08);
   color: var(--seal-ink);
 }
-.sn-btn.sn-random:active:not(:disabled) {
+.sn-btn.sn-next:active:not(:disabled) {
   filter: brightness(0.94);
 }
-.sn-random kbd {
-  border-color: color-mix(in srgb, var(--seal-ink) 40%, transparent);
-  background: transparent;
-  color: var(--seal-ink);
+/* Key hints mean nothing on a touch screen. */
+@media (hover: none) {
+  .sn-btn kbd, .sh-search kbd, .sm-esc { display: none; }
 }
 
 /* ==========================================================================
@@ -913,7 +919,8 @@
     min-height: var(--touch);
   }
   .sh-menu-shortcuts,
-  .pip-dock {
+  .pip-dock,
+  .sh-menu-widget {
     display: none;
   }
 
@@ -948,7 +955,8 @@
     display: inline-flex;
   }
   .sn-btn,
-  .sn-btn.sn-random {
+  .sn-btn.sn-random,
+  .sn-btn.sn-next {
     flex-direction: column;
     gap: var(--space-1);
     height: 100%;
@@ -966,12 +974,12 @@
   .sn-btn:active:not(:disabled) {
     background: var(--press);
   }
-  .sn-btn.sn-random {
+  .sn-btn.sn-next {
     background: var(--seal-soft);
     color: var(--seal);
   }
-  .sn-btn.sn-random:hover:not(:disabled),
-  .sn-btn.sn-random:active:not(:disabled) {
+  .sn-btn.sn-next:hover:not(:disabled),
+  .sn-btn.sn-next:active:not(:disabled) {
     background: var(--seal-soft);
     color: var(--seal);
     filter: none;
@@ -1041,3 +1049,17 @@
 
 /* kbd hints: at least 11px (tokens default is 10.5px) */
 .sh-kbd, .sh-search kbd, .sn-random kbd { font-size: 11px; }
+
+/* Phones: the header holds logo, search, Ôn tập, Sổ tay and the menu. The notebook keeps only its book
+   icon (still distinct from the study sheet's "Lưu" star), and below 380px the 漢 logo stands alone. */
+@media (max-width: 599px) {
+  .sh-notebook-label { display: none; }
+}
+@media (max-width: 379px) {
+  .sh-brand-name { display: none; }
+}
+
+/* Labelled header buttons (Ôn tập, Sổ tay) size to their content but never below the touch target. */
+@media (pointer: coarse), (max-width: 767px) {
+  .sh-icon-btn.rv-entry { min-width: var(--touch); }
+}

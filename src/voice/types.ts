@@ -48,7 +48,8 @@ export type EngineState =
 
 export type EngineError =
   | 'permission-denied'
-  | 'no-microphone'
+  | 'no-microphone' // NotFoundError / DevicesNotFoundError / (second) OverconstrainedError: no input device
+  | 'mic-busy' // NotReadableError / AbortError / TrackStartError: device exists but is in use or failed
   | 'insecure-context'
   | 'unsupported'
   | 'unknown'

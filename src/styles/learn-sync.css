@@ -1,0 +1,48 @@
+/* Sync section inside the backup dialog (sy-*). Reuses bk-* / pm-* classes and tokens. */
+.sy-section { width: 100%; box-sizing: border-box; }
+.sy-title { margin: 0; font-family: var(--font-display); font-size: var(--text-lg); font-weight: 700; color: var(--ink); }
+.sy-points { margin: 0; padding-left: var(--space-4); display: flex; flex-direction: column; gap: var(--space-1); font-size: var(--text-md); line-height: var(--leading); color: var(--ink-2); }
+.sy-warn { color: var(--seal); }
+.sy-label { font-size: var(--text-xs); font-weight: 600; letter-spacing: var(--tracking-label); text-transform: uppercase; color: var(--ink-3); }
+.sy-join, .sy-codebox { display: flex; flex-direction: column; gap: var(--space-2); width: 100%; }
+.sy-input {
+  width: 100%; box-sizing: border-box; height: var(--control-h); padding: 0 var(--space-3);
+  border: 1px solid var(--rule-strong); border-radius: var(--radius-md); background: var(--sheet); color: var(--ink);
+  font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace; font-size: var(--text-md); letter-spacing: 0.04em;
+}
+.sy-input::placeholder { color: var(--ink-4); }
+.sy-input:focus-visible { outline: 2px solid var(--seal); outline-offset: -1px; }
+.sy-coderow { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); }
+.sy-code {
+  flex: 1 1 260px; min-width: 0; padding: var(--space-2) var(--space-3); border: 1px dashed var(--rule-strong); border-radius: var(--radius-md);
+  background: var(--sheet); color: var(--ink); font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+  font-size: var(--text-md); letter-spacing: 0.06em; overflow-wrap: anywhere; user-select: all;
+}
+.sy-code-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.sy-status { margin: 0; font-size: var(--text-sm); color: var(--ink-3); }
+.sy-status-err { color: var(--seal); }
+.sy-status-msg { color: inherit; }
+.sy-msg { width: 100%; }
+.sy-msg:empty { display: none; }
+.sy-spin { animation: sy-rot 0.9s linear infinite; }
+@keyframes sy-rot { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .sy-spin { animation: none; } }
+.pm-btn:disabled { opacity: 0.55; cursor: default; }
+@media (max-width: 600px) {
+  .sy-section .bk-actions .pm-btn, .sy-code-actions .pm-btn { width: 100%; justify-content: center; }
+  .sy-code-actions { width: 100%; }
+}
+
+/* Backup reminder (non-blocking, bottom-left; above the page, below dialogs). */
+.sy-nudge {
+  position: fixed; right: var(--space-4); bottom: var(--space-4); z-index: 40; max-width: min(420px, calc(100vw - 2 * var(--space-4)));
+  display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-3);
+  background: var(--sheet); color: var(--ink); border: 1px solid var(--rule-strong); border-radius: var(--radius-lg); box-shadow: var(--shadow-float);
+}
+.sy-nudge-text { margin: 0; font-size: var(--text-md); line-height: var(--leading); color: var(--ink-2); }
+.sy-nudge-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+.sy-nudge-actions .pm-icon-btn { margin-left: auto; }
+@media (max-width: 600px) {
+  .sy-nudge-actions .pm-btn, .sy-nudge-actions .pm-btn.bk-primary { width: auto; }
+  .sy-nudge { left: var(--space-2); right: var(--space-2); bottom: calc(var(--space-2) + env(safe-area-inset-bottom, 0px)); max-width: none; }
+}

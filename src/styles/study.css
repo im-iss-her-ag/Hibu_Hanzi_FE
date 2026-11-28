@@ -293,3 +293,7 @@
   .st-segmented button { min-height: var(--touch); }
   .st-icon-btn, .st-sq, .st-tiny { width: var(--touch); height: var(--touch); min-width: var(--touch); }
 }
+
+/* Slow playback: a lone turtle glyph read as a glitch, so it carries a word. */
+.st-sq.st-sq-wide { display: inline-flex; align-items: center; gap: 4px; width: auto; min-width: 0; padding: 0 10px 0 8px; font-size: var(--text-sm); font-weight: 500; }
+@media (pointer: coarse), (max-width: 767px) { .st-sq.st-sq-wide { width: auto; min-width: var(--touch); } }
